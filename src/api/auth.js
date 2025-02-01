@@ -1,23 +1,39 @@
 import axios from 'axios';
 import { API_URL } from '../config';
 
+console.log('API URL being used:', API_URL);
 
 export const login = async (email, password) => {
     try {
-        const response = await axios.post(`${API_URL}/api/Auth/login`, {
-            email,
-            password
-        });
+        console.log('Attempting login with URL:', `${API_URL}/api/Auth/login`);
+        console.log('Login payload:', { email, password });
+        
+        const response = await axios.post(`${API_URL}/api/Auth/login`, 
+            JSON.stringify({
+                email,
+                password
+            }), 
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            }
+        );
         
         if (response.data.token) {
             localStorage.setItem('token', response.data.token);
-            // Store any user data if needed
             localStorage.setItem('user', JSON.stringify(response.data.user));
         }
         
         return response.data;
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            headers: error.response?.headers
+        });
         throw error;
     }
 };
