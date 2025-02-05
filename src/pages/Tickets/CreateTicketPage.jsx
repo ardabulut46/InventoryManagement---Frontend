@@ -35,6 +35,10 @@ import { API_URL } from '../../config';
 function CreateTicketPage() {
     const navigate = useNavigate();
     const theme = useTheme();
+    const { addNotification } = useNotifications();
+    
+    console.log('Notifications context:', { addNotification }); // Debug log
+
     const [formData, setFormData] = useState({
         problemTypeId: null,
         inventoryId: null,
@@ -52,7 +56,6 @@ function CreateTicketPage() {
     const [errors, setErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
-    const { addNotification } = useNotifications();
 
     useEffect(() => {
         fetchProblemTypes();
@@ -125,11 +128,32 @@ function CreateTicketPage() {
         if (!validateForm()) return;
 
         try {
-            await createTicket(formData);
+            const ticketData = {
+                ...formData,
+                priority: parseInt(formData.priority)
+            };
+            
+            console.log('Sending ticket data:', ticketData);
+            
+            const response = await createTicket(ticketData);
+            console.log('Create ticket response:', response);
+            
+            // Only call addNotification if it exists
+            if (addNotification) {
+                addNotification('Ticket created successfully', 'success');
+            }
+            
             navigate('/tickets');
         } catch (err) {
             console.error('Error creating ticket', err);
-            setSubmitError('Failed to create ticket. Please try again.');
+            if (err.response) {
+                console.error('Error response:', {
+                    data: err.response.data,
+                    status: err.response.status,
+                    headers: err.response.headers
+                });
+            }
+            setSubmitError(err.response?.data?.message || err.message || 'Failed to create ticket. Please try again.');
         }
     };
 
@@ -175,12 +199,18 @@ function CreateTicketPage() {
         }));
     };
 
-    // Convert TICKET_PRIORITIES object to array
-    const priorityOptions = Object.entries(TICKET_PRIORITIES).map(([value, info]) => ({
-        value: Number(value),
-        label: info.label,
-        color: info.color
-    }));
+    // Priority options with values matching backend enum
+    const priorityOptions = [
+        { value: 1, label: 'Critical', color: '#DC2626' },
+        { value: 2, label: 'High', color: '#EA580C' },
+        { value: 3, label: 'Normal', color: '#0D9488' },
+        { value: 4, label: 'Low', color: '#2563EB' }
+    ];
+
+    // Helper function to map priority to enum
+    const mapPriorityToEnum = (priority) => {
+        return parseInt(priority);
+    };
 
     return (
         <Container maxWidth="lg" sx={{ py: 3 }}>

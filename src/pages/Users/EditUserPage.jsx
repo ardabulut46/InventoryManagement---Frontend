@@ -55,7 +55,7 @@ function EditUserPage() {
         e.preventDefault()
         try {
             await updateUser(id, formData)
-            navigate('/users')
+            navigate('/admin')
         } catch (err) {
             console.error('Error updating user:', err)
         }

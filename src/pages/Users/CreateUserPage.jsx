@@ -30,7 +30,7 @@ function CreateUserPage() {
         surname: '',
         email: '',
         location: '',
-        groupId: 0,
+        groupId: null,
         password: '',
         role: '',
         floor: '',
@@ -75,7 +75,7 @@ function CreateUserPage() {
         setSelectedGroup(newValue);
         setFormData(prev => ({
             ...prev,
-            groupId: newValue?.id || 0
+            groupId: newValue?.id || null
         }));
     };
 
@@ -94,16 +94,33 @@ function CreateUserPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setSubmitError('');
         
-        if (!validateForm()) return;
+        // Enhanced validation
+        const newErrors = {};
+        if (!formData.name) newErrors.name = 'Name is required';
+        if (!formData.surname) newErrors.surname = 'Surname is required';
+        if (!formData.email) newErrors.email = 'Email is required';
+        if (!formData.password) newErrors.password = 'Password is required';
+        if (!formData.role) newErrors.role = 'Role is required';
+        if (!formData.groupId) newErrors.groupId = 'Group is required';
+        
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
 
         try {
-            await createUser(formData);
-            navigate('/users');
+            const dataToSubmit = {
+                ...formData,
+                userName: formData.email,  // Set userName to email
+                groupId: formData.groupId || null
+            };
+            await createUser(dataToSubmit);
+            navigate('/admin');
         } catch (err) {
             console.error('Error creating user:', err);
-            setSubmitError('Failed to create user. Please try again.');
+            const errorMessage = err.response?.data || 'Failed to create user. Please try again.';
+            setSubmitError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
         }
     };
 

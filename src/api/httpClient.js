@@ -28,10 +28,10 @@ httpClient.interceptors.response.use(
     (response) => {
         // If the endpoint typically returns an array, ensure we have an array
         const arrayEndpoints = [
-            '/api/Ticket',
+            '/api/Ticket$',  // Only match exact endpoint
             '/api/Ticket/my-tickets',
             '/api/Ticket/department-tickets',
-            '/api/Inventory',
+            '/api/Inventory$',  // Only match exact endpoint
             '/api/Inventory/assigned',
             '/api/Notification',
             '/api/User',
@@ -43,9 +43,9 @@ httpClient.interceptors.response.use(
             '/api/Role'
         ];
 
-        // Check if the URL matches any of the array endpoints
+        // Check if the URL matches any of the array endpoints using regex
         const shouldBeArray = arrayEndpoints.some(endpoint => 
-            response.config.url.toLowerCase().includes(endpoint.toLowerCase())
+            new RegExp(endpoint, 'i').test(response.config.url)
         );
 
         if (shouldBeArray) {

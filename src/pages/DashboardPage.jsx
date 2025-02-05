@@ -43,6 +43,7 @@ import PriorityChip from '../components/PriorityChip';
 import { TICKET_PRIORITIES } from '../utils/ticketConfig';
 import { getCurrentUser } from '../api/auth';
 import { API_URL } from '../config';
+import { useTheme } from '@mui/material/styles';
 const statusColors = {
     'Available': 'success',
     'In Use': 'primary',
@@ -55,7 +56,7 @@ const statusColors = {
     'Cancelled': 'error',
 };
 
-function TicketDetailsDialog({ ticket, onClose }) {
+function TicketDetailsDialog({ ticket, onClose, onAssignTicket }) {
     if (!ticket) return null;
 
     const handleDownload = async () => {
@@ -444,60 +445,30 @@ function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicke
 
 function DashboardPage() {
     const [inventories, setInventories] = useState([]);
-    const [myTickets, setMyTickets] = useState([]);
     const [departmentTickets, setDepartmentTickets] = useState([]);
     const [assignedToMeTickets, setAssignedToMeTickets] = useState([]);
-    const [error, setError] = useState('');
-    const [selectedTicket, setSelectedTicket] = useState(null);
     const [showDepartmentTickets, setShowDepartmentTickets] = useState(false);
     const [showAssignedTickets, setShowAssignedTickets] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [error, setError] = useState('');
+    const theme = useTheme();
 
     useEffect(() => {
-        fetchInventories();
-        fetchTickets();
+        fetchData();
+    }, []);
 
-        // Set up polling interval
-        const intervalId = setInterval(() => {
-            fetchTickets();
-        }, 10000); // Fetch every 10 seconds
-
-        // Cleanup interval on component unmount
-        return () => clearInterval(intervalId);
-    }, []); // Empty dependency array means this effect runs once on mount
-
-    const fetchInventories = async () => {
+    const fetchData = async () => {
         try {
-            const response = await getAssignedInventories();
-            // Ensure we have an array of inventories
-            const inventoriesData = Array.isArray(response.data) ? response.data : [];
-            setInventories(inventoriesData);
-        } catch (error) {
-            console.error('Error fetching inventories:', error);
-            setError('Failed to fetch inventories.');
-        }
-    };
-
-    const fetchTickets = async () => {
-        try {
-            const [myTicketsResponse, departmentTicketsResponse] = await Promise.all([
-                getMyTickets(),
-                getDepartmentTickets()
+            const [inventoriesRes, departmentTicketsRes, assignedTicketsRes] = await Promise.all([
+                getAssignedInventories(),
+                getDepartmentTickets(),
+                getMyTickets()
             ]);
-            
-            console.log('My Tickets Response:', myTicketsResponse);
-            console.log('Department Tickets Response:', departmentTicketsResponse);
-            
-            // Ensure we have arrays
-            const myTicketsData = Array.isArray(myTicketsResponse.data) ? myTicketsResponse.data : [];
-            const departmentTicketsData = Array.isArray(departmentTicketsResponse.data) ? departmentTicketsResponse.data : [];
-            
-            setMyTickets(myTicketsData);
-            setDepartmentTickets(departmentTicketsData); // Show all department tickets
-            setAssignedToMeTickets(myTicketsData);
-            setError('');
+            setInventories(inventoriesRes.data);
+            setDepartmentTickets(departmentTicketsRes.data);
+            setAssignedToMeTickets(assignedTicketsRes.data);
         } catch (err) {
-            console.error('Error fetching tickets:', err);
-            setError('Failed to fetch tickets. ' + (err.response?.data?.message || err.message));
+            setError('Veri yüklenirken bir hata oluştu');
         }
     };
 
@@ -505,91 +476,133 @@ function DashboardPage() {
         setSelectedTicket(ticket);
     };
 
+    const handleTicketUpdate = () => {
+        fetchData();
+    };
+
     const handleAssignTicket = async (ticketId) => {
         try {
             await assignTicket(ticketId);
-            fetchTickets(); // Refresh tickets after assignment
-            setShowDepartmentTickets(false); // Close the dialog after successful assignment
-            setError('');
+            fetchData();
         } catch (err) {
-            const errorMessage = err.response?.data || 'Failed to assign ticket.';
-            setError(errorMessage);
-            console.error('Error assigning ticket:', err);
+            setError('Çağrı atama işlemi başarısız oldu');
         }
     };
 
-    const handleTicketUpdate = () => {
-        fetchTickets(); // Refresh tickets after priority update
-    };
-
     return (
-        <Box sx={{ p: 0 }}>
+        <Box sx={{ p: 3 }}>
             {error && (
-                <Box sx={{ px: 1, mb: 1 }}>
-                    <Alert severity="error">{error}</Alert>
-                </Box>
+                <Alert 
+                    severity="error" 
+                    sx={{ 
+                        mb: 3,
+                        borderRadius: 2,
+                        '& .MuiAlert-icon': {
+                            color: 'error.main'
+                        }
+                    }}
+                    onClose={() => setError('')}
+                >
+                    {error}
+                </Alert>
             )}
 
-            {/* My Assigned Inventories Section */}
+            {/* Welcome Section */}
+            <Box 
+                sx={{ 
+                    mb: 4,
+                    p: 3,
+                    borderRadius: 3,
+                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                    color: 'white',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                }}
+            >
+                <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
+                    Hoş Geldiniz!
+                </Typography>
+                <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+                    Envanter ve çağrı yönetim sistemi kontrol paneli
+                </Typography>
+            </Box>
+
+            {/* Inventory Overview Section */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" sx={{ px: 1, py: 2, fontWeight: 'bold' }}>
-                    Zimmetli Envanterim
+                <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: 'text.primary' }}>
+                    Envanter Durumu
                 </Typography>
                 <TableContainer 
                     component={Paper} 
+                    elevation={0}
                     sx={{ 
-                        maxHeight: 400, // This will show approximately 5 rows before scrolling
-                        '& .MuiTableHead-root': {
-                            position: 'sticky',
-                            top: 0,
-                            bgcolor: 'background.paper',
-                            zIndex: 1,
-                        }
+                        borderRadius: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        overflow: 'hidden'
                     }}
                 >
                     <Table>
                         <TableHead>
-                            <TableRow>
-                                <TableCell>ID</TableCell>
-                                <TableCell>Barcode</TableCell>
-                                <TableCell>Brand</TableCell>
-                                <TableCell>Model</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell align="right">Actions</TableCell>
+                            <TableRow sx={{ bgcolor: 'background.default' }}>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Barkod</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Model</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Seri No</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Lokasyon</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Durum</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {inventories.map((inventory) => (
-                                <TableRow key={inventory.id}>
-                                    <TableCell>{inventory.id}</TableCell>
-                                    <TableCell>{inventory.serialNumber}</TableCell>
-                                    <TableCell>{inventory.brand}</TableCell>
-                                    <TableCell>{inventory.model}</TableCell>
+                                <TableRow 
+                                    key={inventory.id}
+                                    sx={{
+                                        '&:hover': {
+                                            bgcolor: 'action.hover',
+                                        }
+                                    }}
+                                >
                                     <TableCell>
-                                        <Chip
-                                            label={inventory.status}
-                                            color={inventory.status === 'Available' ? 'success' : 'default'}
-                                            size="small"
-                                        />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <BarcodeIcon color="action" fontSize="small" />
+                                            {inventory.barcode}
+                                        </Box>
                                     </TableCell>
-                                    <TableCell align="right">
-                                        <IconButton
-                                            component={Link}
-                                            to={`/inventories/edit/${inventory.id}`}
+                                    <TableCell>{inventory.model}</TableCell>
+                                    <TableCell>{inventory.serialNumber}</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <LocationIcon color="action" fontSize="small" />
+                                            {inventory.location}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip 
+                                            label={inventory.status}
+                                            color={statusColors[inventory.status] || 'default'}
                                             size="small"
-                                            color="primary"
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            color="error"
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
+                                            sx={{ 
+                                                borderRadius: 1,
+                                                fontWeight: 500
+                                            }}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}
+                            {inventories.length === 0 && (
+                                <TableRow>
+                                    <TableCell 
+                                        colSpan={5} 
+                                        align="center"
+                                        sx={{ 
+                                            py: 4,
+                                            color: 'text.secondary',
+                                            fontStyle: 'italic'
+                                        }}
+                                    >
+                                        Atanmış envanter bulunamadı
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
@@ -597,45 +610,53 @@ function DashboardPage() {
 
             {/* Tickets Overview Section */}
             <Box sx={{ mb: 4 }}>
-                <Grid container spacing={2} sx={{ px: 1 }}>
+                <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: 'text.primary' }}>
+                    Çağrı Durumu
+                </Typography>
+                <Grid container spacing={3}>
                     {/* Department Tickets Card */}
                     <Grid item xs={12} sm={6}>
                         <Paper
                             sx={{ 
                                 cursor: 'pointer',
-                                border: '2px solid',
-                                borderColor: 'divider',
-                                borderRadius: 2,
+                                borderRadius: 3,
+                                overflow: 'hidden',
                                 transition: 'transform 0.2s, box-shadow 0.2s',
                                 '&:hover': {
                                     transform: 'translateY(-4px)',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                                 },
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
                             }}
                             onClick={() => setShowDepartmentTickets(true)}
-                            elevation={0}
+                            elevation={1}
                         >
-                            <CardContent sx={{ p: 3 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <TicketIcon sx={{ mr: 2, color: 'primary.main', fontSize: 32 }} />
-                                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            Grubumdaki Çağrılar
-                                        </Typography>
-                                    </Box>
+                            <Box 
+                                sx={{ 
+                                    p: 3,
+                                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+                                        Departman Çağrıları
+                                    </Typography>
                                     <Chip 
                                         label={departmentTickets.length}
-                                        color="primary"
                                         sx={{ 
+                                            bgcolor: 'rgba(255,255,255,0.2)',
+                                            color: 'white',
                                             fontWeight: 600,
-                                            fontSize: '1.1rem',
-                                            height: 32,
-                                            minWidth: 32,
-                                            borderRadius: 2
+                                            fontSize: '1.1rem'
                                         }}
                                     />
                                 </Box>
-                            </CardContent>
+                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                                    Departmanınıza atanmış tüm çağrıları görüntüleyin
+                                </Typography>
+                            </Box>
                         </Paper>
                     </Grid>
 
@@ -644,39 +665,44 @@ function DashboardPage() {
                         <Paper
                             sx={{ 
                                 cursor: 'pointer',
-                                border: '2px solid',
-                                borderColor: 'divider',
-                                borderRadius: 2,
+                                borderRadius: 3,
+                                overflow: 'hidden',
                                 transition: 'transform 0.2s, box-shadow 0.2s',
                                 '&:hover': {
                                     transform: 'translateY(-4px)',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                                 },
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
                             }}
                             onClick={() => setShowAssignedTickets(true)}
-                            elevation={0}
+                            elevation={1}
                         >
-                            <CardContent sx={{ p: 3 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <TicketIcon sx={{ mr: 2, color: 'primary.main', fontSize: 32 }} />
-                                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            Üzerimdeki Çağrılar
-                                        </Typography>
-                                    </Box>
+                            <Box 
+                                sx={{ 
+                                    p: 3,
+                                    background: `linear-gradient(45deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+                                        Üzerimdeki Çağrılar
+                                    </Typography>
                                     <Chip 
                                         label={assignedToMeTickets.length}
-                                        color="primary"
                                         sx={{ 
+                                            bgcolor: 'rgba(255,255,255,0.2)',
+                                            color: 'white',
                                             fontWeight: 600,
-                                            fontSize: '1.1rem',
-                                            height: 32,
-                                            minWidth: 32,
-                                            borderRadius: 2
+                                            fontSize: '1.1rem'
                                         }}
                                     />
                                 </Box>
-                            </CardContent>
+                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                                    Size atanmış çağrıları görüntüleyin ve yönetin
+                                </Typography>
+                            </Box>
                         </Paper>
                     </Grid>
                 </Grid>
@@ -699,11 +725,11 @@ function DashboardPage() {
                 onTicketClick={handleTicketClick}
             />
 
-            {/* Ticket Details Dialog */}
             {selectedTicket && (
                 <TicketDetailsDialog
                     ticket={selectedTicket}
                     onClose={() => setSelectedTicket(null)}
+                    onAssignTicket={handleAssignTicket}
                 />
             )}
         </Box>

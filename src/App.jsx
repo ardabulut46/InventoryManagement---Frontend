@@ -23,7 +23,6 @@ import CreateUserPage from './pages/Users/CreateUserPage'
 import EditUserPage from './pages/Users/EditUserPage'
 import DashboardPage from './pages/DashboardPage'
 import MyProfilePage from './pages/MyProfilePage'
-import GroupsPage from './pages/Groups/GroupsPage'
 import CreateTicketSolutionPage from './pages/Tickets/CreateTicketSolutionPage'
 import EditTicketSolutionPage from './pages/Tickets/EditTicketSolutionPage'
 import TicketSolutionsPage from './pages/Tickets/TicketSolutionsPage'
@@ -101,19 +100,13 @@ function App() {
                             <Route path="/tickets/:id/solutions/create" element={<CreateTicketSolutionPage />} />
                             <Route path="/tickets/:id/solutions/edit/:solutionId" element={<EditTicketSolutionPage />} />
 
-                            {/* USERS */}
-                            <Route path="/users" element={<UsersPage />} />
-                            <Route path="/users/create" element={<CreateUserPage />} />
-                            <Route path="/users/edit/:id" element={<EditUserPage />} />
-
-                            {/* GROUPS */}
-                            <Route path="/groups" element={<GroupsPage />} />
-
                             {/* PROFILE */}
                             <Route path="/profile" element={<MyProfilePage />} />
 
                             {/* ADMIN */}
                             <Route path="/admin" element={<AdminPage />} />
+                            <Route path="/admin/users/create" element={<CreateUserPage />} />
+                            <Route path="/admin/users/edit/:id" element={<EditUserPage />} />
                         </Route>
 
                         {/* Catch all other routes and redirect to login if not authenticated */}

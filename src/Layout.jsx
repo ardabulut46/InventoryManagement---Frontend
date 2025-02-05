@@ -130,8 +130,6 @@ function Layout() {
         { text: 'Companies', icon: <BusinessIcon />, path: '/companies' },
         { text: 'Inventories', icon: <InventoryIcon />, path: '/inventories' },
         { text: 'Tickets', icon: <TicketIcon />, path: '/tickets' },
-        { text: 'Users', icon: <PeopleIcon />, path: '/users', adminOnly: true },
-        { text: 'Groups', icon: <GroupIcon />, path: '/groups', adminOnly: true },
         { text: 'Admin Panel', icon: <AdminPanelIcon />, path: '/admin', adminOnly: true },
     ];
 

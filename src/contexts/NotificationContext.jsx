@@ -111,12 +111,25 @@ const NotificationProvider = ({ children }) => {
         }
     }, []);
 
+    // Add the addNotification function
+    const addNotification = useCallback((message, type = 'info') => {
+        const newNotification = {
+            id: Date.now(),
+            createdAt: new Date(),
+            isRead: false,
+            type: type,
+            message: message
+        };
+        setNotifications(prev => [newNotification, ...prev]);
+    }, []);
+
     const value = {
         notifications,
         markAsRead,
         markAllAsRead,
         removeNotification,
-        getUnreadCount
+        getUnreadCount,
+        addNotification
     };
 
     return (

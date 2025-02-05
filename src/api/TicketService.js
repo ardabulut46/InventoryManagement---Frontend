@@ -6,8 +6,16 @@ export const getTickets = () => {
     return httpClient.get(endpoint)
 }
 
-export const getTicketById = (id) => {
-    return httpClient.get(`${endpoint}/${id}`)
+export const getTicketById = async (id) => {
+    try {
+        console.log('Fetching ticket with ID:', id);
+        const response = await httpClient.get(`${endpoint}/${id}`);
+        console.log('Ticket response:', response);
+        return response;
+    } catch (error) {
+        console.error('Error fetching ticket:', error);
+        throw error;
+    }
 }
 
 export const createTicket = (createTicketDto) => {

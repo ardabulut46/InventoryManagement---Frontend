@@ -1,21 +1,25 @@
 export const TICKET_PRIORITIES = {
     1: {
-        label: 'Kritik',
+        label: 'Critical',
+        value: 'Critical',
         color: '#DC2626', // Stronger red
         backgroundColor: '#FEE2E2'
     },
     2: {
-        label: 'Yüksek',
+        label: 'High',
+        value: 'High',
         color: '#EA580C', // Stronger orange
         backgroundColor: '#FFEDD5'
     },
     3: {
-        label: 'Orta',
+        label: 'Normal',
+        value: 'Normal',
         color: '#0D9488', // Teal/green color
         backgroundColor: '#CCFBF1'
     },
     4: {
-        label: 'Düşük',
+        label: 'Low',
+        value: 'Low',
         color: '#2563EB', // Stronger blue
         backgroundColor: '#DBEAFE'
     }
