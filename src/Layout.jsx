@@ -48,6 +48,7 @@ import { logout } from './api/auth';
 import { jwtDecode } from "jwt-decode";
 import { useTheme as useColorMode } from './contexts/ThemeContext';
 import NotificationBell from './components/NotificationBell';
+import ChatWidget from './components/ChatWidget';
 
 function Layout() {
     const [drawerOpen, setDrawerOpen] = useState(true);
@@ -129,7 +130,16 @@ function Layout() {
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Companies', icon: <BusinessIcon />, path: '/companies' },
         { text: 'Inventories', icon: <InventoryIcon />, path: '/inventories' },
-        { text: 'Tickets', icon: <TicketIcon />, path: '/tickets' },
+        { 
+            text: 'Tickets', 
+            icon: <TicketIcon />, 
+            path: '/tickets',
+            subItems: [
+                { text: 'Tüm Çağrılar', path: '/tickets' },
+                { text: 'Benim Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
+                { text: 'Süresi Aşılan Çağrılar', path: '/tickets/idle-breach' },
+            ]
+        },
         { text: 'Admin Panel', icon: <AdminPanelIcon />, path: '/admin', adminOnly: true },
     ];
 
@@ -274,33 +284,81 @@ function Layout() {
                     </Box>
                     <Divider sx={{ mx: 2, mb: 2 }} />
                     <List sx={{ flex: 1, px: 2 }}>
-                        {menuItems.map((item) => (
-                            (!item.adminOnly || (item.adminOnly && isAdmin)) && (
-                                <ListItem
-                                    key={item.text}
-                                    button
-                                    component={Link}
-                                    to={item.path}
-                                    selected={location.pathname === item.path}
-                                    sx={{
-                                        borderRadius: '8px',
-                                        mx: 1,
-                                        mb: 0.5,
-                                        '&.Mui-selected': {
-                                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                        {menuItems.map((item) => {
+                            if (item.adminOnly && !isAdmin) return null;
+                            
+                            const isSelected = location.pathname === item.path || 
+                                (item.subItems && item.subItems.some(subItem => location.pathname === subItem.path));
+
+                            return (
+                                <React.Fragment key={item.text}>
+                                    <ListItem
+                                        button
+                                        onClick={() => {
+                                            if (item.subItems) {
+                                                setMenuOpenState(prev => ({
+                                                    ...prev,
+                                                    [item.text]: !prev[item.text]
+                                                }));
+                                            } else {
+                                                navigate(item.path);
+                                            }
+                                        }}
+                                        sx={{
+                                            mb: 0.5,
+                                            borderRadius: 2,
+                                            mx: 1,
+                                            color: isSelected ? 'primary.main' : 'text.primary',
+                                            bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
                                             '&:hover': {
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <ListItemIcon sx={{ minWidth: 40 }}>
-                                        {item.icon}
-                                    </ListItemIcon>
-                                    {drawerOpen && <ListItemText primary={item.text} />}
-                                </ListItem>
-                            )
-                        ))}
+                                                bgcolor: isSelected 
+                                                    ? alpha(theme.palette.primary.main, 0.15) 
+                                                    : alpha(theme.palette.primary.main, 0.08)
+                                            }
+                                        }}
+                                    >
+                                        <ListItemIcon sx={{ color: isSelected ? 'primary.main' : 'inherit' }}>
+                                            {item.icon}
+                                        </ListItemIcon>
+                                        <ListItemText primary={item.text} />
+                                        {item.subItems && (
+                                            menuOpenState[item.text] ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                                        )}
+                                    </ListItem>
+                                    {item.subItems && (
+                                        <Collapse in={menuOpenState[item.text]} timeout="auto" unmountOnExit>
+                                            <List component="div" disablePadding>
+                                                {item.subItems.map((subItem) => {
+                                                    const isSubItemSelected = location.pathname === subItem.path;
+                                                    return (
+                                                        <ListItem
+                                                            key={subItem.text}
+                                                            button
+                                                            onClick={() => navigate(subItem.path)}
+                                                            sx={{
+                                                                pl: 6,
+                                                                py: 0.5,
+                                                                borderRadius: 2,
+                                                                mx: 1,
+                                                                color: isSubItemSelected ? 'primary.main' : 'text.primary',
+                                                                bgcolor: isSubItemSelected ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                                                                '&:hover': {
+                                                                    bgcolor: isSubItemSelected 
+                                                                        ? alpha(theme.palette.primary.main, 0.15) 
+                                                                        : alpha(theme.palette.primary.main, 0.08)
+                                                                }
+                                                            }}
+                                                        >
+                                                            <ListItemText primary={subItem.text} />
+                                                        </ListItem>
+                                                    );
+                                                })}
+                                            </List>
+                                        </Collapse>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </List>
                     <Divider sx={{ mx: 2, mb: 2 }} />
                     <List sx={{ px: 2 }}>
@@ -381,6 +439,7 @@ function Layout() {
                     flexGrow: 1,
                     p: 0,
                     width: `calc(100% - ${drawerOpen ? 280 : 0}px)`,
+                    marginLeft: drawerOpen ? 0 : `-${280}px`,
                     transition: theme.transitions.create(['margin', 'width'], {
                         easing: theme.transitions.easing.sharp,
                         duration: theme.transitions.duration.leavingScreen,
@@ -436,6 +495,7 @@ function Layout() {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <ChatWidget />
         </Box>
     );
 }

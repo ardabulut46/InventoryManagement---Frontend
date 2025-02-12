@@ -41,6 +41,8 @@ import {
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { getInventories, deleteInventory, getAssignmentHistory, downloadInvoice, downloadExcelTemplate, importExcel } from '../../api/InventoryService';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { useTheme } from '@mui/material/styles';
 
 const COLUMNS = [
     { id: 'id', label: 'ID', always: true },
@@ -56,6 +58,8 @@ const COLUMNS = [
     { id: 'floor', label: 'Floor' },
     { id: 'block', label: 'Block' },
     { id: 'department', label: 'Department' },
+    { id: 'purchasePrice', label: 'Purchase Price' },
+    { id: 'purchaseCurrency', label: 'Currency' },
     { id: 'warrantyStartDate', label: 'Warranty Start' },
     { id: 'warrantyEndDate', label: 'Warranty End' },
     { id: 'supplier', label: 'Supplier' },
@@ -67,12 +71,113 @@ const COLUMNS = [
 ];
 
 const statusColors = {
-    'Available': 'success',
-    'In Use': 'primary',
-    'Under Maintenance': 'warning',
-    'Retired': 'error',
-    'Lost': 'error',
+    'Müsait': 'success',
+    'Kullanımda': 'primary',
+    'Bakımda': 'warning',
+    'Emekli': 'error',
+    'Kayıp': 'error',
 };
+
+const CURRENCY_MAP = {
+    1: 'TRY',
+    2: 'USD',
+    3: 'EUR'
+};
+
+const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'];
+
+function InventoryStats({ inventories }) {
+    const theme = useTheme();
+
+    // Calculate status distribution
+    const statusDistribution = inventories.reduce((acc, inv) => {
+        acc[inv.status] = (acc[inv.status] || 0) + 1;
+        return acc;
+    }, {});
+
+    const pieData = Object.entries(statusDistribution).map(([name, value]) => ({
+        name: name === 'Available' ? 'Müsait' :
+             name === 'In Use' ? 'Kullanımda' :
+             name === 'Under Maintenance' ? 'Bakımda' :
+             name === 'Retired' ? 'Emekli' :
+             name === 'Lost' ? 'Kayıp' : name,
+        value
+    }));
+
+    // Calculate department distribution (top 5)
+    const departmentDistribution = inventories.reduce((acc, inv) => {
+        const deptName = inv.department?.name || 'Atanmamış';
+        acc[deptName] = (acc[deptName] || 0) + 1;
+        return acc;
+    }, {});
+
+    const barData = Object.entries(departmentDistribution)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value]) => ({
+            name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+            value
+        }));
+
+    return (
+        <Box sx={{ 
+            mb: 4, 
+            p: 3,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            boxShadow: theme.palette.mode === 'dark'
+                ? '0 4px 24px rgba(0, 0, 0, 0.3)'
+                : '0 4px 24px rgba(0, 0, 0, 0.1)',
+        }}>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Envanter Analizi</Typography>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Durum Dağılımı</Typography>
+                    <Box sx={{ height: 300, width: '100%' }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={pieData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    fill="#8884d8"
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} (%${(percent * 100).toFixed(0)})`}
+                                >
+                                    {pieData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>En Çok Envantere Sahip 5 Departman</Typography>
+                    <Box sx={{ height: 300, width: '100%' }}>
+                        <ResponsiveContainer>
+                            <BarChart data={barData}>
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Bar dataKey="value" fill={theme.palette.primary.main}>
+                                    {barData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Box>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+}
 
 function HistoryDialog({ inventoryId, onClose }) {
     const [history, setHistory] = useState([]);
@@ -297,6 +402,23 @@ function InventoryDetailsDialog({ inventory, onClose }) {
                                 <Box>
                                     <Typography variant="subtitle2" color="text.secondary">Block</Typography>
                                     <Typography>{inventory.block || '-'}</Typography>
+                                </Box>
+                            </Box>
+                        </Grid>
+
+                        {/* Purchase Information */}
+                        <Grid item xs={12}>
+                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
+                                Purchase Information
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Purchase Price</Typography>
+                                    <Typography>
+                                        {inventory.purchasePrice 
+                                            ? `${inventory.purchasePrice.toLocaleString()} ${CURRENCY_MAP[inventory.purchaseCurrency] || '-'}`
+                                            : '-'}
+                                    </Typography>
                                 </Box>
                             </Box>
                         </Grid>
@@ -649,6 +771,8 @@ function InventoriesPage() {
                     </Alert>
                 )}
 
+                <InventoryStats inventories={filteredInventories} />
+
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -824,6 +948,18 @@ function InventoriesPage() {
                                             return (
                                                 <TableCell key={column.id} sx={{ py: 2 }}>
                                                     {inventory.assignedUser?.email || '-'}
+                                                </TableCell>
+                                            );
+                                        } else if (column.id === 'purchasePrice') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.purchasePrice ? `${inventory.purchasePrice.toLocaleString()} ${CURRENCY_MAP[inventory.purchaseCurrency] || '-'}` : '-'}
+                                                </TableCell>
+                                            );
+                                        } else if (column.id === 'purchaseCurrency') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {CURRENCY_MAP[inventory.purchaseCurrency] || '-'}
                                                 </TableCell>
                                             );
                                         } else {

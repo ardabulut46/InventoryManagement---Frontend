@@ -12,21 +12,34 @@ import {
     Grid,
     MenuItem,
     Paper,
-    Divider,
     Alert,
     Container,
+    IconButton,
+    Tooltip,
+    useTheme,
+    Divider,
 } from '@mui/material'
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material'
+import {
+    ArrowBack as ArrowBackIcon,
+    Help as HelpIcon,
+} from '@mui/icons-material'
 
 const STATUS_OPTIONS = [
-    'Available',
-    'In Use',
-    'Under Maintenance',
-    'Retired',
-    'Lost',
+    'Kullanılabilir',
+    'Kullanımda',
+    'Bakımda',
+    'Emekli',
+    'Kayıp',
 ]
 
+const CURRENCY_OPTIONS = [
+    { value: 1, label: 'TL' },
+    { value: 2, label: 'USD' },
+    { value: 3, label: 'EUR' },
+];
+
 function CreateInventoryPage() {
+    const theme = useTheme()
     const navigate = useNavigate()
 
     const [formData, setFormData] = useState({
@@ -43,6 +56,8 @@ function CreateInventoryPage() {
         block: '',
         department: '',
         purchaseDate: '',
+        purchasePrice: '',
+        purchaseCurrency: 1,
         warrantyStartDate: '',
         warrantyEndDate: '',
         supplier: '',
@@ -122,6 +137,8 @@ function CreateInventoryPage() {
             const inventoryData = {
                 ...formData,
                 purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate).toISOString() : null,
+                purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : null,
+                purchaseCurrency: formData.purchaseCurrency,
                 warrantyStartDate: formData.warrantyStartDate ? new Date(formData.warrantyStartDate).toISOString() : null,
                 warrantyEndDate: formData.warrantyEndDate ? new Date(formData.warrantyEndDate).toISOString() : null,
                 assignedUserId: selectedUser?.id || null,
@@ -139,19 +156,18 @@ function CreateInventoryPage() {
     return (
         <Container maxWidth="lg">
             <Box component={Paper} sx={{ p: 4, mt: 4, borderRadius: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
                     <Button
                         startIcon={<ArrowBackIcon />}
                         onClick={() => navigate('/inventories')}
                         sx={{ mr: 2 }}
                     >
-                        Back
+                        Geri
                     </Button>
-                    <Typography variant="h4" sx={{ flexGrow: 1 }}>
-                        Create New Inventory Item
+                    <Typography variant="h4" sx={{ flexGrow: 1, color: theme.palette.primary.main }}>
+                        Yeni Envanter Öğesi Oluştur
                     </Typography>
                 </Box>
-                <Divider sx={{ mb: 4 }} />
 
                 {submitError && (
                     <Alert severity="error" sx={{ mb: 3 }}>
@@ -160,274 +176,308 @@ function CreateInventoryPage() {
                 )}
 
                 <Box component="form" onSubmit={handleSubmit}>
-                    <Grid container spacing={4}>
-                        {/* Basic Information */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Basic Information
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            mb: 3,
+                            backgroundColor: theme.palette.grey[50],
+                            borderRadius: 2
+                        }}
+                    >
+                        {/* Basic Information Section */}
+                        <Typography variant="h6" sx={{ mb: 2, color: theme.palette.primary.main }}>
+                            Temel Bilgiler
+                        </Typography>
+                        <Grid container spacing={3} sx={{ mb: 4 }}>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Tooltip title="Envanter öğesi için benzersiz tanımlayıcı" arrow placement="top">
                                     <TextField
                                         fullWidth
-                                        label="Barcode"
+                                        label="Barkod"
                                         name="barcode"
                                         value={formData.barcode}
                                         onChange={handleChange}
                                         required
                                         error={!!errors.barcode}
                                         helperText={errors.barcode}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <IconButton size="small">
+                                                    <HelpIcon fontSize="small" color="action" />
+                                                </IconButton>
+                                            ),
+                                        }}
                                     />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        label="Serial Number"
-                                        name="serialNumber"
-                                        value={formData.serialNumber}
-                                        onChange={handleChange}
-                                        required
-                                        error={!!errors.serialNumber}
-                                        helperText={errors.serialNumber}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        select
-                                        label="Status"
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleChange}
-                                    >
-                                        {STATUS_OPTIONS.map(option => (
-                                            <MenuItem key={option} value={option}>
-                                                {option}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Grid>
+                                </Tooltip>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    label="Seri Numarası"
+                                    name="serialNumber"
+                                    value={formData.serialNumber}
+                                    onChange={handleChange}
+                                    required
+                                    error={!!errors.serialNumber}
+                                    helperText={errors.serialNumber}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Durum"
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                >
+                                    {STATUS_OPTIONS.map(option => (
+                                        <MenuItem key={option} value={option}>
+                                            {option}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                             </Grid>
                         </Grid>
 
-                        {/* Product Details */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Product Details
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6} md={3}>
-                                    <TextField
-                                        fullWidth
-                                        label="Family"
-                                        name="family"
-                                        value={formData.family}
-                                        onChange={handleChange}
-                                        required
-                                        error={!!errors.family}
-                                        helperText={errors.family}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={3}>
-                                    <TextField
-                                        fullWidth
-                                        label="Type"
-                                        name="type"
-                                        value={formData.type}
-                                        onChange={handleChange}
-                                        required
-                                        error={!!errors.type}
-                                        helperText={errors.type}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={3}>
-                                    <TextField
-                                        fullWidth
-                                        label="Brand"
-                                        name="brand"
-                                        value={formData.brand}
-                                        onChange={handleChange}
-                                        required
-                                        error={!!errors.brand}
-                                        helperText={errors.brand}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={3}>
-                                    <TextField
-                                        fullWidth
-                                        label="Model"
-                                        name="model"
-                                        value={formData.model}
-                                        onChange={handleChange}
-                                        required
-                                        error={!!errors.model}
-                                        helperText={errors.model}
-                                    />
-                                </Grid>
+                        <Divider sx={{ my: 3 }} />
+
+                        {/* Product Details Section */}
+                        <Typography variant="h6" sx={{ mb: 2, mt: 3, color: theme.palette.primary.main }}>
+                            Ürün Detayları
+                        </Typography>
+                        <Grid container spacing={3} sx={{ mb: 4 }}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <TextField
+                                    fullWidth
+                                    label="Aile"
+                                    name="family"
+                                    value={formData.family}
+                                    onChange={handleChange}
+                                    required
+                                    error={!!errors.family}
+                                    helperText={errors.family}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <TextField
+                                    fullWidth
+                                    label="Tip"
+                                    name="type"
+                                    value={formData.type}
+                                    onChange={handleChange}
+                                    required
+                                    error={!!errors.type}
+                                    helperText={errors.type}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <TextField
+                                    fullWidth
+                                    label="Marka"
+                                    name="brand"
+                                    value={formData.brand}
+                                    onChange={handleChange}
+                                    required
+                                    error={!!errors.brand}
+                                    helperText={errors.brand}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <TextField
+                                    fullWidth
+                                    label="Model"
+                                    name="model"
+                                    value={formData.model}
+                                    onChange={handleChange}
+                                    required
+                                    error={!!errors.model}
+                                    helperText={errors.model}
+                                />
                             </Grid>
                         </Grid>
 
-                        {/* Purchase and Warranty */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Purchase and Warranty
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        type="date"
-                                        label="Purchase Date"
-                                        name="purchaseDate"
-                                        value={formData.purchaseDate}
-                                        onChange={handleChange}
-                                        InputLabelProps={{ shrink: true }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        type="date"
-                                        label="Warranty Start Date"
-                                        name="warrantyStartDate"
-                                        value={formData.warrantyStartDate}
-                                        onChange={handleChange}
-                                        InputLabelProps={{ shrink: true }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        type="date"
-                                        label="Warranty End Date"
-                                        name="warrantyEndDate"
-                                        value={formData.warrantyEndDate}
-                                        onChange={handleChange}
-                                        error={!!errors.warrantyEndDate}
-                                        helperText={errors.warrantyEndDate}
-                                        InputLabelProps={{ shrink: true }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Supplier"
-                                        name="supplier"
-                                        value={formData.supplier}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
+                        <Divider sx={{ my: 3 }} />
+
+                        {/* Purchase and Warranty Section */}
+                        <Typography variant="h6" sx={{ mb: 2, mt: 3, color: theme.palette.primary.main }}>
+                            Satın Alma ve Garanti Bilgileri
+                        </Typography>
+                        <Grid container spacing={3} sx={{ mb: 4 }}>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    label="Satın Alma Tarihi"
+                                    name="purchaseDate"
+                                    value={formData.purchaseDate}
+                                    onChange={handleChange}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    label="Satın Alma Fiyatı"
+                                    name="purchasePrice"
+                                    value={formData.purchasePrice}
+                                    onChange={handleChange}
+                                    InputProps={{
+                                        inputProps: { min: 0 }
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Para Birimi"
+                                    name="purchaseCurrency"
+                                    value={formData.purchaseCurrency}
+                                    onChange={handleChange}
+                                >
+                                    {CURRENCY_OPTIONS.map((option) => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    label="Garanti Başlangıç Tarihi"
+                                    name="warrantyStartDate"
+                                    value={formData.warrantyStartDate}
+                                    onChange={handleChange}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    label="Garanti Bitiş Tarihi"
+                                    name="warrantyEndDate"
+                                    value={formData.warrantyEndDate}
+                                    onChange={handleChange}
+                                    error={!!errors.warrantyEndDate}
+                                    helperText={errors.warrantyEndDate}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    label="Tedarikçi"
+                                    name="supplier"
+                                    value={formData.supplier}
+                                    onChange={handleChange}
+                                />
                             </Grid>
                         </Grid>
 
-                        {/* Location Information */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Location Information
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Location"
-                                        name="location"
-                                        value={formData.location}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Department"
-                                        name="department"
-                                        value={formData.department}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        label="Room"
-                                        name="room"
-                                        value={formData.room}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        label="Floor"
-                                        name="floor"
-                                        value={formData.floor}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={4}>
-                                    <TextField
-                                        fullWidth
-                                        label="Block"
-                                        name="block"
-                                        value={formData.block}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
+                        <Divider sx={{ my: 3 }} />
+
+                        {/* Location and Assignment Section */}
+                        <Typography variant="h6" sx={{ mb: 2, mt: 3, color: theme.palette.primary.main }}>
+                            Konum ve Atama Bilgileri
+                        </Typography>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Konum"
+                                    name="location"
+                                    value={formData.location}
+                                    onChange={handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Departman"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    label="Oda"
+                                    name="room"
+                                    value={formData.room}
+                                    onChange={handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    label="Kat"
+                                    name="floor"
+                                    value={formData.floor}
+                                    onChange={handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                    fullWidth
+                                    label="Blok"
+                                    name="block"
+                                    value={formData.block}
+                                    onChange={handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Autocomplete
+                                    options={users}
+                                    getOptionLabel={(user) => user.email}
+                                    value={selectedUser}
+                                    onChange={(e, newValue) => setSelectedUser(newValue)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Atanan Kullanıcı"
+                                            fullWidth
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Autocomplete
+                                    options={companies}
+                                    getOptionLabel={(company) => company.name}
+                                    value={selectedCompany}
+                                    onChange={(e, newValue) => setSelectedCompany(newValue)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Destek Şirketi"
+                                            fullWidth
+                                        />
+                                    )}
+                                />
                             </Grid>
                         </Grid>
+                    </Paper>
 
-                        {/* Assignment */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Assignment
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <Autocomplete
-                                        options={users}
-                                        getOptionLabel={(user) => user.email}
-                                        value={selectedUser}
-                                        onChange={(e, newValue) => setSelectedUser(newValue)}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                label="Assigned User"
-                                                fullWidth
-                                            />
-                                        )}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Autocomplete
-                                        options={companies}
-                                        getOptionLabel={(company) => company.name}
-                                        value={selectedCompany}
-                                        onChange={(e, newValue) => setSelectedCompany(newValue)}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                label="Support Company"
-                                                fullWidth
-                                            />
-                                        )}
-                                    />
-                                </Grid>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-
-                    <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
                         <Button
-                            variant="outlined"
                             onClick={() => navigate('/inventories')}
-                            sx={{ px: 4 }}
+                            variant="outlined"
                         >
-                            Cancel
+                            İptal
                         </Button>
                         <Button
                             type="submit"
                             variant="contained"
-                            sx={{ px: 4 }}
+                            color="primary"
                         >
-                            Create Inventory
+                            Envanter Oluştur
                         </Button>
                     </Box>
                 </Box>

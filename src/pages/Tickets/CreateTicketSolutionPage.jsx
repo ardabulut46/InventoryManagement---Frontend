@@ -346,6 +346,31 @@ const CreateTicketSolutionPage = () => {
                             requiredMark="optional"
                         >
                             <Form.Item
+                                name="solutionTypeId"
+                                label="Çözüm Türü"
+                                rules={[{ required: true, message: 'Lütfen çözüm türü seçiniz' }]}
+                            >
+                                <Select 
+                                    placeholder="Çözüm türü seçiniz"
+                                    style={{ borderRadius: 6 }}
+                                    optionLabelProp="label"
+                                >
+                                    {solutionTypes.map(type => (
+                                        <Select.Option 
+                                            key={type.id} 
+                                            value={type.id}
+                                            label={type.name}
+                                        >
+                                            <Space>
+                                                <TagOutlined />
+                                                {type.name}
+                                            </Space>
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+
+                            <Form.Item
                                 name="subject"
                                 label="Çözüm Başlığı"
                                 rules={[{ required: true, message: 'Lütfen çözüm başlığı giriniz' }]}
@@ -370,31 +395,6 @@ const CreateTicketSolutionPage = () => {
                                         minHeight: 120
                                     }}
                                 />
-                            </Form.Item>
-
-                            <Form.Item
-                                name="solutionTypeId"
-                                label="Çözüm Türü"
-                                rules={[{ required: true, message: 'Lütfen çözüm türü seçiniz' }]}
-                            >
-                                <Select 
-                                    placeholder="Çözüm türü seçiniz"
-                                    style={{ borderRadius: 6 }}
-                                    optionLabelProp="label"
-                                >
-                                    {solutionTypes.map(type => (
-                                        <Select.Option 
-                                            key={type.id} 
-                                            value={type.id}
-                                            label={type.name}
-                                        >
-                                            <Space>
-                                                <TagOutlined />
-                                                {type.name}
-                                            </Space>
-                                        </Select.Option>
-                                    ))}
-                                </Select>
                             </Form.Item>
 
                             <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>

@@ -28,6 +28,8 @@ import EditTicketSolutionPage from './pages/Tickets/EditTicketSolutionPage'
 import TicketSolutionsPage from './pages/Tickets/TicketSolutionsPage'
 import UploadInvoicePage from './pages/Inventories/UploadInvoicePage'
 import AdminPage from './pages/Admin/AdminPage'
+import MyCreatedTicketsPage from './pages/Tickets/MyCreatedTicketsPage'
+import IdleBreachTicketsPage from './pages/Tickets/IdleBreachTicketsPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -99,6 +101,8 @@ function App() {
                             <Route path="/tickets/:id/solutions" element={<TicketSolutionsPage />} />
                             <Route path="/tickets/:id/solutions/create" element={<CreateTicketSolutionPage />} />
                             <Route path="/tickets/:id/solutions/edit/:solutionId" element={<EditTicketSolutionPage />} />
+                            <Route path="/tickets/my-created-tickets" element={<MyCreatedTicketsPage />} />
+                            <Route path="/tickets/idle-breach" element={<IdleBreachTicketsPage />} />
 
                             {/* PROFILE */}
                             <Route path="/profile" element={<MyProfilePage />} />
