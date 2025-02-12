@@ -319,11 +319,19 @@ function CreateInventoryPage() {
                             <Grid item xs={12} sm={6} md={4}>
                                 <TextField
                                     fullWidth
-                                    type="number"
+                                    type="text"
                                     label="Satın Alma Fiyatı"
                                     name="purchasePrice"
-                                    value={formData.purchasePrice}
-                                    onChange={handleChange}
+                                    value={formData.purchasePrice ? Number(formData.purchasePrice).toLocaleString('tr-TR') : ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\./g, '');
+                                        if (value === '' || /^\d+$/.test(value)) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                purchasePrice: value
+                                            }));
+                                        }
+                                    }}
                                     InputProps={{
                                         inputProps: { min: 0 }
                                     }}
