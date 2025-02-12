@@ -621,7 +621,7 @@ function DashboardPage() {
                                 }
                             }}>
                                 <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
-                                    Departman Çağrıları
+                                    Grubumun Çağrıları
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                                     {loading ? '...' : departmentTickets.length}
@@ -717,31 +717,6 @@ function DashboardPage() {
                                     </Typography>
                                 </Box>
                             </Box>
-                            <Button
-                                variant="contained"
-                                component={Link}
-                                to="/tickets/create"
-                                startIcon={<AddIcon />}
-                                sx={{
-                                    bgcolor: 'white',
-                                    color: theme.palette.primary.main,
-                                    px: 3,
-                                    py: 1,
-                                    borderRadius: 2,
-                                    fontWeight: 600,
-                                    fontSize: '0.9rem',
-                                    textTransform: 'none',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                    '&:hover': {
-                                        bgcolor: 'white',
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-                                    },
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                Yeni Çağrı Oluştur
-                            </Button>
                         </Box>
 
                         <TableContainer sx={{ maxHeight: 400 }}>
