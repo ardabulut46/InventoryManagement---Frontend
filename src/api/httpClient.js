@@ -31,6 +31,7 @@ httpClient.interceptors.response.use(
             '/api/Ticket$',  // Only match exact endpoint
             '/api/Ticket/my-tickets',
             '/api/Ticket/department-tickets',
+            '/api/IdleDurationLimit/idle-breach-tickets',
             '/api/Inventory$',  // Only match exact endpoint
             '/api/Inventory/assigned',
             '/api/Notification',

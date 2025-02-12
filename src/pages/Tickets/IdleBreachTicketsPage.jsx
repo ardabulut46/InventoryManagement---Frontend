@@ -30,7 +30,7 @@ import {
     Info as InfoIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from '../../api/httpClient';
+import { getIdleBreachTickets } from '../../api/IdleDurationLimitService';
 import PriorityChip from '../../components/PriorityChip';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -56,10 +56,13 @@ function IdleBreachTicketsPage() {
 
     const fetchIdleBreachTickets = async () => {
         try {
-            const response = await axios.get('/api/IdleDurationLimit/idle-breach-tickets');
+            const response = await getIdleBreachTickets();
+            console.log('API Response:', response);
+            console.log('Response Data:', response.data);
             setTickets(response.data);
             setError('');
         } catch (err) {
+            console.error('Error details:', err.response || err);
             setError('Süresi aşılan talepler yüklenirken bir hata oluştu.');
             console.error('Error fetching idle breach tickets:', err);
         } finally {
@@ -72,6 +75,9 @@ function IdleBreachTicketsPage() {
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
+    
+    console.log('Filtered Tickets:', filteredTickets);
+    console.log('All Tickets State:', tickets);
 
     const handleTicketClick = (ticketId) => {
         navigate(`/tickets/${ticketId}`);
