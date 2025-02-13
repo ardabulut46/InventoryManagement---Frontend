@@ -59,6 +59,9 @@ function Layout() {
     const [adminPanelOpen, setAdminPanelOpen] = useState(false);
     const [menuOpenState, setMenuOpenState] = useState({
         Tickets: false,
+        'Admin Panel': false,
+        'Genel Ayarlar': false,
+        'Çağrı Ayarları': false,
     });
     const theme = useMuiTheme();
     const navigate = useNavigate();
@@ -128,20 +131,102 @@ function Layout() {
 
     const menuItems = [
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-        { text: 'Companies', icon: <BusinessIcon />, path: '/companies' },
-        { text: 'Inventories', icon: <InventoryIcon />, path: '/inventories' },
+        { 
+            text: 'Inventories', 
+            icon: <InventoryIcon />, 
+            path: '/inventories',
+            subItems: [
+                { text: 'Tüm Envanterler', path: '/inventories' },
+            ]
+        },
         { 
             text: 'Tickets', 
             icon: <TicketIcon />, 
             path: '/tickets',
             subItems: [
                 { text: 'Tüm Çağrılar', path: '/tickets' },
+                { text: 'Grubumun Çağrıları', path: '/tickets/department' },
                 { text: 'Benim Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
                 { text: 'Süresi Aşılan Çağrılar', path: '/tickets/idle-breach' },
             ]
         },
-        { text: 'Admin Panel', icon: <AdminPanelIcon />, path: '/admin', adminOnly: true },
+        { 
+            text: 'Admin Panel', 
+            icon: <AdminPanelIcon />, 
+            adminOnly: true,
+            subItems: [
+                { text: 'Genel Ayarlar', path: '/admin?section=general' },
+                { text: 'Çağrı Ayarları', path: '/admin?section=ticket' },
+                { text: 'Envanter Ayarları', path: '/admin?section=inventory' }
+            ]
+        },
     ];
+
+    const renderMenuItem = (item, level = 0) => {
+        if (item.adminOnly && !isAdmin) return null;
+        
+        const isSelected = location.pathname === item.path || 
+            (item.subItems && item.subItems.some(subItem => 
+                subItem.path === location.pathname || 
+                (subItem.subItems && subItem.subItems.some(nestedItem => nestedItem.path === location.pathname))
+            ));
+
+        return (
+            <React.Fragment key={item.text}>
+                <ListItem
+                    button
+                    onClick={() => {
+                        if (item.subItems) {
+                            setMenuOpenState(prev => ({
+                                ...prev,
+                                [item.text]: !prev[item.text]
+                            }));
+                        } else if (item.path) {
+                            navigate(item.path);
+                        }
+                    }}
+                    sx={{
+                        mb: 0.5,
+                        borderRadius: 2,
+                        mx: 1,
+                        pl: 2 + level * 2,
+                        color: isSelected ? 'primary.main' : 'text.primary',
+                        bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                        '&:hover': {
+                            bgcolor: isSelected 
+                                ? alpha(theme.palette.primary.main, 0.15) 
+                                : alpha(theme.palette.primary.main, 0.08)
+                        }
+                    }}
+                >
+                    {level === 0 && (
+                        <ListItemIcon sx={{ color: isSelected ? 'primary.main' : 'inherit' }}>
+                            {item.icon}
+                        </ListItemIcon>
+                    )}
+                    <ListItemText 
+                        primary={item.text} 
+                        sx={{ 
+                            '& .MuiTypography-root': {
+                                fontSize: level > 0 ? '0.9rem' : '1rem',
+                                fontWeight: level > 0 ? 400 : 500
+                            }
+                        }}
+                    />
+                    {item.subItems && (
+                        menuOpenState[item.text] ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                    )}
+                </ListItem>
+                {item.subItems && (
+                    <Collapse in={menuOpenState[item.text]} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                            {item.subItems.map(subItem => renderMenuItem(subItem, level + 1))}
+                        </List>
+                    </Collapse>
+                )}
+            </React.Fragment>
+        );
+    };
 
     return (
         <Box sx={{ display: 'flex', bgcolor: theme.palette.background.default, minHeight: '100vh' }}>
@@ -284,81 +369,7 @@ function Layout() {
                     </Box>
                     <Divider sx={{ mx: 2, mb: 2 }} />
                     <List sx={{ flex: 1, px: 2 }}>
-                        {menuItems.map((item) => {
-                            if (item.adminOnly && !isAdmin) return null;
-                            
-                            const isSelected = location.pathname === item.path || 
-                                (item.subItems && item.subItems.some(subItem => location.pathname === subItem.path));
-
-                            return (
-                                <React.Fragment key={item.text}>
-                                    <ListItem
-                                        button
-                                        onClick={() => {
-                                            if (item.subItems) {
-                                                setMenuOpenState(prev => ({
-                                                    ...prev,
-                                                    [item.text]: !prev[item.text]
-                                                }));
-                                            } else {
-                                                navigate(item.path);
-                                            }
-                                        }}
-                                        sx={{
-                                            mb: 0.5,
-                                            borderRadius: 2,
-                                            mx: 1,
-                                            color: isSelected ? 'primary.main' : 'text.primary',
-                                            bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
-                                            '&:hover': {
-                                                bgcolor: isSelected 
-                                                    ? alpha(theme.palette.primary.main, 0.15) 
-                                                    : alpha(theme.palette.primary.main, 0.08)
-                                            }
-                                        }}
-                                    >
-                                        <ListItemIcon sx={{ color: isSelected ? 'primary.main' : 'inherit' }}>
-                                            {item.icon}
-                                        </ListItemIcon>
-                                        <ListItemText primary={item.text} />
-                                        {item.subItems && (
-                                            menuOpenState[item.text] ? <ExpandLessIcon /> : <ExpandMoreIcon />
-                                        )}
-                                    </ListItem>
-                                    {item.subItems && (
-                                        <Collapse in={menuOpenState[item.text]} timeout="auto" unmountOnExit>
-                                            <List component="div" disablePadding>
-                                                {item.subItems.map((subItem) => {
-                                                    const isSubItemSelected = location.pathname === subItem.path;
-                                                    return (
-                                                        <ListItem
-                                                            key={subItem.text}
-                                                            button
-                                                            onClick={() => navigate(subItem.path)}
-                                                            sx={{
-                                                                pl: 6,
-                                                                py: 0.5,
-                                                                borderRadius: 2,
-                                                                mx: 1,
-                                                                color: isSubItemSelected ? 'primary.main' : 'text.primary',
-                                                                bgcolor: isSubItemSelected ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
-                                                                '&:hover': {
-                                                                    bgcolor: isSubItemSelected 
-                                                                        ? alpha(theme.palette.primary.main, 0.15) 
-                                                                        : alpha(theme.palette.primary.main, 0.08)
-                                                                }
-                                                            }}
-                                                        >
-                                                            <ListItemText primary={subItem.text} />
-                                                        </ListItem>
-                                                    );
-                                                })}
-                                            </List>
-                                        </Collapse>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
+                        {menuItems.map(item => renderMenuItem(item))}
                     </List>
                     <Divider sx={{ mx: 2, mb: 2 }} />
                     <List sx={{ px: 2 }}>

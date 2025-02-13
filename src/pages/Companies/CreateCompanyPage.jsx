@@ -23,7 +23,7 @@ function CreateCompanyPage() {
         e.preventDefault()
         try {
             await createCompany(formData)
-            navigate('/companies')
+            navigate('/admin/companies')
         } catch (error) {
             console.error('Error creating company', error)
         }

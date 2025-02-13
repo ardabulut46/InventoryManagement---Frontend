@@ -30,6 +30,10 @@ import UploadInvoicePage from './pages/Inventories/UploadInvoicePage'
 import AdminPage from './pages/Admin/AdminPage'
 import MyCreatedTicketsPage from './pages/Tickets/MyCreatedTicketsPage'
 import IdleBreachTicketsPage from './pages/Tickets/IdleBreachTicketsPage'
+import DepartmentTicketsPage from './pages/Tickets/DepartmentTicketsPage'
+import InventoryDetailPage from './pages/Inventories/InventoryDetailPage'
+import AssignedTicketsPage from './pages/Tickets/AssignedTicketsPage'
+import WarrantyStatusPage from './pages/Inventories/WarrantyStatusPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -81,9 +85,9 @@ function App() {
                             <Route path="/" element={<DashboardPage />} />
                             
                             {/* COMPANIES */}
-                            <Route path="/companies" element={<CompaniesPage />} />
+                            {/* <Route path="/companies" element={<CompaniesPage />} />
                             <Route path="/companies/create" element={<CreateCompanyPage />} />
-                            <Route path="/companies/edit/:id" element={<EditCompanyPage />} />
+                            <Route path="/companies/edit/:id" element={<EditCompanyPage />} /> */}
 
                             {/* INVENTORIES */}
                             <Route path="/inventories" element={<InventoriesPage />} />
@@ -91,6 +95,8 @@ function App() {
                             <Route path="/inventories/edit/:id" element={<EditInventoryPage />} />
                             <Route path="/inventories/assign" element={<AssignInventoryPage />} />
                             <Route path="/inventories/upload-invoice" element={<UploadInvoicePage />} />
+                            <Route path="/inventories/detail/:id" element={<InventoryDetailPage />} />
+                            <Route path="/inventories/warranty-status" element={<WarrantyStatusPage />} />
 
                             {/* TICKETS */}
                             <Route path="/tickets" element={<TicketsPage />} />
@@ -103,6 +109,8 @@ function App() {
                             <Route path="/tickets/:id/solutions/edit/:solutionId" element={<EditTicketSolutionPage />} />
                             <Route path="/tickets/my-created-tickets" element={<MyCreatedTicketsPage />} />
                             <Route path="/tickets/idle-breach" element={<IdleBreachTicketsPage />} />
+                            <Route path="/tickets/department" element={<DepartmentTicketsPage />} />
+                            <Route path="/tickets/assigned" element={<AssignedTicketsPage />} />
 
                             {/* PROFILE */}
                             <Route path="/profile" element={<MyProfilePage />} />
@@ -111,6 +119,9 @@ function App() {
                             <Route path="/admin" element={<AdminPage />} />
                             <Route path="/admin/users/create" element={<CreateUserPage />} />
                             <Route path="/admin/users/edit/:id" element={<EditUserPage />} />
+                            <Route path="/admin/companies" element={<CompaniesPage />} />
+                            <Route path="/admin/companies/create" element={<CreateCompanyPage />} />
+                            <Route path="/admin/companies/edit/:id" element={<EditCompanyPage />} />
                         </Route>
 
                         {/* Catch all other routes and redirect to login if not authenticated */}

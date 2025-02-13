@@ -18,6 +18,9 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  Tabs,
+  Tab,
+  Badge,
 } from '@mui/material';
 import {
   Timeline,
@@ -41,6 +44,7 @@ import {
   Assignment as AssignmentIcon,
   Business as BusinessIcon,
   Flag as FlagIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { getTicketById, assignTicket } from '../../api/TicketService';
 import { API_URL } from '../../config';
@@ -62,11 +66,25 @@ const priorityColors = {
 };
 
 const priorityLabels = {
-  1: 'Critical',
-  2: 'High',
-  3: 'Medium',
-  4: 'Low',
+  1: 'Kritik',
+  2: 'Yüksek',
+  3: 'Orta',
+  4: 'Düşük',
 };
+
+function TabPanel({ children, value, index }) {
+  return (
+    <Box
+      role="tabpanel"
+      hidden={value !== index}
+      id={`ticket-tabpanel-${index}`}
+      aria-labelledby={`ticket-tab-${index}`}
+      sx={{ mt: 2 }}
+    >
+      {value === index && children}
+    </Box>
+  );
+}
 
 function TicketDetailPage() {
   const theme = useTheme();
@@ -74,6 +92,7 @@ function TicketDetailPage() {
   const navigate = useNavigate();
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
   const currentUser = getCurrentUser();
 
   useEffect(() => {
@@ -88,7 +107,7 @@ function TicketDetailPage() {
       setError('');
     } catch (err) {
       console.error('Error fetching ticket:', err);
-      setError('Failed to fetch ticket details.');
+      setError('Çağrı detayları yüklenirken bir hata oluştu.');
     }
   };
 
@@ -102,7 +121,7 @@ function TicketDetailPage() {
       await fetchTicket(); // Refresh ticket data
     } catch (err) {
       console.error('Error assigning ticket:', err);
-      setError('Failed to assign ticket.');
+      setError('Çağrı atanırken bir hata oluştu.');
     }
   };
 
@@ -119,19 +138,19 @@ function TicketDetailPage() {
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Alert severity="error" variant="filled">{error}</Alert>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Alert severity="error" variant="filled">Çağrı detayları yüklenirken bir hata oluştu.</Alert>
       </Container>
     );
   }
 
   if (!ticket) {
     return (
-      <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
         <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
           <Stack spacing={2}>
             <LinearProgress />
-            <Typography align="center" color="text.secondary">Loading ticket details...</Typography>
+            <Typography align="center" color="text.secondary">Çağrı detayları yükleniyor...</Typography>
           </Stack>
         </Paper>
       </Container>
@@ -141,105 +160,163 @@ function TicketDetailPage() {
   const isAssignedToCurrentUser = ticket.userId === currentUser?.id;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/tickets')}
-          sx={{ mb: 3 }}
+          sx={{ mb: 2 }}
         >
-          Back to Tickets
+          Çağrılara Dön
         </Button>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ flex: 1, minWidth: 280 }}>
-              <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-                {ticket.subject}
-              </Typography>
-              <Typography variant="subtitle1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AssignmentIcon fontSize="small" />
-                Ticket #{ticket.registrationNumber}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={2} sx={{ flexShrink: 0 }}>
-              {!ticket.userId && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  startIcon={<PersonIcon />}
-                  onClick={handleAssignTicket}
-                  sx={{ borderRadius: 2, textTransform: 'none' }}
-                >
-                  Çağrıyı Üstlen
-                </Button>
-              )}
-              {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && isAssignedToCurrentUser && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="large"
-                  startIcon={<CheckCircleIcon />}
-                  onClick={handleCloseTicket}
-                  sx={{ borderRadius: 2, textTransform: 'none' }}
-                >
-                  Close Ticket
-                </Button>
-              )}
-            </Stack>
-          </Box>
-
-          {/* Status Progress Bar */}
-          <Box sx={{ mt: 4, mb: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
-              <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Status Progress
-              </Typography>
-              <Chip
-                label={ticket.status}
-                sx={{
-                  bgcolor: `${statusColors[ticket.status]}15`,
-                  color: statusColors[ticket.status],
-                  fontWeight: 'medium',
-                  borderRadius: '8px',
-                  '& .MuiChip-label': { px: 2 },
-                }}
-              />
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={getStatusProgress()}
-              sx={{
-                height: 10,
-                borderRadius: 5,
-                bgcolor: 'grey.100',
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: statusColors[ticket.status],
-                  borderRadius: 5,
-                },
-              }}
-            />
-          </Box>
-        </Paper>
       </Box>
 
+      {/* Main Content */}
       <Grid container spacing={3}>
         {/* Left Column - Main Information */}
         <Grid item xs={12} md={8}>
-          {/* Description Card */}
-          <Card elevation={3} sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
-                <InfoIcon />
-                Description
-              </Typography>
-              <Divider sx={{ my: 2 }} />
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: 'background.paper', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: 1, minWidth: 280 }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
+                  {ticket.subject}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AssignmentIcon fontSize="small" />
+                  Çağrı #{ticket.registrationNumber}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={2} sx={{ flexShrink: 0 }}>
+                {!ticket.userId && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<PersonIcon />}
+                    onClick={handleAssignTicket}
+                    sx={{ borderRadius: 2, textTransform: 'none' }}
+                  >
+                    Çağrıyı Üstlen
+                  </Button>
+                )}
+                {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && isAssignedToCurrentUser && (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<CheckCircleIcon />}
+                    onClick={handleCloseTicket}
+                    sx={{ borderRadius: 2, textTransform: 'none' }}
+                  >
+                    Çağrıyı Kapat
+                  </Button>
+                )}
+              </Stack>
+            </Box>
+
+            {/* Status Progress Bar */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
+                <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Durum İlerlemesi
+                </Typography>
+                <Chip
+                  label={ticket.status}
+                  sx={{
+                    bgcolor: `${statusColors[ticket.status]}15`,
+                    color: statusColors[ticket.status],
+                    fontWeight: 'medium',
+                    borderRadius: '8px',
+                    '& .MuiChip-label': { px: 2 },
+                  }}
+                />
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={getStatusProgress()}
+                sx={{
+                  height: 10,
+                  borderRadius: 5,
+                  bgcolor: 'grey.100',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: statusColors[ticket.status],
+                    borderRadius: 5,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Quick Info Cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Öncelik
+                  </Typography>
+                  <Chip
+                    label={priorityLabels[ticket.priority]}
+                    sx={{
+                      bgcolor: `${priorityColors[ticket.priority]}15`,
+                      color: priorityColors[ticket.priority],
+                      fontWeight: 'medium',
+                    }}
+                  />
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Departman
+                  </Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{ticket.group?.department?.name || '-'}</Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Grup
+                  </Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{ticket.group?.name || '-'}</Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Problem Tipi
+                  </Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{ticket.problemType}</Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            {/* Tabs Navigation */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} aria-label="çağrı detayları sekmeleri">
+                <Tab 
+                  icon={<DescriptionIcon />} 
+                  label="Açıklama" 
+                  iconPosition="start"
+                />
+                <Tab 
+                  icon={<LocationIcon />} 
+                  label="Konum" 
+                  iconPosition="start"
+                />
+                {ticket.attachmentPath && (
+                  <Tab 
+                    icon={<AttachmentIcon />} 
+                    label="Ekler" 
+                    iconPosition="start"
+                  />
+                )}
+              </Tabs>
+            </Box>
+
+            {/* Tab Panels */}
+            <TabPanel value={activeTab} index={0}>
               <Typography variant="body1" sx={{ 
                 whiteSpace: 'pre-wrap', 
-                color: 'text.secondary', 
-                mt: 2,
+                color: 'text.secondary',
                 p: 2,
                 bgcolor: 'grey.50',
                 borderRadius: 1,
@@ -248,22 +325,14 @@ function TicketDetailPage() {
               }}>
                 {ticket.description}
               </Typography>
-            </CardContent>
-          </Card>
+            </TabPanel>
 
-          {/* Location Card */}
-          <Card elevation={3} sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
-                <LocationIcon />
-                Location Details
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Grid container spacing={3} sx={{ mt: 1 }}>
+            <TabPanel value={activeTab} index={1}>
+              <Grid container spacing={3}>
                 <Grid item xs={12} sm={4}>
                   <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Building/Location
+                      Bina/Konum
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>{ticket.location}</Typography>
                   </Paper>
@@ -272,7 +341,7 @@ function TicketDetailPage() {
                   <Grid item xs={12} sm={4}>
                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Room
+                        Oda
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>{ticket.room}</Typography>
                     </Paper>
@@ -282,25 +351,17 @@ function TicketDetailPage() {
                   <Grid item xs={12} sm={4}>
                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Floor
+                        Kat
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>{ticket.floor}</Typography>
                     </Paper>
                   </Grid>
                 )}
               </Grid>
-            </CardContent>
-          </Card>
+            </TabPanel>
 
-          {/* Attachment Card */}
-          {ticket.attachmentPath && (
-            <Card elevation={3} sx={{ borderRadius: 2 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
-                  <AttachmentIcon />
-                  Attachments
-                </Typography>
-                <Divider sx={{ my: 2 }} />
+            {ticket.attachmentPath && (
+              <TabPanel value={activeTab} index={2}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -310,7 +371,6 @@ function TicketDetailPage() {
                     p: 2,
                     bgcolor: 'grey.50',
                     borderRadius: 2,
-                    mt: 2,
                     border: '1px solid',
                     borderColor: 'grey.200'
                   }}
@@ -329,179 +389,104 @@ function TicketDetailPage() {
                     target="_blank"
                     sx={{ borderRadius: 2, textTransform: 'none' }}
                   >
-                    Download
+                    İndir
                   </Button>
                 </Paper>
-              </CardContent>
-            </Card>
-          )}
+              </TabPanel>
+            )}
+          </Paper>
         </Grid>
 
-        {/* Right Column - Timeline and Details */}
+        {/* Right Column - Timeline and Assignment */}
         <Grid item xs={12} md={4}>
-          {/* Status Timeline Card */}
-          <Card elevation={3} sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
-                <AccessTimeIcon />
-                Ticket Timeline
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Timeline sx={{ mt: 2, p: 0 }}>
-                <TimelineItem>
-                  <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
-                    {new Date(ticket.createdDate).toLocaleString()}
-                  </TimelineOppositeContent>
-                  <TimelineSeparator>
-                    <TimelineDot color="primary" />
-                    <TimelineConnector />
-                  </TimelineSeparator>
-                  <TimelineContent>
-                    <Typography variant="subtitle2">Created</Typography>
-                  </TimelineContent>
-                </TimelineItem>
-                {ticket.updatedDate && (
-                  <TimelineItem>
-                    <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
-                      {new Date(ticket.updatedDate).toLocaleString()}
-                    </TimelineOppositeContent>
-                    <TimelineSeparator>
-                      <TimelineDot color="warning" />
-                      <TimelineConnector />
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Typography variant="subtitle2">Updated</Typography>
-                    </TimelineContent>
-                  </TimelineItem>
-                )}
-                {ticket.status === 'Completed' && (
-                  <TimelineItem>
-                    <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
-                      {ticket.completedDate ? new Date(ticket.completedDate).toLocaleString() : 'N/A'}
-                    </TimelineOppositeContent>
-                    <TimelineSeparator>
-                      <TimelineDot color="success" />
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Typography variant="subtitle2">Completed</Typography>
-                    </TimelineContent>
-                  </TimelineItem>
-                )}
-              </Timeline>
-            </CardContent>
-          </Card>
-
-          {/* Assignment Details Card */}
-          <Card elevation={3} sx={{ mb: 3, borderRadius: 2 }}>
-            <CardContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            {/* Assignment Details Card */}
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
                 <PersonIcon />
-                Assignment Details
+                Atama Detayları
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Stack spacing={3} sx={{ mt: 2 }}>
+              <Stack spacing={3}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Assigned To
+                    Atanan Kişi
                   </Typography>
                   <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
                       {ticket.user ? ticket.user.name[0] : '?'}
                     </Avatar>
                     <Typography sx={{ fontWeight: 500 }}>
-                      {ticket.user ? `${ticket.user.name} ${ticket.user.surname}` : 'Not assigned'}
+                      {ticket.user ? `${ticket.user.name} ${ticket.user.surname}` : 'Atanmamış'}
                     </Typography>
                   </Paper>
                 </Box>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Created By
+                    Oluşturan
                   </Typography>
                   <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
                       {ticket.createdBy ? ticket.createdBy.name[0] : '?'}
                     </Avatar>
                     <Typography sx={{ fontWeight: 500 }}>
-                      {ticket.createdBy ? `${ticket.createdBy.name} ${ticket.createdBy.surname}` : 'Not Available'}
+                      {ticket.createdBy ? `${ticket.createdBy.name} ${ticket.createdBy.surname}` : 'Mevcut Değil'}
                     </Typography>
                   </Paper>
                 </Box>
               </Stack>
-            </CardContent>
-          </Card>
+            </Paper>
 
-          {/* Additional Details Card */}
-          <Card elevation={3} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ p: 3 }}>
+            {/* Timeline Card */}
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main }}>
-                <FlagIcon />
-                Additional Details
+                <AccessTimeIcon />
+                Zaman Çizelgesi
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Stack spacing={3} sx={{ mt: 2 }}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Problem Type
-                  </Typography>
-                  <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <Typography sx={{ fontWeight: 500 }}>{ticket.problemType}</Typography>
-                  </Paper>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Priority
-                  </Typography>
-                  <Chip
-                    label={priorityLabels[ticket.priority]}
-                    sx={{
-                      mt: 1,
-                      bgcolor: `${priorityColors[ticket.priority]}15`,
-                      color: priorityColors[ticket.priority],
-                      fontWeight: 'medium',
-                      borderRadius: '8px',
-                      '& .MuiChip-label': { px: 2 },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Group
-                  </Typography>
-                  <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <Typography sx={{ fontWeight: 500 }}>{ticket.group?.name || '-'}</Typography>
-                  </Paper>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Department
-                  </Typography>
-                  <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <Typography sx={{ fontWeight: 500 }}>{ticket.group?.department?.name || '-'}</Typography>
-                  </Paper>
-                </Box>
-                {ticket.idleDurationDisplay && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Idle Duration
-                    </Typography>
-                    <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Typography sx={{ fontWeight: 500 }}>{ticket.idleDurationDisplay}</Typography>
-                    </Paper>
-                  </Box>
+              <Timeline sx={{ m: 0, p: 0 }}>
+                <TimelineItem>
+                  <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
+                    {new Date(ticket.createdDate).toLocaleString('tr-TR')}
+                  </TimelineOppositeContent>
+                  <TimelineSeparator>
+                    <TimelineDot color="primary" />
+                    <TimelineConnector />
+                  </TimelineSeparator>
+                  <TimelineContent>
+                    <Typography variant="subtitle2">Oluşturuldu</Typography>
+                  </TimelineContent>
+                </TimelineItem>
+                {ticket.updatedDate && (
+                  <TimelineItem>
+                    <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
+                      {new Date(ticket.updatedDate).toLocaleString('tr-TR')}
+                    </TimelineOppositeContent>
+                    <TimelineSeparator>
+                      <TimelineDot color="warning" />
+                      <TimelineConnector />
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <Typography variant="subtitle2">Güncellendi</Typography>
+                    </TimelineContent>
+                  </TimelineItem>
                 )}
-                {ticket.assignedDate && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Assigned Date
-                    </Typography>
-                    <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Typography sx={{ fontWeight: 500 }}>{new Date(ticket.assignedDate).toLocaleString()}</Typography>
-                    </Paper>
-                  </Box>
+                {ticket.status === 'Completed' && (
+                  <TimelineItem>
+                    <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
+                      {ticket.completedDate ? new Date(ticket.completedDate).toLocaleString('tr-TR') : '-'}
+                    </TimelineOppositeContent>
+                    <TimelineSeparator>
+                      <TimelineDot color="success" />
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <Typography variant="subtitle2">Tamamlandı</Typography>
+                    </TimelineContent>
+                  </TimelineItem>
                 )}
-              </Stack>
-            </CardContent>
-          </Card>
+              </Timeline>
+            </Paper>
+          </Stack>
         </Grid>
       </Grid>
     </Container>

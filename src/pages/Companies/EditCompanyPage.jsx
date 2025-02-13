@@ -37,7 +37,7 @@ function EditCompanyPage() {
         e.preventDefault()
         try {
             await updateCompany(id, formData)
-            navigate('/companies')
+            navigate('/admin/companies')
         } catch (error) {
             console.error('Error updating company', error)
         }

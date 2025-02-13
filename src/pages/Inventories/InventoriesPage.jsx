@@ -26,6 +26,9 @@ import {
     DialogActions,
     Grid,
     Container,
+    Tabs,
+    Tab,
+    alpha,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -43,6 +46,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getInventories, deleteInventory, getAssignmentHistory, downloadInvoice, downloadExcelTemplate, importExcel } from '../../api/InventoryService';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useTheme } from '@mui/material/styles';
+import { getWarrantyExpiringInventories, getWarrantyExpiredInventories } from '../../api/WarrantyService';
 
 const COLUMNS = [
     { id: 'id', label: 'ID', always: true },
@@ -86,7 +90,7 @@ const CURRENCY_MAP = {
 
 const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'];
 
-function InventoryStats({ inventories }) {
+function InventoryStats({ inventories, warrantyData }) {
     const theme = useTheme();
 
     // Calculate status distribution
@@ -131,6 +135,87 @@ function InventoryStats({ inventories }) {
         }}>
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Envanter Analizi</Typography>
             <Grid container spacing={3}>
+                {/* Warranty Status Cards */}
+                <Grid item xs={12}>
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Garanti Durumu</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                        border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
+                                >
+                                    <Box>
+                                        <Typography variant="h4" color="warning.main">
+                                            {warrantyData.expiring?.length || 0}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Garantisi Bitmeye Yakın
+                                        </Typography>
+                                    </Box>
+                                    <Tooltip title="30 gün içinde garantisi dolacak ürünler">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ 
+                                                bgcolor: alpha(theme.palette.warning.main, 0.2),
+                                                '&:hover': {
+                                                    bgcolor: alpha(theme.palette.warning.main, 0.3),
+                                                }
+                                            }}
+                                            onClick={() => warrantyData.onViewWarrantyDetails(0)}
+                                        >
+                                            <ViewColumnIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.error.main, 0.1),
+                                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
+                                >
+                                    <Box>
+                                        <Typography variant="h4" color="error.main">
+                                            {warrantyData.expired?.length || 0}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Süresi Dolanlar
+                                        </Typography>
+                                    </Box>
+                                    <Tooltip title="Garantisi sona ermiş ürünler">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ 
+                                                bgcolor: alpha(theme.palette.error.main, 0.2),
+                                                '&:hover': {
+                                                    bgcolor: alpha(theme.palette.error.main, 0.3),
+                                                }
+                                            }}
+                                            onClick={() => warrantyData.onViewWarrantyDetails(1)}
+                                        >
+                                            <ViewColumnIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Paper>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </Grid>
+
                 <Grid item xs={12} md={6}>
                     <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Durum Dağılımı</Typography>
                     <Box sx={{ height: 300, width: '100%' }}>
@@ -179,376 +264,6 @@ function InventoryStats({ inventories }) {
     );
 }
 
-function HistoryDialog({ inventoryId, onClose }) {
-    const [history, setHistory] = useState([]);
-
-    useEffect(() => {
-        loadHistory();
-    }, [inventoryId]);
-
-    const loadHistory = async () => {
-        try {
-            const response = await getAssignmentHistory(inventoryId);
-            setHistory(response.data);
-        } catch (err) {
-            console.error('Error loading history:', err);
-        }
-    };
-
-    return (
-        <Dialog
-            open={true}
-            onClose={onClose}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 2,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                }
-            }}
-        >
-            <DialogTitle>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6">Assignment History</Typography>
-                    <IconButton onClick={onClose} size="small">
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-            </DialogTitle>
-            <DialogContent>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>User</TableCell>
-                                <TableCell>Assignment Date</TableCell>
-                                <TableCell>Return Date</TableCell>
-                                <TableCell>Notes</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {history.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.user?.email}</TableCell>
-                                    <TableCell>
-                                        {new Date(item.assignmentDate).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell>
-                                        {item.returnDate 
-                                            ? new Date(item.returnDate).toLocaleDateString()
-                                            : <Chip label="Active" color="primary" size="small" />
-                                        }
-                                    </TableCell>
-                                    <TableCell>{item.notes || '-'}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Close</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function InventoryDetailsDialog({ inventory, onClose }) {
-    const [showHistory, setShowHistory] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
-
-    console.log('Inventory details:', inventory); // Debug log
-
-    // ... existing code ...
-
-    const handleDownloadInvoice = async () => {
-        try {
-            setIsDownloading(true);
-            const response = await downloadInvoice(inventory.id);
-
-            // Get filename from Content-Disposition header or use default
-            let filename = `invoice_${inventory.id}`;
-            const disposition = response.headers['content-disposition'];
-            if (disposition && disposition.indexOf('filename=') !== -1) {
-                const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (filenameMatch && filenameMatch[1]) {
-                    filename = filenameMatch[1].replace(/['"]/g, '');
-                }
-            }
-
-            // Get the correct MIME type from response
-            const contentType = response.headers['content-type'];
-            
-            // Create blob with the correct MIME type
-            const blob = new Blob([response.data], { type: contentType });
-            
-            // Create and trigger download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename; // The filename should include the extension from the server
-            document.body.appendChild(a);
-            a.click();
-
-            // Cleanup
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (error) {
-            console.error('Error downloading invoice:', error);
-            // You might want to show an error notification here
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
-    return (
-        <>
-            <Dialog
-                open={true}
-                onClose={onClose}
-                maxWidth="md"
-                fullWidth
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                    }
-                }}
-            >
-                <DialogTitle>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h6">Inventory Details</Typography>
-                        <IconButton onClick={onClose} size="small">
-                            <CloseIcon />
-                        </IconButton>
-                    </Box>
-                </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={3}>
-                        {/* Basic Information */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Basic Information
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Barcode</Typography>
-                                    <Typography>{inventory.barcode}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Serial Number</Typography>
-                                    <Typography>{inventory.serialNumber || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Brand & Model</Typography>
-                                    <Typography>{inventory.brand} {inventory.model}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Type</Typography>
-                                    <Typography>{inventory.type || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Family</Typography>
-                                    <Typography>{inventory.family || '-'}</Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-
-                        {/* Status and Assignment */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Status and Assignment
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                                    <Chip 
-                                        label={inventory.status}
-                                        color={statusColors[inventory.status] || 'default'}
-                                        size="small"
-                                        sx={{ mt: 0.5 }}
-                                    />
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Assigned User</Typography>
-                                    <Typography>{inventory.assignedUser?.email || 'Not assigned'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Department</Typography>
-                                    <Typography>{inventory.department?.name || '-'}</Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-
-                        {/* Location Information */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Location Information
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Location</Typography>
-                                    <Typography>{inventory.location || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Room</Typography>
-                                    <Typography>{inventory.room || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Floor</Typography>
-                                    <Typography>{inventory.floor || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Block</Typography>
-                                    <Typography>{inventory.block || '-'}</Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-
-                        {/* Purchase Information */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Purchase Information
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Purchase Price</Typography>
-                                    <Typography>
-                                        {inventory.purchasePrice 
-                                            ? `${inventory.purchasePrice.toLocaleString()} ${CURRENCY_MAP[inventory.purchaseCurrency] || '-'}`
-                                            : '-'}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-
-                        {/* Warranty and Support */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Warranty and Support
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Warranty Period</Typography>
-                                    <Typography>
-                                        {inventory.warrantyStartDate ? (
-                                            `${new Date(inventory.warrantyStartDate).toLocaleDateString()} - ${new Date(inventory.warrantyEndDate).toLocaleDateString()}`
-                                        ) : '-'}
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Supplier</Typography>
-                                    <Typography>{inventory.supplier || '-'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Support Company</Typography>
-                                    <Typography>{inventory.supportCompany?.name || '-'}</Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-
-                        {/* Invoice */}
-                        {inventory.invoiceAttachmentPath && (
-                            <Grid item xs={12}>
-                                <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                    Invoice
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Typography>
-                                        {inventory.invoiceAttachmentPath.split('/').pop()}
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        startIcon={<DownloadIcon />}
-                                        onClick={handleDownloadInvoice}
-                                        disabled={isDownloading}
-                                        sx={{ 
-                                            borderRadius: 1,
-                                            textTransform: 'none',
-                                            minWidth: 'auto'
-                                        }}
-                                    >
-                                        {isDownloading ? 'Downloading...' : 'Download Invoice'}
-                                    </Button>
-                                </Box>
-                            </Grid>
-                        )}
-
-                        {/* Dates */}
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium', mt: 2 }}>
-                                Dates
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Created Date</Typography>
-                                    <Typography>{new Date(inventory.createdDate).toLocaleString()}</Typography>
-                                </Box>
-                                {inventory.updatedDate && (
-                                    <Box>
-                                        <Typography variant="subtitle2" color="text.secondary">Last Updated</Typography>
-                                        <Typography>{new Date(inventory.updatedDate).toLocaleString()}</Typography>
-                                    </Box>
-                                )}
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 3 }}>
-                    <Button 
-                        onClick={onClose}
-                        variant="outlined"
-                        sx={{
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            px: 3,
-                        }}
-                    >
-                        Close
-                    </Button>
-                    <Button
-                        onClick={() => setShowHistory(true)}
-                        variant="outlined"
-                        color="primary"
-                        sx={{
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            px: 3,
-                        }}
-                    >
-                        Geçmişi Gör
-                    </Button>
-                    <Button 
-                        component={Link}
-                        to={`/inventories/edit/${inventory.id}`}
-                        color="primary"
-                        variant="contained"
-                        sx={{
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            px: 3,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                            '&:hover': {
-                                boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-                            }
-                        }}
-                    >
-                        Edit Inventory
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            {showHistory && (
-                <HistoryDialog 
-                    inventoryId={inventory.id} 
-                    onClose={() => setShowHistory(false)} 
-                />
-            )}
-        </>
-    );
-}
-
 function InventoriesPage() {
     const [inventories, setInventories] = useState([]);
     const [error, setError] = useState('');
@@ -559,14 +274,17 @@ function InventoriesPage() {
     );
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedInventory, setSelectedInventory] = useState(null);
     const [showColumnsDialog, setShowColumnsDialog] = useState(false);
-    const [selectedHistoryInventoryId, setSelectedHistoryInventoryId] = useState(null);
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
+    const [warrantyExpiringInventories, setWarrantyExpiringInventories] = useState([]);
+    const [warrantyExpiredInventories, setWarrantyExpiredInventories] = useState([]);
+    const [warrantyDialogOpen, setWarrantyDialogOpen] = useState(false);
+    const [activeWarrantyTab, setActiveWarrantyTab] = useState(0);
 
     useEffect(() => {
         fetchInventories();
+        fetchWarrantyData();
     }, []);
 
     const fetchInventories = async () => {
@@ -576,6 +294,19 @@ function InventoriesPage() {
             setError('');
         } catch (err) {
             setError('Failed to fetch inventories.');
+        }
+    };
+
+    const fetchWarrantyData = async () => {
+        try {
+            const [expiringRes, expiredRes] = await Promise.all([
+                getWarrantyExpiringInventories(),
+                getWarrantyExpiredInventories()
+            ]);
+            setWarrantyExpiringInventories(expiringRes.data);
+            setWarrantyExpiredInventories(expiredRes.data);
+        } catch (err) {
+            setError('Failed to fetch warranty data');
         }
     };
 
@@ -621,7 +352,7 @@ function InventoriesPage() {
     };
 
     const handleInventoryClick = (inventory) => {
-        setSelectedInventory(inventory);
+        navigate(`/inventories/detail/${inventory.id}`);
     };
 
     const handleDownloadTemplate = async () => {
@@ -656,6 +387,53 @@ function InventoriesPage() {
         } catch (err) {
             setError(err.response?.data?.errors?.join('\n') || 'Failed to import file');
         }
+    };
+
+    const handleViewWarrantyDetails = (tabIndex) => {
+        navigate('/inventories/warranty-status');
+    };
+
+    const calculateDaysRemaining = (endDate) => {
+        if (!endDate) return null;
+        const end = new Date(endDate);
+        const today = new Date();
+        const diffTime = end - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    };
+
+    const getWarrantyStatusChip = (endDate) => {
+        const daysRemaining = calculateDaysRemaining(endDate);
+        
+        if (daysRemaining === null) return null;
+        
+        if (daysRemaining < 0) {
+            return (
+                <Chip 
+                    label="Süresi Dolmuş" 
+                    color="error" 
+                    size="small"
+                />
+            );
+        }
+        
+        if (daysRemaining <= 30) {
+            return (
+                <Chip 
+                    label={`${daysRemaining} gün kaldı`} 
+                    color="warning" 
+                    size="small"
+                />
+            );
+        }
+        
+        return (
+            <Chip 
+                label={`${daysRemaining} gün kaldı`} 
+                color="success" 
+                size="small"
+            />
+        );
     };
 
     return (
@@ -771,7 +549,14 @@ function InventoriesPage() {
                     </Alert>
                 )}
 
-                <InventoryStats inventories={filteredInventories} />
+                <InventoryStats 
+                    inventories={filteredInventories} 
+                    warrantyData={{
+                        expiring: warrantyExpiringInventories,
+                        expired: warrantyExpiredInventories,
+                        onViewWarrantyDetails: handleViewWarrantyDetails
+                    }}
+                />
 
                 <TextField
                     fullWidth
@@ -854,14 +639,15 @@ function InventoriesPage() {
                         </TableHead>
                         <TableBody>
                             {filteredInventories.map((inventory) => (
-                                <TableRow 
+                                <TableRow
                                     key={inventory.id}
-                                    onClick={() => handleInventoryClick(inventory)}
-                                    sx={{
+                                    component={Link}
+                                    to={`/inventories/detail/${inventory.id}`}
+                                    sx={{ 
+                                        textDecoration: 'none',
+                                        color: 'inherit',
                                         cursor: 'pointer',
-                                        '&:hover': {
-                                            bgcolor: 'action.hover',
-                                        }
+                                        '&:hover': { bgcolor: 'action.hover' }
                                     }}
                                 >
                                     {COLUMNS.filter(col => visibleColumns.includes(col.id)).map(column => {
@@ -878,9 +664,7 @@ function InventoriesPage() {
                                                             size="small"
                                                             sx={{ 
                                                                 bgcolor: 'primary.50',
-                                                                '&:hover': {
-                                                                    bgcolor: 'primary.100',
-                                                                }
+                                                                '&:hover': { bgcolor: 'primary.100' }
                                                             }}
                                                         >
                                                             <EditIcon fontSize="small" />
@@ -894,9 +678,7 @@ function InventoriesPage() {
                                                             size="small"
                                                             sx={{ 
                                                                 bgcolor: 'error.50',
-                                                                '&:hover': {
-                                                                    bgcolor: 'error.100',
-                                                                }
+                                                                '&:hover': { bgcolor: 'error.100' }
                                                             }}
                                                         >
                                                             <DeleteIcon fontSize="small" />
@@ -913,14 +695,12 @@ function InventoriesPage() {
                                                         size="small"
                                                         sx={{ 
                                                             borderRadius: 1,
-                                                            '& .MuiChip-label': {
-                                                                px: 2
-                                                            }
+                                                            '& .MuiChip-label': { px: 2 }
                                                         }}
                                                     />
                                                 </TableCell>
                                             );
-                                        } else if (column.id === 'warrantyStartDate' || column.id === 'warrantyEndDate' || column.id === 'createdDate' || column.id === 'updatedDate') {
+                                        } else if (['warrantyStartDate', 'warrantyEndDate', 'createdDate', 'updatedDate'].includes(column.id)) {
                                             return (
                                                 <TableCell key={column.id} sx={{ py: 2 }}>
                                                     {formatDate(inventory[column.id])}
@@ -1043,14 +823,6 @@ function InventoriesPage() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
-                {/* Inventory Details Dialog */}
-                {selectedInventory && (
-                    <InventoryDetailsDialog
-                        inventory={selectedInventory}
-                        onClose={() => setSelectedInventory(null)}
-                    />
-                )}
             </Paper>
         </Container>
     );

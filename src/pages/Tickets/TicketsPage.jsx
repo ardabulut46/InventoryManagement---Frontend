@@ -57,127 +57,6 @@ const statusColors = {
     'Cancelled': 'error',
 }
 
-function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicketClick }) {
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [selectedTicket, setSelectedTicket] = useState(null);
-
-    const handlePriorityClick = (event, ticket) => {
-        setAnchorEl(event.currentTarget);
-        setSelectedTicket(ticket);
-    };
-
-    const handlePriorityClose = () => {
-        setAnchorEl(null);
-        setSelectedTicket(null);
-    };
-
-    const handlePriorityChange = async (priority) => {
-        try {
-            await updateTicketPriority(selectedTicket.id, priority);
-            onTicketUpdate(); // Refresh tickets after update
-        } catch (err) {
-            console.error('Error updating priority:', err);
-        }
-        handlePriorityClose();
-    };
-
-    return (
-        <Dialog 
-            open={open} 
-            onClose={onClose}
-            maxWidth="lg"
-            fullWidth
-        >
-            <DialogTitle>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6">Üzerimdeki Çağrılar</Typography>
-                    <IconButton onClick={onClose} size="small">
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-            </DialogTitle>
-            <DialogContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                    {tickets.map((ticket) => (
-                        <Grid item xs={12} sm={6} md={4} key={ticket.id}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" component="div">
-                                        {ticket.subject}
-                                    </Typography>
-                                    <Typography color="textSecondary" gutterBottom>
-                                        #{ticket.registrationNumber}
-                                    </Typography>
-                                    <Divider sx={{ my: 1 }} />
-                                    <Box sx={{ mt: 2, mb: 2 }}>
-                                        <Chip 
-                                            label={ticket.problemType}
-                                            sx={{ mr: 1, mb: 1 }}
-                                            color="primary"
-                                            variant="outlined"
-                                        />
-                                        <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                                            <PriorityChip priority={ticket.priority} />
-                                            <IconButton 
-                                                size="small" 
-                                                onClick={(e) => handlePriorityClick(e, ticket)}
-                                                sx={{ ml: 0.5 }}
-                                            >
-                                                <ArrowDownIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    </Box>
-                                    <Chip 
-                                        label={ticket.status}
-                                        size="small"
-                                        color={statusColors[ticket.status] || 'default'}
-                                    />
-                                </CardContent>
-                                <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => onTicketClick(ticket)}
-                                    >
-                                        <InfoIcon />
-                                    </IconButton>
-                                </Box>
-                            </Card>
-                        </Grid>
-                    ))}
-                    {tickets.length === 0 && (
-                        <Grid item xs={12}>
-                            <Typography variant="body1" color="textSecondary" sx={{ textAlign: 'center' }}>
-                                No tickets assigned to you.
-                            </Typography>
-                        </Grid>
-                    )}
-                </Grid>
-            </DialogContent>
-
-            {/* Priority Menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handlePriorityClose}
-            >
-                {Object.entries(TICKET_PRIORITIES).map(([value, { label, color }]) => (
-                    <MenuItem
-                        key={value}
-                        onClick={() => handlePriorityChange(Number(value))}
-                        sx={{
-                            color: color,
-                            fontWeight: 'medium',
-                            minWidth: '120px'
-                        }}
-                    >
-                        {label}
-                    </MenuItem>
-                ))}
-            </Menu>
-        </Dialog>
-    );
-}
-
 function TicketsPage() {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([])
@@ -271,7 +150,8 @@ function TicketsPage() {
                         <Button
                             variant="outlined"
                             startIcon={<AssignmentIcon />}
-                            onClick={() => setShowAssignedTickets(true)}
+                            component={Link}
+                            to="/tickets/assigned"
                             sx={{
                                 borderRadius: 2,
                                 textTransform: 'none',
@@ -506,15 +386,6 @@ function TicketsPage() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* Assigned Tickets Dialog */}
-                <AssignedTicketsDialog
-                    open={showAssignedTickets}
-                    onClose={() => setShowAssignedTickets(false)}
-                    tickets={assignedTickets}
-                    onTicketUpdate={handleTicketUpdate}
-                    onTicketClick={handleTicketClick}
-                />
             </Paper>
         </Container>
     )

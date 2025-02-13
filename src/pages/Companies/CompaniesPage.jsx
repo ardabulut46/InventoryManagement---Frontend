@@ -96,7 +96,7 @@ function CompaniesPage() {
                     </Typography>
                     <Button
                         component={Link}
-                        to="/companies/create"
+                        to="/admin/companies/create"
                         variant="contained"
                         startIcon={<AddIcon />}
                         sx={{
@@ -215,7 +215,7 @@ function CompaniesPage() {
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <IconButton
                                                 component={Link}
-                                                to={`/companies/edit/${company.id}`}
+                                                to={`/admin/companies/edit/${company.id}`}
                                                 color="primary"
                                                 size="small"
                                                 sx={{ 

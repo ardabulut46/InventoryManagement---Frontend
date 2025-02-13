@@ -42,7 +42,8 @@ import {
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAssignedInventories } from '../api/InventoryService';
-import { getMyTickets, getTicketById, assignTicket, getDepartmentTickets, updateTicketPriority } from '../api/TicketService';
+import { getMyTickets, getTicketById, assignTicket, getDepartmentTickets, updateTicketPriority, getMyAllTickets } from '../api/TicketService';
+import { getIdleBreachTickets } from '../api/IdleDurationLimitService';
 import PriorityChip from '../components/PriorityChip';
 import { TICKET_PRIORITIES } from '../utils/ticketConfig';
 import { getCurrentUser } from '../api/auth';
@@ -451,6 +452,8 @@ function DashboardPage() {
     const [inventories, setInventories] = useState([]);
     const [departmentTickets, setDepartmentTickets] = useState([]);
     const [assignedToMeTickets, setAssignedToMeTickets] = useState([]);
+    const [allTickets, setAllTickets] = useState([]);
+    const [idleBreachTickets, setIdleBreachTickets] = useState([]);
     const [showDepartmentTickets, setShowDepartmentTickets] = useState(false);
     const [showAssignedTickets, setShowAssignedTickets] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -466,14 +469,18 @@ function DashboardPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [inventoriesRes, departmentTicketsRes, assignedTicketsRes] = await Promise.all([
+            const [inventoriesRes, departmentTicketsRes, assignedTicketsRes, allTicketsRes, idleBreachRes] = await Promise.all([
                 getAssignedInventories(),
                 getDepartmentTickets(),
-                getMyTickets()
+                getMyTickets(),
+                getMyAllTickets(),
+                getIdleBreachTickets()
             ]);
             setInventories(inventoriesRes.data);
             setDepartmentTickets(departmentTicketsRes.data);
             setAssignedToMeTickets(assignedTicketsRes.data);
+            setAllTickets(allTicketsRes.data);
+            setIdleBreachTickets(idleBreachRes.data);
         } catch (err) {
             setError('Veri yüklenirken bir hata oluştu');
         } finally {
@@ -572,54 +579,30 @@ function DashboardPage() {
 
                     {/* Stats Grid */}
                     <Grid container spacing={3} sx={{ mt: 2 }}>
-                        <Grid item xs={12} sm={4}>
-                            <Paper sx={{ 
-                                p: 2, 
-                                bgcolor: theme.palette.mode === 'dark' 
-                                    ? 'rgba(255, 255, 255, 0.15)'
-                                    : 'rgba(255, 255, 255, 0.1)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: 2,
-                                border: '1px solid',
-                                borderColor: theme.palette.mode === 'dark'
-                                    ? 'rgba(255, 255, 255, 0.3)'
-                                    : 'rgba(255, 255, 255, 0.2)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: theme.palette.mode === 'dark'
-                                        ? '0 4px 20px rgba(0, 0, 0, 0.4)'
-                                        : '0 4px 20px rgba(0, 0, 0, 0.1)',
-                                }
-                            }}>
-                                <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
-                                    Toplam Envanter
-                                </Typography>
-                                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                                    {loading ? '...' : inventories.length}
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Paper sx={{ 
-                                p: 2, 
-                                bgcolor: theme.palette.mode === 'dark' 
-                                    ? 'rgba(255, 255, 255, 0.15)'
-                                    : 'rgba(255, 255, 255, 0.1)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: 2,
-                                border: '1px solid',
-                                borderColor: theme.palette.mode === 'dark'
-                                    ? 'rgba(255, 255, 255, 0.3)'
-                                    : 'rgba(255, 255, 255, 0.2)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: theme.palette.mode === 'dark'
-                                        ? '0 4px 20px rgba(0, 0, 0, 0.4)'
-                                        : '0 4px 20px rgba(0, 0, 0, 0.1)',
-                                }
-                            }}>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets/department')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.3)'
+                                        : 'rgba(255, 255, 255, 0.2)',
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: theme.palette.mode === 'dark'
+                                            ? '0 4px 20px rgba(0, 0, 0, 0.4)'
+                                            : '0 4px 20px rgba(0, 0, 0, 0.1)',
+                                    }
+                                }}
+                            >
                                 <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
                                     Grubumun Çağrıları
                                 </Typography>
@@ -628,31 +611,125 @@ function DashboardPage() {
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Paper sx={{ 
-                                p: 2, 
-                                bgcolor: theme.palette.mode === 'dark' 
-                                    ? 'rgba(255, 255, 255, 0.15)'
-                                    : 'rgba(255, 255, 255, 0.1)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: 2,
-                                border: '1px solid',
-                                borderColor: theme.palette.mode === 'dark'
-                                    ? 'rgba(255, 255, 255, 0.3)'
-                                    : 'rgba(255, 255, 255, 0.2)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: theme.palette.mode === 'dark'
-                                        ? '0 4px 20px rgba(0, 0, 0, 0.4)'
-                                        : '0 4px 20px rgba(0, 0, 0, 0.1)',
-                                }
-                            }}>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets/assigned')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.3)'
+                                        : 'rgba(255, 255, 255, 0.2)',
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: theme.palette.mode === 'dark'
+                                            ? '0 4px 20px rgba(0, 0, 0, 0.4)'
+                                            : '0 4px 20px rgba(0, 0, 0, 0.1)',
+                                    }
+                                }}
+                            >
                                 <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
-                                    Aktif Çağrılarım
+                                    Üzerimdeki Çağrılar
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                                     {loading ? '...' : assignedToMeTickets.length}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 255, 255, 0.3)'
+                                        : 'rgba(255, 255, 255, 0.2)',
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: theme.palette.mode === 'dark'
+                                            ? '0 4px 20px rgba(0, 0, 0, 0.4)'
+                                            : '0 4px 20px rgba(0, 0, 0, 0.1)',
+                                    }
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
+                                    Tüm Çağrılar
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                                    {loading ? '...' : allTickets.length}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets/idle-breach')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.warning.main,
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 4px 20px ${theme.palette.warning.main}40`,
+                                    }
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ color: theme.palette.warning.light, mb: 1 }}>
+                                    Süresi Aşılan
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: theme.palette.warning.light, fontWeight: 'bold' }}>
+                                    {loading ? '...' : idleBreachTickets.length}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+
+                        {/* Second Row - Inventory */}
+                        <Grid item xs={12} sm={6} md={3} sx={{ mx: 'auto' }}>
+                            <Paper 
+                                onClick={() => navigate('/inventories')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.primary.main,
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 4px 20px ${theme.palette.primary.main}40`,
+                                    }
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ color: theme.palette.primary.light, mb: 1 }}>
+                                    Toplam Envanter
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: theme.palette.primary.light, fontWeight: 'bold' }}>
+                                    {loading ? '...' : inventories.length}
                                 </Typography>
                             </Paper>
                         </Grid>

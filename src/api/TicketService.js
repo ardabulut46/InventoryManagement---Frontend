@@ -54,4 +54,8 @@ export const updateTicketPriority = (ticketId, priority) => {
     })
 }
 
+export const getMyAllTickets = () => {
+    return httpClient.get(`${endpoint}/my-all-tickets`)
+}
+
 // Add more ticket-specific operations as needed
