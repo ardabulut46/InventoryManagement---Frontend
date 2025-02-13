@@ -22,7 +22,12 @@ import {
   Tooltip,
   useTheme,
   CardActionArea,
-  Avatar
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemSecondaryAction
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -222,98 +227,58 @@ const AssignedTicketsPage = () => {
       />
 
       {/* Tickets Grid */}
-      <Grid container spacing={3}>
-        {filteredTickets.map((ticket) => (
-          <Grid item xs={12} sm={6} md={4} key={ticket.id}>
-            <Card 
-              sx={{ 
-                height: '100%',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: theme.shadows[8],
-                }
-              }}
-            >
-              <CardActionArea 
-                onClick={() => navigate(`/tickets/${ticket.id}`)}
-                sx={{ height: '100%' }}
-              >
-                <CardContent>
-                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Typography variant="h6" component="div" sx={{ mb: 1 }}>
-                      {ticket.subject}
-                    </Typography>
-                    <Chip
-                      label={ticket.status}
-                      color={statusColors[ticket.status]}
-                      size="small"
-                      icon={statusIcons[ticket.status]}
-                      sx={{ ml: 1 }}
-                    />
-                  </Box>
-                  
-                  <Typography color="textSecondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccessTimeIcon fontSize="small" />
-                    #{ticket.registrationNumber}
-                  </Typography>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        {ticket.location}
-                        {ticket.room && ` (Oda: ${ticket.room})`}
+      {filteredTickets.length > 0 ? (
+        <List sx={{ width: '100%', bgcolor: 'background.paper', mb: 4 }}>
+          {filteredTickets.map((ticket) => (
+            <ListItem key={ticket.id} button onClick={() => navigate(`/tickets/${ticket.id}`)}>
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: `${statusColors[ticket.status]}.main` }}>
+                  {statusIcons[ticket.status]}
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={ticket.subject}
+                secondary={
+                  <React.Fragment>
+                    <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                      <AccessTimeIcon fontSize="small" />
+                      <Typography variant="body2" color="text.secondary">
+                        #{ticket.registrationNumber}
                       </Typography>
                     </Box>
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
+                    <Box>
+                      <Typography variant="body2" display="inline">
+                        {ticket.location}{ticket.room ? ` (Oda: ${ticket.room})` : ''}
+                      </Typography>
+                      {' - '}
+                      <Typography variant="body2" display="inline" color="text.secondary">
                         {ticket.department?.name || 'Departman Belirtilmemiş'}
                       </Typography>
                     </Box>
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Chip 
-                        label={ticket.problemType}
-                        variant="outlined"
-                        size="small"
-                        sx={{ borderRadius: 1 }}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PriorityChip priority={ticket.priority} />
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => handlePriorityClick(e, ticket)}
-                          sx={{ 
-                            ml: 0.5,
-                            bgcolor: 'background.default',
-                            '&:hover': { bgcolor: 'action.hover' }
-                          }}
-                        >
-                          <ArrowDownIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
+                  </React.Fragment>
+                }
+              />
+              <ListItemSecondaryAction>
+                <IconButton edge="end" onClick={(e) => {
+                  e.stopPropagation();
+                  handlePriorityClick(e, ticket);
+                }}>
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <PriorityChip priority={ticket.priority} />
+                    <ArrowDownIcon fontSize="small" />
                   </Stack>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Grid>
-        ))}
-        {filteredTickets.length === 0 && (
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'background.default' }}>
-              <Typography color="textSecondary">
-                {searchTerm ? 'Arama kriterlerine uygun çağrı bulunamadı.' : 'Atanmış çağrı bulunmamaktadır.'}
-              </Typography>
-            </Paper>
-          </Grid>
-        )}
-      </Grid>
+                </IconButton>
+              </ListItemSecondaryAction>
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'background.default' }}>
+          <Typography color="textSecondary">
+            {searchTerm ? 'Arama kriterlerine uygun çağrı bulunamadı.' : 'Atanmış çağrı bulunmamaktadır.'}
+          </Typography>
+        </Paper>
+      )}
 
       {/* Priority Menu */}
       <Menu
