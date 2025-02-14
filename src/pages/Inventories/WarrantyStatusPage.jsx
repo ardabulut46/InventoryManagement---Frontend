@@ -18,31 +18,68 @@ import {
     Tooltip,
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { getWarrantyExpiringInventories, getWarrantyExpiredInventories } from '../../api/WarrantyService';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+    getWarrantyExpiringInMonth, 
+    getWarrantyExpiredInventories,
+    getActiveWarrantyInventories,
+    getWarrantyExpiringInFifteenDays,
+    getMostRepairedInventories 
+} from '../../api/WarrantyService';
 
 const WarrantyStatusPage = () => {
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState(0);
-    const [expiringInventories, setExpiringInventories] = useState([]);
-    const [expiredInventories, setExpiredInventories] = useState([]);
+    const [inventories, setInventories] = useState([]);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Set initial tab based on navigation state
+        if (location.state?.activeTab) {
+            const tabMap = {
+                'active': 0,
+                'expired': 1,
+                'expiringMonth': 2,
+                'expiringFifteen': 3,
+                'mostRepaired': 4
+            };
+            setActiveTab(tabMap[location.state.activeTab] || 0);
+        }
+    }, [location]);
+
+    useEffect(() => {
         fetchData();
-    }, []);
+    }, [activeTab]);
 
     const fetchData = async () => {
         try {
-            const [expiringRes, expiredRes] = await Promise.all([
-                getWarrantyExpiringInventories(),
-                getWarrantyExpiredInventories()
-            ]);
-            setExpiringInventories(expiringRes.data);
-            setExpiredInventories(expiredRes.data);
+            let response;
+            switch (activeTab) {
+                case 0: // Active
+                    response = await getActiveWarrantyInventories();
+                    break;
+                case 1: // Expired
+                    response = await getWarrantyExpiredInventories();
+                    break;
+                case 2: // Expiring in Month
+                    response = await getWarrantyExpiringInMonth();
+                    break;
+                case 3: // Expiring in 15 Days
+                    response = await getWarrantyExpiringInFifteenDays();
+                    break;
+                case 4: // Most Repaired
+                    response = await getMostRepairedInventories();
+                    break;
+                default:
+                    response = { data: [] };
+            }
+            setInventories(response.data || []);
             setError('');
         } catch (err) {
+            console.error('Failed to fetch warranty data:', err);
             setError('Failed to fetch warranty data');
+            setInventories([]);
         }
     };
 
@@ -96,6 +133,23 @@ const WarrantyStatusPage = () => {
                 size="small"
             />
         );
+    };
+
+    const getTabLabel = (index) => {
+        switch (index) {
+            case 0:
+                return `Aktif Garantiler (${inventories.length})`;
+            case 1:
+                return `Süresi Dolan Garantiler (${inventories.length})`;
+            case 2:
+                return `1 Ay İçinde Dolacak (${inventories.length})`;
+            case 3:
+                return `15 Gün İçinde Dolacak (${inventories.length})`;
+            case 4:
+                return `En Çok Tamir Görenler (${inventories.length})`;
+            default:
+                return '';
+        }
     };
 
     const renderInventoryTable = (inventories) => (
@@ -164,23 +218,32 @@ const WarrantyStatusPage = () => {
 
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                     <Tabs value={activeTab} onChange={handleTabChange}>
-                        <Tab 
-                            label={`Yaklaşan Garantiler (${expiringInventories.length})`} 
-                            id="tab-0"
-                        />
-                        <Tab 
-                            label={`Süresi Dolan Garantiler (${expiredInventories.length})`} 
-                            id="tab-1"
-                        />
+                        <Tab label={getTabLabel(0)} id="tab-0" />
+                        <Tab label={getTabLabel(1)} id="tab-1" />
+                        <Tab label={getTabLabel(2)} id="tab-2" />
+                        <Tab label={getTabLabel(3)} id="tab-3" />
+                        <Tab label={getTabLabel(4)} id="tab-4" />
                     </Tabs>
                 </Box>
 
                 <Box role="tabpanel" hidden={activeTab !== 0}>
-                    {activeTab === 0 && renderInventoryTable(expiringInventories)}
+                    {activeTab === 0 && renderInventoryTable(inventories)}
                 </Box>
 
                 <Box role="tabpanel" hidden={activeTab !== 1}>
-                    {activeTab === 1 && renderInventoryTable(expiredInventories)}
+                    {activeTab === 1 && renderInventoryTable(inventories)}
+                </Box>
+
+                <Box role="tabpanel" hidden={activeTab !== 2}>
+                    {activeTab === 2 && renderInventoryTable(inventories)}
+                </Box>
+
+                <Box role="tabpanel" hidden={activeTab !== 3}>
+                    {activeTab === 3 && renderInventoryTable(inventories)}
+                </Box>
+
+                <Box role="tabpanel" hidden={activeTab !== 4}>
+                    {activeTab === 4 && renderInventoryTable(inventories)}
                 </Box>
             </Paper>
         </Container>

@@ -454,6 +454,9 @@ function DashboardPage() {
     const [assignedToMeTickets, setAssignedToMeTickets] = useState([]);
     const [allTickets, setAllTickets] = useState([]);
     const [idleBreachTickets, setIdleBreachTickets] = useState([]);
+    const [solutionOverdueTickets, setSolutionOverdueTickets] = useState([]);
+    const [responseOverdueTickets, setResponseOverdueTickets] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
     const [showDepartmentTickets, setShowDepartmentTickets] = useState(false);
     const [showAssignedTickets, setShowAssignedTickets] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -469,19 +472,46 @@ function DashboardPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            console.log('Starting to fetch dashboard data...');
+            
             const [inventoriesRes, departmentTicketsRes, assignedTicketsRes, allTicketsRes, idleBreachRes] = await Promise.all([
-                getAssignedInventories(),
-                getDepartmentTickets(),
-                getMyTickets(),
-                getMyAllTickets(),
-                getIdleBreachTickets()
+                getAssignedInventories().catch(err => {
+                    console.error('Error fetching inventories:', err);
+                    return { data: [] };
+                }),
+                getDepartmentTickets().catch(err => {
+                    console.error('Error fetching department tickets:', err);
+                    return { data: [] };
+                }),
+                getMyTickets().catch(err => {
+                    console.error('Error fetching my tickets:', err);
+                    return { data: [] };
+                }),
+                getMyAllTickets().catch(err => {
+                    console.error('Error fetching all tickets:', err);
+                    return { data: [] };
+                }),
+                getIdleBreachTickets().catch(err => {
+                    console.error('Error fetching idle breach tickets:', err);
+                    return { data: [] };
+                })
             ]);
+
+            console.log('API Responses:', {
+                inventories: inventoriesRes.data,
+                departmentTickets: departmentTicketsRes.data,
+                assignedTickets: assignedTicketsRes.data,
+                allTickets: allTicketsRes.data,
+                idleBreachTickets: idleBreachRes.data
+            });
+
             setInventories(inventoriesRes.data);
             setDepartmentTickets(departmentTicketsRes.data);
             setAssignedToMeTickets(assignedTicketsRes.data);
             setAllTickets(allTicketsRes.data);
             setIdleBreachTickets(idleBreachRes.data);
         } catch (err) {
+            console.error('Error in fetchData:', err);
             setError('Veri yüklenirken bir hata oluştu');
         } finally {
             setLoading(false);
@@ -675,36 +705,6 @@ function DashboardPage() {
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Paper 
-                                onClick={() => navigate('/tickets/idle-breach')}
-                                sx={{ 
-                                    p: 2, 
-                                    bgcolor: theme.palette.mode === 'dark' 
-                                        ? 'rgba(255, 255, 255, 0.15)'
-                                        : 'rgba(255, 255, 255, 0.1)',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: 2,
-                                    border: '1px solid',
-                                    borderColor: theme.palette.warning.main,
-                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                    cursor: 'pointer',
-                                    '&:hover': {
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: `0 4px 20px ${theme.palette.warning.main}40`,
-                                    }
-                                }}
-                            >
-                                <Typography variant="h6" sx={{ color: theme.palette.warning.light, mb: 1 }}>
-                                    Süresi Aşılan
-                                </Typography>
-                                <Typography variant="h4" sx={{ color: theme.palette.warning.light, fontWeight: 'bold' }}>
-                                    {loading ? '...' : idleBreachTickets.length}
-                                </Typography>
-                            </Paper>
-                        </Grid>
-
-                        {/* Second Row - Inventory */}
                         <Grid item xs={12} sm={6} md={3} sx={{ mx: 'auto' }}>
                             <Paper 
                                 onClick={() => navigate('/inventories')}
@@ -730,6 +730,64 @@ function DashboardPage() {
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: theme.palette.primary.light, fontWeight: 'bold' }}>
                                     {loading ? '...' : inventories.length}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+
+                        {/* Third Row - Solution Overdue and Response Overdue */}
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets/solution-overdue')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.error.main,
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 4px 20px ${theme.palette.error.main}40`,
+                                    }
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ color: theme.palette.error.light, mb: 1 }}>
+                                    Çözüm Süresi Geçen Çağrılar
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: theme.palette.error.light, fontWeight: 'bold' }}>
+                                    {loading ? '...' : solutionOverdueTickets.length}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper 
+                                onClick={() => navigate('/tickets/response-overdue')}
+                                sx={{ 
+                                    p: 2, 
+                                    bgcolor: theme.palette.mode === 'dark' 
+                                        ? 'rgba(255, 255, 255, 0.15)'
+                                        : 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.warning.main,
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 4px 20px ${theme.palette.warning.main}40`,
+                                    }
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ color: theme.palette.warning.light, mb: 1 }}>
+                                    Müdahale Süresi Geçen Çağrılar
+                                </Typography>
+                                <Typography variant="h4" sx={{ color: theme.palette.warning.light, fontWeight: 'bold' }}>
+                                    {loading ? '...' : responseOverdueTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -764,6 +822,22 @@ function DashboardPage() {
                 onTicketUpdate={handleTicketUpdate}
                 onTicketClick={handleTicketClick}
             />
+
+            {/* Announcement Section */}
+            <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                    Duyurular
+                </Typography>
+                {announcements.length > 0 ? (
+                    announcements.map((announcement, index) => (
+                        <Alert key={index} severity="info" sx={{ mb: 2 }}>
+                            {announcement.message}
+                        </Alert>
+                    ))
+                ) : (
+                    <Typography variant="body1">Şu anda bir duyuru yok.</Typography>
+                )}
+            </Box>
         </Box>
     );
 }

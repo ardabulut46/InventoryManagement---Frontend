@@ -73,7 +73,7 @@ function AdminPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-    const [activeSection, setActiveSection] = useState(searchParams.get('section') || 'general');
+    const activeSection = searchParams.get('section') || 'general';
     const [activeTab, setActiveTab] = useState(0);
     
     // Solution Times state
@@ -143,30 +143,23 @@ function AdminPage() {
     }, []);
 
     useEffect(() => {
-        const section = searchParams.get('section');
         const tab = searchParams.get('tab');
-        
-        if (section) {
-            setActiveSection(section);
-            
-            // Set the active tab based on the URL parameter
-            if (tab) {
-                let tabIndex = 0;
-                switch (section) {
-                    case 'general':
-                        tabIndex = tab === 'users' ? 0 : tab === 'groups' ? 1 : tab === 'companies' ? 2 : 0;
-                        break;
-                    case 'ticket':
-                        tabIndex = tab === 'solution-times' ? 0 
-                            : tab === 'problem-types' ? 1 
-                            : tab === 'solution-types' ? 2 
-                            : tab === 'assignment-times' ? 3 : 0;
-                        break;
-                }
-                setActiveTab(tabIndex);
+        if (tab) {
+            let tabIndex = 0;
+            switch (activeSection) {
+                case 'general':
+                    tabIndex = tab === 'users' ? 0 : tab === 'groups' ? 1 : tab === 'companies' ? 2 : 0;
+                    break;
+                case 'ticket':
+                    tabIndex = tab === 'solution-times' ? 0 
+                        : tab === 'problem-types' ? 1 
+                        : tab === 'solution-types' ? 2 
+                        : tab === 'assignment-times' ? 3 : 0;
+                    break;
             }
+            setActiveTab(tabIndex);
         }
-    }, [location.search]);
+    }, [location.search, activeSection]);
 
     const fetchAllData = async () => {
         try {
@@ -429,37 +422,6 @@ function AdminPage() {
         }
     };
 
-    // Update URL when section changes
-    const handleSectionChange = (event, newValue) => {
-        setActiveSection(newValue);
-        setActiveTab(0);
-        navigate(`/admin?section=${newValue}`);
-    };
-
-    // Update URL when tab changes
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-        let tabParam = '';
-        
-        switch (activeSection) {
-            case 'general':
-                tabParam = newValue === 0 ? 'users' 
-                    : newValue === 1 ? 'groups' 
-                    : newValue === 2 ? 'companies' : '';
-                break;
-            case 'ticket':
-                tabParam = newValue === 0 ? 'solution-times'
-                    : newValue === 1 ? 'problem-types'
-                    : newValue === 2 ? 'solution-types'
-                    : newValue === 3 ? 'assignment-times' : '';
-                break;
-        }
-        
-        if (tabParam) {
-            navigate(`/admin?section=${activeSection}&tab=${tabParam}`);
-        }
-    };
-
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Paper 
@@ -505,35 +467,6 @@ function AdminPage() {
                         {successMessage}
                     </Alert>
                 )}
-
-                <Box sx={{ 
-                    borderBottom: 1, 
-                    borderColor: 'divider',
-                    mb: 3,
-                }}>
-                    <Tabs 
-                        value={activeSection} 
-                        onChange={handleSectionChange}
-                        sx={{
-                            '& .MuiTab-root': {
-                                textTransform: 'none',
-                                minHeight: 48,
-                                fontWeight: 500,
-                            },
-                            '& .Mui-selected': {
-                                color: 'primary.main',
-                            },
-                            '& .MuiTabs-indicator': {
-                                height: 3,
-                                borderRadius: '3px 3px 0 0',
-                            },
-                        }}
-                    >
-                        <Tab value="general" label="Genel Ayarlar" />
-                        <Tab value="ticket" label="Çağrı Ayarları" />
-                        <Tab value="inventory" label="Envanter Ayarları" />
-                    </Tabs>
-                </Box>
 
                 {/* Genel Ayarlar Section */}
                 {activeSection === 'general' && (
@@ -843,7 +776,7 @@ function AdminPage() {
                                                             </IconButton>
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleDeleteSolutionTime(time.id)}
+                                                                onClick={() => handleDeleteSolutionType(time.id)}
                                                                 color="error"
                                                             >
                                                                 <DeleteIcon fontSize="small" />
@@ -1346,7 +1279,7 @@ function AdminPage() {
                 {/* Groups Dialog */}
                 <Dialog open={groupDialog} onClose={() => setGroupDialog(false)}>
                     <DialogTitle>
-                        {selectedGroup ? 'Grupu Düzenle' : 'Grup Ekle'}
+                        {selectedGroup ? 'Grubu Düzenle' : 'Grup Ekle'}
                     </DialogTitle>
                     <DialogContent>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>

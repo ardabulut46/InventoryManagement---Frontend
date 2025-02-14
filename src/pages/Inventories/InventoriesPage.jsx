@@ -46,7 +46,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getInventories, deleteInventory, getAssignmentHistory, downloadInvoice, downloadExcelTemplate, importExcel } from '../../api/InventoryService';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useTheme } from '@mui/material/styles';
-import { getWarrantyExpiringInventories, getWarrantyExpiredInventories } from '../../api/WarrantyService';
+import { 
+    getActiveWarrantyInventories,
+    getWarrantyExpiredInventories,
+    getWarrantyExpiringInMonth,
+    getWarrantyExpiringInFifteenDays,
+    getMostRepairedInventories 
+} from '../../api/WarrantyService';
 
 const COLUMNS = [
     { id: 'id', label: 'ID', always: true },
@@ -92,6 +98,7 @@ const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'];
 
 function InventoryStats({ inventories, warrantyData }) {
     const theme = useTheme();
+    const navigate = useNavigate();
 
     // Calculate status distribution
     const statusDistribution = inventories.reduce((acc, inv) => {
@@ -123,6 +130,10 @@ function InventoryStats({ inventories, warrantyData }) {
             value
         }));
 
+    const handleWarrantyCardClick = (type) => {
+        navigate('/inventories/warranty-status', { state: { activeTab: type } });
+    };
+
     return (
         <Box sx={{ 
             mb: 4, 
@@ -134,88 +145,126 @@ function InventoryStats({ inventories, warrantyData }) {
                 : '0 4px 24px rgba(0, 0, 0, 0.1)',
         }}>
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Envanter Analizi</Typography>
-            <Grid container spacing={3}>
-                {/* Warranty Status Cards */}
+            
+            {/* Warranty and Repair Stats */}
+            <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Garanti Durumu</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        borderRadius: 2,
-                                        bgcolor: alpha(theme.palette.warning.main, 0.1),
-                                        border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Box>
-                                        <Typography variant="h4" color="warning.main">
-                                            {warrantyData.expiring?.length || 0}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Garantisi Bitmeye Yakın
-                                        </Typography>
-                                    </Box>
-                                    <Tooltip title="30 gün içinde garantisi dolacak ürünler">
-                                        <IconButton
-                                            size="small"
-                                            sx={{ 
-                                                bgcolor: alpha(theme.palette.warning.main, 0.2),
-                                                '&:hover': {
-                                                    bgcolor: alpha(theme.palette.warning.main, 0.3),
-                                                }
-                                            }}
-                                            onClick={() => warrantyData.onViewWarrantyDetails(0)}
-                                        >
-                                            <ViewColumnIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Paper>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <Paper
-                                    sx={{
-                                        p: 2,
-                                        borderRadius: 2,
-                                        bgcolor: alpha(theme.palette.error.main, 0.1),
-                                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Box>
-                                        <Typography variant="h4" color="error.main">
-                                            {warrantyData.expired?.length || 0}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Süresi Dolanlar
-                                        </Typography>
-                                    </Box>
-                                    <Tooltip title="Garantisi sona ermiş ürünler">
-                                        <IconButton
-                                            size="small"
-                                            sx={{ 
-                                                bgcolor: alpha(theme.palette.error.main, 0.2),
-                                                '&:hover': {
-                                                    bgcolor: alpha(theme.palette.error.main, 0.3),
-                                                }
-                                            }}
-                                            onClick={() => warrantyData.onViewWarrantyDetails(1)}
-                                        >
-                                            <ViewColumnIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Paper>
-                            </Grid>
-                        </Grid>
+                    <Box sx={{ 
+                        display: 'flex', 
+                        gap: 2, 
+                        flexWrap: 'wrap',
+                        '& > *': { 
+                            flex: '1 1 200px',
+                            minWidth: 200,
+                            maxWidth: 300,
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                            }
+                        }
+                    }}>
+                        {/* Active Warranty */}
+                        <Paper
+                            elevation={0}
+                            onClick={() => handleWarrantyCardClick('active')}
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                            }}
+                        >
+                            <Typography variant="subtitle2" color="success.main" sx={{ mb: 1, fontWeight: 600 }}>
+                                Garanti Süresi Devam Eden
+                            </Typography>
+                            <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
+                                {warrantyData.active?.length || 0}
+                            </Typography>
+                        </Paper>
+
+                        {/* Expired Warranty */}
+                        <Paper
+                            elevation={0}
+                            onClick={() => handleWarrantyCardClick('expired')}
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                                border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                            }}
+                        >
+                            <Typography variant="subtitle2" color="error.main" sx={{ mb: 1, fontWeight: 600 }}>
+                                Garanti Süresi Biten
+                            </Typography>
+                            <Typography variant="h4" color="error.main" sx={{ fontWeight: 700 }}>
+                                {warrantyData.expired?.length || 0}
+                            </Typography>
+                        </Paper>
+
+                        {/* 1 Month Warning */}
+                        <Paper
+                            elevation={0}
+                            onClick={() => handleWarrantyCardClick('expiringMonth')}
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
+                            }}
+                        >
+                            <Typography variant="subtitle2" color="warning.main" sx={{ mb: 1, fontWeight: 600 }}>
+                                1 Ay İçinde Sona Erecek
+                            </Typography>
+                            <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
+                                {warrantyData.expiringInMonth?.length || 0}
+                            </Typography>
+                        </Paper>
+
+                        {/* 15 Days Warning */}
+                        <Paper
+                            elevation={0}
+                            onClick={() => handleWarrantyCardClick('expiringFifteen')}
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.warning.dark, 0.1),
+                                border: `1px solid ${alpha(theme.palette.warning.dark, 0.2)}`,
+                            }}
+                        >
+                            <Typography variant="subtitle2" color="warning.dark" sx={{ mb: 1, fontWeight: 600 }}>
+                                15 Gün İçinde Sona Erecek
+                            </Typography>
+                            <Typography variant="h4" color="warning.dark" sx={{ fontWeight: 700 }}>
+                                {warrantyData.expiringInFifteenDays?.length || 0}
+                            </Typography>
+                        </Paper>
+
+                        {/* Most Repaired */}
+                        <Paper
+                            elevation={0}
+                            onClick={() => handleWarrantyCardClick('mostRepaired')}
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.info.main, 0.1),
+                                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                            }}
+                        >
+                            <Typography variant="subtitle2" color="info.main" sx={{ mb: 1, fontWeight: 600 }}>
+                                En Çok Tamir Gören
+                            </Typography>
+                            <Typography variant="h4" color="info.main" sx={{ fontWeight: 700 }}>
+                                {warrantyData.mostRepaired?.length || 0}
+                            </Typography>
+                        </Paper>
                     </Box>
                 </Grid>
+            </Grid>
 
+            {/* Charts */}
+            <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                     <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Durum Dağılımı</Typography>
                     <Box sx={{ height: 300, width: '100%' }}>
@@ -281,6 +330,11 @@ function InventoriesPage() {
     const [warrantyExpiredInventories, setWarrantyExpiredInventories] = useState([]);
     const [warrantyDialogOpen, setWarrantyDialogOpen] = useState(false);
     const [activeWarrantyTab, setActiveWarrantyTab] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [activeWarrantyInventories, setActiveWarrantyInventories] = useState([]);
+    const [expiringInMonthInventories, setExpiringInMonthInventories] = useState([]);
+    const [expiringInFifteenDaysInventories, setExpiringInFifteenDaysInventories] = useState([]);
+    const [mostRepairedInventories, setMostRepairedInventories] = useState([]);
 
     useEffect(() => {
         fetchInventories();
@@ -298,15 +352,54 @@ function InventoriesPage() {
     };
 
     const fetchWarrantyData = async () => {
+        setLoading(true);
         try {
-            const [expiringRes, expiredRes] = await Promise.all([
-                getWarrantyExpiringInventories(),
-                getWarrantyExpiredInventories()
+            // Wrap each promise in a catch block to handle individual failures
+            const results = await Promise.all([
+                getActiveWarrantyInventories().catch(err => ({ data: [] })),
+                getWarrantyExpiredInventories().catch(err => ({ data: [] })),
+                getWarrantyExpiringInMonth().catch(err => ({ data: [] })),
+                getWarrantyExpiringInFifteenDays().catch(err => ({ data: [] })),
+                getMostRepairedInventories().catch(err => ({ data: [] }))
             ]);
-            setWarrantyExpiringInventories(expiringRes.data);
-            setWarrantyExpiredInventories(expiredRes.data);
+
+            const [
+                activeRes,
+                expiredRes,
+                expiringInMonthRes,
+                expiringInFifteenDaysRes,
+                mostRepairedRes
+            ] = results;
+
+            // Enhanced logging
+            console.log('Raw Expired Warranty Response:', expiredRes);
+            console.log('Expired Warranty Data:', expiredRes.data);
+            console.log('Expiring in Month Data:', expiringInMonthRes.data);
+            console.log('Expiring in 15 Days Data:', expiringInFifteenDaysRes.data);
+            
+            // Set states with null checks
+            setActiveWarrantyInventories(activeRes?.data || []);
+            setWarrantyExpiredInventories(expiredRes?.data || []);
+            setExpiringInMonthInventories(expiringInMonthRes?.data || []);
+            setExpiringInFifteenDaysInventories(expiringInFifteenDaysRes?.data || []);
+            setMostRepairedInventories(mostRepairedRes?.data || []);
+
+            // Log state after setting
+            console.log('State after setting:', {
+                expired: expiredRes?.data || [],
+                active: activeRes?.data || [],
+                expiringInMonth: expiringInMonthRes?.data || [],
+                expiringInFifteenDays: expiringInFifteenDaysRes?.data || [],
+                mostRepaired: mostRepairedRes?.data || []
+            });
+
+            // Clear any previous errors since we have some data
+            setError('');
         } catch (err) {
-            setError('Failed to fetch warranty data');
+            console.error('Failed to fetch warranty data:', err);
+            setError('Failed to fetch some warranty data. Some information may be incomplete.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -552,9 +645,11 @@ function InventoriesPage() {
                 <InventoryStats 
                     inventories={filteredInventories} 
                     warrantyData={{
-                        expiring: warrantyExpiringInventories,
+                        active: activeWarrantyInventories,
                         expired: warrantyExpiredInventories,
-                        onViewWarrantyDetails: handleViewWarrantyDetails
+                        expiringInMonth: expiringInMonthInventories,
+                        expiringInFifteenDays: expiringInFifteenDaysInventories,
+                        mostRepaired: mostRepairedInventories
                     }}
                 />
 
@@ -641,11 +736,8 @@ function InventoriesPage() {
                             {filteredInventories.map((inventory) => (
                                 <TableRow
                                     key={inventory.id}
-                                    component={Link}
-                                    to={`/inventories/detail/${inventory.id}`}
+                                    onClick={() => navigate(`/inventories/detail/${inventory.id}`)}
                                     sx={{ 
-                                        textDecoration: 'none',
-                                        color: 'inherit',
                                         cursor: 'pointer',
                                         '&:hover': { bgcolor: 'action.hover' }
                                     }}
