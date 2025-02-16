@@ -155,8 +155,8 @@ function Layout() {
             icon: <AdminPanelIcon />, 
             adminOnly: true,
             subItems: [
-                { text: 'Genel Ayarlar', path: '/admin?section=general' },
-                { text: 'Çağrı Ayarları', path: '/admin?section=ticket' },
+                { text: 'Genel Ayarlar', path: '/admin' },
+                { text: 'Çağrı Ayarları', path: '/admin/ticket-settings' },
                 { text: 'Envanter Ayarları', path: '/admin?section=inventory' }
             ]
         },

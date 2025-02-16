@@ -177,7 +177,7 @@ function DepartmentTicketsPage() {
                     </Fade>
                 )}
 
-                <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ mb: 4 }}>
                     <TextField
                         variant="outlined"
                         placeholder="Çağrılarda ara..."
@@ -192,20 +192,12 @@ function DepartmentTicketsPage() {
                         }}
                         sx={{
                             maxWidth: 500,
-                            flexGrow: 1,
+                            width: '100%',
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
                             }
                         }}
                     />
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => navigate('/tickets/create')}
-                        sx={{ borderRadius: 2 }}
-                    >
-                        Yeni Çağrı
-                    </Button>
                 </Box>
 
                 <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>

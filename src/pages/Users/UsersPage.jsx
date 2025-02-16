@@ -21,12 +21,14 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Search as SearchIcon,
+    ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getUsers, deleteUser } from '../../api/UserService';
 import UserDetailsDialog from '../../components/UserDetailsDialog';
 
 function UsersPage() {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
@@ -94,6 +96,20 @@ function UsersPage() {
                     boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
                 }}
             >
+                <Button
+                    onClick={() => navigate('/admin')}
+                    startIcon={<ArrowBackIcon />}
+                    sx={{
+                        mb: 3,
+                        color: 'text.secondary',
+                        '&:hover': {
+                            bgcolor: 'grey.100',
+                        }
+                    }}
+                >
+                    Geri
+                </Button>
+
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                     <Typography 
                         variant="h4" 
@@ -105,11 +121,11 @@ function UsersPage() {
                             color: 'transparent',
                         }}
                     >
-                        Users
+                        Kullanıcı Yönetimi
                     </Typography>
                     <Button
                         component={Link}
-                        to="/users/create"
+                        to="/admin/users/create"
                         variant="contained"
                         startIcon={<AddIcon />}
                         sx={{
@@ -125,7 +141,7 @@ function UsersPage() {
                             }
                         }}
                     >
-                        Add User
+                        Yeni Kullanıcı
                     </Button>
                 </Box>
 
@@ -147,7 +163,7 @@ function UsersPage() {
                 <TextField
                     fullWidth
                     variant="outlined"
-                    placeholder="Search users..."
+                    placeholder="Kullanıcı ara..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     InputProps={{
@@ -175,6 +191,7 @@ function UsersPage() {
                     }}
                     sx={{
                         mb: 3,
+                        maxWidth: 500,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
                             bgcolor: 'background.paper',
@@ -189,11 +206,11 @@ function UsersPage() {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: 'background.default' }}>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Name</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Surname</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Email</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Department</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Ad</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Soyad</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>E-posta</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Departman</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>İşlemler</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -216,7 +233,7 @@ function UsersPage() {
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <IconButton
                                                 component={Link}
-                                                to={`/users/edit/${user.id}`}
+                                                to={`/admin/users/edit/${user.id}`}
                                                 color="primary"
                                                 size="small"
                                                 onClick={(e) => e.stopPropagation()}
@@ -260,7 +277,7 @@ function UsersPage() {
                                             fontStyle: 'italic'
                                         }}
                                     >
-                                        No users found.
+                                        Kullanıcı bulunamadı.
                                     </TableCell>
                                 </TableRow>
                             )}

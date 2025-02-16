@@ -4,7 +4,6 @@ import httpClient from './httpClient';
 export const getActiveWarrantyInventories = async () => {
     try {
         const response = await httpClient.get('/api/Inventory/warranty-active');
-        console.log('Active warranty response:', response);
         return response;
     } catch (error) {
         console.error('Error fetching active warranties:', error);

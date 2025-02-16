@@ -131,7 +131,19 @@ function InventoryStats({ inventories, warrantyData }) {
         }));
 
     const handleWarrantyCardClick = (type) => {
-        navigate('/inventories/warranty-status', { state: { activeTab: type } });
+        navigate('/inventories/warranty-status', { 
+            state: { 
+                activeTab: type,
+                showOnlyActiveTab: true,
+                tabData: {
+                    active: type === 'active' ? warrantyData.active : null,
+                    expired: type === 'expired' ? warrantyData.expired : null,
+                    expiringInMonth: type === 'expiringMonth' ? warrantyData.expiringInMonth : null,
+                    expiringInFifteenDays: type === 'expiringFifteen' ? warrantyData.expiringInFifteenDays : null,
+                    mostRepaired: type === 'mostRepaired' ? warrantyData.mostRepaired : null
+                }
+            } 
+        });
     };
 
     return (

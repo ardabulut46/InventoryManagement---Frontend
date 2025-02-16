@@ -33,9 +33,10 @@ const WarrantyStatusPage = () => {
     const [inventories, setInventories] = useState([]);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const [showOnlyActiveTab, setShowOnlyActiveTab] = useState(false);
 
     useEffect(() => {
-        // Set initial tab based on navigation state
+        // Set initial tab and state based on navigation state
         if (location.state?.activeTab) {
             const tabMap = {
                 'active': 0,
@@ -44,18 +45,38 @@ const WarrantyStatusPage = () => {
                 'expiringFifteen': 3,
                 'mostRepaired': 4
             };
-            setActiveTab(tabMap[location.state.activeTab] || 0);
+            const mappedTab = tabMap[location.state.activeTab] || 0;
+            setActiveTab(mappedTab);
+            setShowOnlyActiveTab(location.state.showOnlyActiveTab || false);
+            
+            // If we have tab data in the state, use it
+            if (location.state.tabData) {
+                const tabData = location.state.tabData;
+                const currentTabKey = location.state.activeTab;
+                if (tabData[currentTabKey]) {
+                    setInventories(tabData[currentTabKey]);
+                    return; // Don't fetch if we have the data
+                }
+            }
+            // If we don't have data, fetch for the correct tab
+            fetchData(mappedTab);
+        } else {
+            fetchData(0); // Default to first tab
         }
     }, [location]);
 
     useEffect(() => {
-        fetchData();
-    }, [activeTab]);
+        // Only fetch data when changing tabs in multi-tab mode
+        if (!showOnlyActiveTab && !location.state?.tabData) {
+            fetchData(activeTab);
+        }
+    }, [activeTab, showOnlyActiveTab]);
 
-    const fetchData = async () => {
+    const fetchData = async (tabIndex) => {
         try {
             let response;
-            switch (activeTab) {
+            // Use the passed tabIndex instead of activeTab state
+            switch (tabIndex) {
                 case 0: // Active
                     response = await getActiveWarrantyInventories();
                     break;
@@ -84,6 +105,9 @@ const WarrantyStatusPage = () => {
     };
 
     const handleTabChange = (event, newValue) => {
+        if (showOnlyActiveTab) {
+            return; // Prevent tab change if showOnlyActiveTab is true
+        }
         setActiveTab(newValue);
     };
 
@@ -217,33 +241,26 @@ const WarrantyStatusPage = () => {
                 )}
 
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                    <Tabs value={activeTab} onChange={handleTabChange}>
-                        <Tab label={getTabLabel(0)} id="tab-0" />
-                        <Tab label={getTabLabel(1)} id="tab-1" />
-                        <Tab label={getTabLabel(2)} id="tab-2" />
-                        <Tab label={getTabLabel(3)} id="tab-3" />
-                        <Tab label={getTabLabel(4)} id="tab-4" />
-                    </Tabs>
+                    {showOnlyActiveTab ? (
+                        // Show only the active tab, always use value 0 since there's only one tab
+                        <Tabs value={0} onChange={handleTabChange}>
+                            <Tab label={getTabLabel(activeTab)} />
+                        </Tabs>
+                    ) : (
+                        // Show all tabs
+                        <Tabs value={activeTab} onChange={handleTabChange}>
+                            <Tab label={getTabLabel(0)} id="tab-0" />
+                            <Tab label={getTabLabel(1)} id="tab-1" />
+                            <Tab label={getTabLabel(2)} id="tab-2" />
+                            <Tab label={getTabLabel(3)} id="tab-3" />
+                            <Tab label={getTabLabel(4)} id="tab-4" />
+                        </Tabs>
+                    )}
                 </Box>
 
-                <Box role="tabpanel" hidden={activeTab !== 0}>
-                    {activeTab === 0 && renderInventoryTable(inventories)}
-                </Box>
-
-                <Box role="tabpanel" hidden={activeTab !== 1}>
-                    {activeTab === 1 && renderInventoryTable(inventories)}
-                </Box>
-
-                <Box role="tabpanel" hidden={activeTab !== 2}>
-                    {activeTab === 2 && renderInventoryTable(inventories)}
-                </Box>
-
-                <Box role="tabpanel" hidden={activeTab !== 3}>
-                    {activeTab === 3 && renderInventoryTable(inventories)}
-                </Box>
-
-                <Box role="tabpanel" hidden={activeTab !== 4}>
-                    {activeTab === 4 && renderInventoryTable(inventories)}
+                {/* Render only the active tab panel */}
+                <Box role="tabpanel">
+                    {renderInventoryTable(inventories)}
                 </Box>
             </Paper>
         </Container>

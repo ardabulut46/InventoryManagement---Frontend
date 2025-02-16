@@ -34,6 +34,7 @@ import {
     CardContent,
     Tooltip,
     CardHeader,
+    CardActionArea,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -48,6 +49,9 @@ import {
     Schedule as ScheduleIcon,
     Group as GroupIcon,
     Business as BusinessIcon,
+    AccountTree as DepartmentIcon,
+    Settings as SettingsIcon,
+    Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import SolutionTimeService from '../../api/SolutionTimeService';
@@ -58,6 +62,7 @@ import UserDetailsDialog from '../../components/UserDetailsDialog';
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '../../api/DepartmentService';
 import { getAssignmentTimes, createAssignmentTime, updateAssignmentTime, deleteAssignmentTime } from '../../api/AssignmentTimeService';
 import { getGroups, createGroup, updateGroup, deleteGroup } from '../../api/GroupService';
+import { getCompanies } from '../../api/CompanyService';
 
 // TabPanel component for tab content
 function TabPanel({ children, value, index }) {
@@ -138,6 +143,9 @@ function AdminPage() {
         departmentId: null,
     });
 
+    // Companies state
+    const [companies, setCompanies] = useState([]);
+
     useEffect(() => {
         fetchAllData();
     }, []);
@@ -163,13 +171,14 @@ function AdminPage() {
 
     const fetchAllData = async () => {
         try {
-            const [solutionTimesRes, problemTypesRes, solutionTypesRes, usersRes, departmentsRes, assignmentTimesRes] = await Promise.all([
+            const [solutionTimesRes, problemTypesRes, solutionTypesRes, usersRes, departmentsRes, assignmentTimesRes, companiesRes] = await Promise.all([
                 SolutionTimeService.getAllSolutionTimes(),
                 getProblemTypes(),
                 SolutionTypeService.getSolutionTypes(),
                 getUsers(),
                 getDepartments(),
-                getAssignmentTimes()
+                getAssignmentTimes(),
+                getCompanies()
             ]);
             setSolutionTimes(solutionTimesRes.data);
             setProblemTypes(problemTypesRes.data);
@@ -177,6 +186,7 @@ function AdminPage() {
             setUsers(usersRes.data);
             setDepartments(departmentsRes.data);
             setAssignmentTimes(assignmentTimesRes.data);
+            setCompanies(companiesRes.data);
             const groupsResponse = await getGroups();
             setGroups(groupsResponse.data);
             setError('');
@@ -422,21 +432,43 @@ function AdminPage() {
         }
     };
 
+    const adminCards = [
+        {
+            title: 'Kullanıcı Yönetimi',
+            description: 'Kullanıcıları görüntüle, düzenle ve yönet',
+            icon: <PeopleIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/users',
+            color: '#1976d2'
+        },
+        {
+            title: 'Şirket Yönetimi',
+            description: 'Şirketleri görüntüle, düzenle ve yönet',
+            icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/companies',
+            color: '#2e7d32'
+        },
+        {
+            title: 'Grup Yönetimi',
+            description: 'Grupları görüntüle, düzenle ve yönet',
+            icon: <GroupIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/groups',
+            color: '#ed6c02'
+        },
+        {
+            title: 'Departman Yönetimi',
+            description: 'Departmanları görüntüle, düzenle ve yönet',
+            icon: <DepartmentIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/departments',
+            color: '#9c27b0'
+        }
+    ];
+
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
-            <Paper 
-                elevation={0} 
-                sx={{ 
-                    p: 3, 
-                    borderRadius: 3, 
-                    bgcolor: 'background.paper',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
-                }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                     <Typography 
                         variant="h4" 
                         sx={{ 
+                    mb: 4,
                             fontWeight: 'bold',
                             background: 'linear-gradient(45deg, #1976d2, #64b5f6)',
                             backgroundClip: 'text',
@@ -446,922 +478,73 @@ function AdminPage() {
                     >
                         Admin Paneli
                     </Typography>
-                </Box>
 
-                {error && (
-                    <Alert 
-                        severity="error" 
-                        sx={{ mb: 3, borderRadius: 2 }}
-                        onClose={() => setError('')}
-                    >
-                        {error}
-                    </Alert>
-                )}
-
-                {successMessage && (
-                    <Alert 
-                        severity="success" 
-                        sx={{ mb: 3, borderRadius: 2 }}
-                        onClose={() => setSuccessMessage('')}
-                    >
-                        {successMessage}
-                    </Alert>
-                )}
-
-                {/* Genel Ayarlar Section */}
-                {activeSection === 'general' && (
                     <Grid container spacing={3}>
-                        {/* Users Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <PeopleIcon color="primary" />
-                                                <Typography variant="h6">Kullanıcılar</Typography>
-                                            </Box>
-                                            <Button
-                                                component={Link}
-                                                to="/admin/users/create"
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                            >
-                                                Kullanıcı Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TextField
-                                        size="small"
-                                        placeholder="Kullanıcı ara..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <SearchIcon />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                        fullWidth
-                                        sx={{ mb: 2 }}
-                                    />
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Ad</TableCell>
-                                                    <TableCell>Soyad</TableCell>
-                                                    <TableCell>E-posta</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {filteredUsers.map((user) => (
-                                                    <TableRow key={user.id}>
-                                                        <TableCell>{user.name}</TableCell>
-                                                        <TableCell>{user.surname}</TableCell>
-                                                        <TableCell>{user.email}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton size="small" onClick={() => handleUserDetails(user)}>
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton size="small" onClick={() => handleDeleteUser(user.id)} color="error">
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Groups Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <GroupIcon color="primary" />
-                                                <Typography variant="h6">Gruplar</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedGroup(null);
-                                                    setGroupForm({ name: '', departmentId: null });
-                                                    setSelectedDepartment(null);
-                                                    setGroupDialog(true);
-                                                }}
-                                            >
-                                                Grup Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Ad</TableCell>
-                                                    <TableCell>Departman</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {groups.map((group) => (
-                                                    <TableRow key={group.id}>
-                                                        <TableCell>{group.name}</TableCell>
-                                                        <TableCell>{group.department?.name || '-'}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    setSelectedGroup(group);
-                                                                    setGroupForm({
-                                                                        name: group.name,
-                                                                        departmentId: group.departmentId,
-                                                                    });
-                                                                    setSelectedDepartment(departments.find(d => d.id === group.departmentId));
-                                                                    setGroupDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteGroup(group.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Companies Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <BusinessIcon color="primary" />
-                                                <Typography variant="h6">Şirketler</Typography>
-                                            </Box>
-                                            <Button
-                                                component={Link}
-                                                to="/admin/companies"
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                            >
-                                                Şirketleri Yönet
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <Typography color="text.secondary">
-                                        Şirket yönetimi için tıklayın.
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Departments Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <BusinessIcon color="primary" />
-                                                <Typography variant="h6">Departmanlar</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedDepartment(null);
-                                                    setDepartmentForm({ name: '' });
-                                                    setDepartmentDialog(true);
-                                                }}
-                                            >
-                                                Departman Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Departman Adı</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {departments.map((department) => (
-                                                    <TableRow key={department.id}>
-                                                        <TableCell>{department.name}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    setSelectedDepartment(department);
-                                                                    setDepartmentForm({ name: department.name });
-                                                                    setDepartmentDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteDepartment(department.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Çağrı Ayarları Section */}
-                {activeSection === 'ticket' && (
-                    <Grid container spacing={3}>
-                        {/* Solution Times Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <TimerIcon color="primary" />
-                                                <Typography variant="h6">Çözüm Süreleri</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedSolutionTime(null);
-                                                    setSolutionTimeForm({ problemTypeId: '', hours: 0, minutes: 0 });
-                                                    setSolutionTimeDialog(true);
-                                                }}
-                                            >
-                                                Çözüm Süresi Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Problem Tipi</TableCell>
-                                                    <TableCell>Çözüm Süresi</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {solutionTimes.map((time) => (
-                                                    <TableRow key={time.id}>
-                                                        <TableCell>
-                                                            {problemTypes.find(pt => pt.id === time.problemTypeId)?.name || time.problemTypeName}
-                                                        </TableCell>
-                                                        <TableCell>{time.timeToSolve}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    const [hours, minutes] = time.timeToSolve.split(':');
-                                                                    setSelectedSolutionTime(time);
-                                                                    setSolutionTimeForm({
-                                                                        problemTypeId: time.problemTypeId,
-                                                                        hours: parseInt(hours),
-                                                                        minutes: parseInt(minutes)
-                                                                    });
-                                                                    setSolutionTimeDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteSolutionType(time.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Problem Types Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <CategoryIcon color="primary" />
-                                                <Typography variant="h6">Problem Tipleri</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedProblemType(null);
-                                                    setProblemTypeForm({ name: '', groupId: '' });
-                                                    setProblemTypeDialog(true);
-                                                }}
-                                            >
-                                                Problem Tipi Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Ad</TableCell>
-                                                    <TableCell>Grup</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {problemTypes.map((type) => (
-                                                    <TableRow key={type.id}>
-                                                        <TableCell>{type.name}</TableCell>
-                                                        <TableCell>{groups.find(g => g.id === type.groupId)?.name || '-'}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    setSelectedProblemType(type);
-                                                                    setProblemTypeForm({
-                                                                        name: type.name,
-                                                                        groupId: type.groupId
-                                                                    });
-                                                                    setProblemTypeDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteProblemType(type.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Solution Types Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <CategoryIcon color="primary" />
-                                                <Typography variant="h6">Çözüm Tipleri</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedSolutionType(null);
-                                                    setSolutionTypeForm({ name: '', description: '' });
-                                                    setSolutionTypeDialog(true);
-                                                }}
-                                            >
-                                                Çözüm Tipi Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Ad</TableCell>
-                                                    <TableCell>Açıklama</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {solutionTypes.map((type) => (
-                                                    <TableRow key={type.id}>
-                                                        <TableCell>{type.name}</TableCell>
-                                                        <TableCell>{type.description}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    setSelectedSolutionType(type);
-                                                                    setSolutionTypeForm({
-                                                                        name: type.name,
-                                                                        description: type.description
-                                                                    });
-                                                                    setSolutionTypeDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteSolutionType(type.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Assignment Times Card */}
-                        <Grid item xs={12} md={6}>
-                            <Card variant="outlined" sx={{ height: '100%' }}>
-                                <CardHeader
-                                    title={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <ScheduleIcon color="primary" />
-                                                <Typography variant="h6">Atama Süreleri</Typography>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<AddIcon />}
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedAssignmentTime(null);
-                                                    setAssignmentTimeForm({ problemTypeId: '', hours: 0, minutes: 0 });
-                                                    setAssignmentTimeDialog(true);
-                                                }}
-                                            >
-                                                Atama Süresi Ekle
-                                            </Button>
-                                        </Box>
-                                    }
-                                />
-                                <CardContent>
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Problem Tipi</TableCell>
-                                                    <TableCell>Atama Süresi</TableCell>
-                                                    <TableCell>İşlemler</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {assignmentTimes.map((time) => (
-                                                    <TableRow key={time.id}>
-                                                        <TableCell>
-                                                            {problemTypes.find(pt => pt.id === time.problemTypeId)?.name || time.problemTypeName}
-                                                        </TableCell>
-                                                        <TableCell>{time.timeToAssign}</TableCell>
-                                                        <TableCell>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    const [hours, minutes] = time.timeToAssign.split(':');
-                                                                    setSelectedAssignmentTime(time);
-                                                                    setAssignmentTimeForm({
-                                                                        problemTypeId: time.problemTypeId,
-                                                                        hours: parseInt(hours),
-                                                                        minutes: parseInt(minutes)
-                                                                    });
-                                                                    setAssignmentTimeDialog(true);
-                                                                }}
-                                                            >
-                                                                <EditIcon fontSize="small" />
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteAssignmentTime(time.id)}
-                                                                color="error"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Envanter Ayarları Section */}
-                {activeSection === 'inventory' && (
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center', 
-                        minHeight: '200px',
-                        color: 'text.secondary'
-                    }}>
-                        <Typography variant="h6">
-                            Bu bölüm henüz hazır değil
-                        </Typography>
-                    </Box>
-                )}
-
-                {/* Solution Times Dialog */}
-                <Dialog 
-                    open={solutionTimeDialog} 
-                    onClose={() => setSolutionTimeDialog(false)}
-                    maxWidth="sm"
-                    fullWidth
-                    TransitionComponent={Fade}
-                    PaperProps={{
-                        sx: {
-                            borderRadius: 2,
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                        }
-                    }}
-                >
-                    <DialogTitle>
-                        <Box display="flex" alignItems="center" justifyContent="space-between">
-                            <Typography variant="h6">
-                                {selectedSolutionTime ? 'Çözüm Süresini Düzenle' : 'Çözüm Süresi Ekle'}
-                            </Typography>
-                            <IconButton onClick={() => setSolutionTimeDialog(false)} size="small">
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-                    </DialogTitle>
-                    <DialogContent>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Problem Tipi</InputLabel>
-                                <Select
-                                    value={solutionTimeForm.problemTypeId}
-                                    onChange={(e) => setSolutionTimeForm({
-                                        ...solutionTimeForm,
-                                        problemTypeId: e.target.value
-                                    })}
-                                    label="Problem Tipi"
-                                >
-                                    {problemTypes.map((type) => (
-                                        <MenuItem key={type.id} value={type.id}>
-                                            {type.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <TextField
-                                    label="Saat"
-                                    type="number"
-                                    value={solutionTimeForm.hours}
-                                    onChange={(e) => setSolutionTimeForm({
-                                        ...solutionTimeForm,
-                                        hours: parseInt(e.target.value) || 0
-                                    })}
-                                    inputProps={{ min: 0 }}
-                                    fullWidth
-                                />
-                                <TextField
-                                    label="Dakika"
-                                    type="number"
-                                    value={solutionTimeForm.minutes}
-                                    onChange={(e) => setSolutionTimeForm({
-                                        ...solutionTimeForm,
-                                        minutes: parseInt(e.target.value) || 0
-                                    })}
-                                    inputProps={{ min: 0, max: 59 }}
-                                    fullWidth
-                                />
-                            </Box>
-                        </Box>
-                    </DialogContent>
-                    <DialogActions sx={{ p: 2.5, gap: 1 }}>
-                        <Button 
-                            onClick={() => setSolutionTimeDialog(false)}
-                            sx={{
-                                borderRadius: 2,
-                                textTransform: 'none',
-                            }}
-                        >
-                            İptal
-                        </Button>
-                        <Button 
-                            onClick={handleSolutionTimeSubmit} 
-                            variant="contained"
-                            sx={{
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                px: 3,
-                                background: 'linear-gradient(45deg, #1976d2, #64b5f6)',
-                                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
+                {adminCards.map((card, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                        <Card 
+                            sx={{ 
+                                height: '100%',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
                                 '&:hover': {
-                                    background: 'linear-gradient(45deg, #1565c0, #42a5f5)',
-                                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.3)',
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                                 }
                             }}
                         >
-                            Kaydet
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Problem Types Dialog */}
-                <Dialog open={problemTypeDialog} onClose={() => setProblemTypeDialog(false)}>
-                    <DialogTitle>
-                        {selectedProblemType ? 'Problem Tipini Düzenle' : 'Problem Tipi Ekle'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            fullWidth
-                            label="Ad"
-                            value={problemTypeForm.name}
-                            onChange={(e) => setProblemTypeForm({
-                                ...problemTypeForm,
-                                name: e.target.value
-                            })}
-                            sx={{ mt: 2 }}
-                        />
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel>Grup</InputLabel>
-                            <Select
-                                value={problemTypeForm.groupId}
-                                onChange={(e) => setProblemTypeForm({
-                                    ...problemTypeForm,
-                                    groupId: e.target.value
-                                })}
-                                label="Grup"
+                            <CardActionArea 
+                                onClick={() => navigate(card.path)}
+                                sx={{ height: '100%', p: 2 }}
                             >
-                                {groups.map((group) => (
-                                    <MenuItem key={group.id} value={group.id}>
-                                        {group.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setProblemTypeDialog(false)}>İptal</Button>
-                        <Button onClick={handleProblemTypeSubmit} variant="contained">Kaydet</Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Solution Types Dialog */}
-                <Dialog open={solutionTypeDialog} onClose={() => setSolutionTypeDialog(false)}>
-                    <DialogTitle>
-                        {selectedSolutionType ? 'Çözüm Tipini Düzenle' : 'Çözüm Tipi Ekle'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            fullWidth
-                            label="Ad"
-                            value={solutionTypeForm.name}
-                            onChange={(e) => setSolutionTypeForm({
-                                ...solutionTypeForm,
-                                name: e.target.value
-                            })}
-                            sx={{ mt: 2 }}
-                        />
-                        <TextField
-                            fullWidth
-                            label="Açıklama"
-                            value={solutionTypeForm.description}
-                            onChange={(e) => setSolutionTypeForm({
-                                ...solutionTypeForm,
-                                description: e.target.value
-                            })}
-                            sx={{ mt: 2 }}
-                            multiline
-                            rows={3}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setSolutionTypeDialog(false)}>İptal</Button>
-                        <Button onClick={handleSolutionTypeSubmit} variant="contained">Kaydet</Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Assignment Times Dialog */}
-                <Dialog open={assignmentTimeDialog} onClose={() => setAssignmentTimeDialog(false)}>
-                    <DialogTitle>
-                        {selectedAssignmentTime ? 'Atama Süresini Düzenle' : 'Atama Süresi Ekle'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel>Problem Tipi</InputLabel>
-                            <Select
-                                value={assignmentTimeForm.problemTypeId}
-                                onChange={(e) => setAssignmentTimeForm({
-                                    ...assignmentTimeForm,
-                                    problemTypeId: e.target.value
-                                })}
-                                label="Problem Tipi"
-                            >
-                                {problemTypes.map((type) => (
-                                    <MenuItem key={type.id} value={type.id}>
-                                        {type.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                            <TextField
-                                label="Saat"
-                                type="number"
-                                value={assignmentTimeForm.hours}
-                                onChange={(e) => {
-                                    const hours = parseInt(e.target.value) || 0;
-                                    if (hours >= 0 && hours < 24) {
-                                        setAssignmentTimeForm({
-                                            ...assignmentTimeForm,
-                                            hours: hours
-                                        });
-                                    }
-                                }}
-                                inputProps={{ 
-                                    min: 0,
-                                    max: 23
-                                }}
-                                helperText="24 saatten az olmalıdır"
-                                error={assignmentTimeForm.hours >= 24}
-                            />
-                            <TextField
-                                label="Dakika"
-                                type="number"
-                                value={assignmentTimeForm.minutes}
-                                onChange={(e) => {
-                                    const minutes = parseInt(e.target.value) || 0;
-                                    if (minutes >= 0 && minutes < 60) {
-                                        setAssignmentTimeForm({
-                                            ...assignmentTimeForm,
-                                            minutes: minutes
-                                        });
-                                    }
-                                }}
-                                inputProps={{ 
-                                    min: 0,
-                                    max: 59
-                                }}
-                                helperText="0-59 dakika"
-                            />
-                        </Box>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setAssignmentTimeDialog(false)}>İptal</Button>
-                        <Button 
-                            onClick={handleAssignmentTimeSubmit} 
-                            variant="contained"
-                            disabled={assignmentTimeForm.hours >= 24}
-                        >
-                            Kaydet
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Groups Dialog */}
-                <Dialog open={groupDialog} onClose={() => setGroupDialog(false)}>
-                    <DialogTitle>
-                        {selectedGroup ? 'Grubu Düzenle' : 'Grup Ekle'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                            <TextField
-                                label="Ad"
-                                value={groupForm.name}
-                                onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                                fullWidth
-                                required
-                            />
-                            <Autocomplete
-                                options={departments}
-                                getOptionLabel={(department) => department.name}
-                                value={selectedDepartment}
-                                onChange={handleDepartmentChange}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Departman"
-                                        required
-                                    />
-                                )}
-                            />
-                        </Box>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setGroupDialog(false)}>İptal</Button>
-                        <Button onClick={handleGroupSubmit} variant="contained">Kaydet</Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Department Dialog */}
-                <Dialog
-                    open={departmentDialog}
-                    onClose={() => {
-                        setDepartmentDialog(false);
-                        setSelectedDepartment(null);
-                        setDepartmentForm({ name: '' });
-                    }}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>
-                        {selectedDepartment ? 'Departman Düzenle' : 'Yeni Departman'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Departman Adı"
-                            fullWidth
-                            value={departmentForm.name}
-                            onChange={(e) => setDepartmentForm({ name: e.target.value })}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => {
-                                setDepartmentDialog(false);
-                                setSelectedDepartment(null);
-                                setDepartmentForm({ name: '' });
-                            }}
-                        >
-                            İptal
-                        </Button>
-                        <Button
-                            onClick={handleDepartmentSubmit}
-                            variant="contained"
-                            disabled={!departmentForm.name.trim()}
-                        >
-                            {selectedDepartment ? 'Güncelle' : 'Kaydet'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* User Details Dialog */}
-                <UserDetailsDialog
-                    open={isDetailsOpen}
-                    onClose={handleCloseDetails}
-                    user={selectedUser}
-                />
-            </Paper>
+                                <CardContent>
+                                    <Box 
+                                        sx={{ 
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            textAlign: 'center',
+                                            gap: 2
+                                        }}
+                                    >
+                                        <Box 
+                                            sx={{ 
+                                                p: 2,
+                                                borderRadius: '50%',
+                                                bgcolor: `${card.color}15`,
+                                                color: card.color,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            {card.icon}
+                                            </Box>
+                                        <Box>
+                                            <Typography 
+                                                variant="h6" 
+                                                component="div"
+                                                sx={{ 
+                                                    mb: 1,
+                                                    color: theme.palette.text.primary,
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {card.title}
+                                            </Typography>
+                                            <Typography 
+                                                variant="body2" 
+                                                color="text.secondary"
+                                            >
+                                                {card.description}
+                                            </Typography>
+                                            </Box>
+                                        </Box>
+                                </CardContent>
+                            </CardActionArea>
+                            </Card>
+                        </Grid>
+                ))}
+                        </Grid>
         </Container>
     );
 }
