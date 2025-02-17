@@ -130,9 +130,9 @@ function Layout() {
     };
 
     const menuItems = [
-        { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+        { text: 'Anasayfa', icon: <DashboardIcon />, path: '/' },
         { 
-            text: 'Inventories', 
+            text: 'Envanterler', 
             icon: <InventoryIcon />, 
             path: '/inventories',
             subItems: [
@@ -140,7 +140,7 @@ function Layout() {
             ]
         },
         { 
-            text: 'Tickets', 
+            text: 'Çağrılar', 
             icon: <TicketIcon />, 
             path: '/tickets',
             subItems: [
@@ -151,7 +151,7 @@ function Layout() {
             ]
         },
         { 
-            text: 'Admin Panel', 
+            text: 'Admin Paneli', 
             icon: <AdminPanelIcon />, 
             adminOnly: true,
             subItems: [
