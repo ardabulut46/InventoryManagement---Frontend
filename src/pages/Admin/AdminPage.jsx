@@ -446,6 +446,13 @@ function AdminPage() {
             icon: <BusinessIcon sx={{ fontSize: 40 }} />,
             path: '/admin/company-settings',
             color: '#2e7d32'
+        },
+        {
+            title: 'Rol Ayarları',
+            description: 'Kullanıcı rollerini ve yetkilerini yönet',
+            icon: <AdminIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/roles',
+            color: '#9c27b0'
         }
     ];
 

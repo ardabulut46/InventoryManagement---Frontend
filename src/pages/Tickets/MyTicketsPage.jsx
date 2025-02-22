@@ -251,7 +251,9 @@ function MyTicketsPage() {
 
             {/* Status Filter Cards */}
             <Grid container spacing={2} sx={{ mb: 4 }}>
-                {Object.entries(statusStats).map(([status, count]) => (
+                {Object.entries(statusStats)
+                    .filter(([status]) => status !== 'In Progress')
+                    .map(([status, count]) => (
                     <Grid item xs={12} sm={6} md={3} key={status}>
                         <Paper
                             elevation={0}
