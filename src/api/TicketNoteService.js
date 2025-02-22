@@ -10,28 +10,35 @@ export const getTicketNoteById = (ticketId, noteId) => {
     return httpClient.get(`${getEndpoint(ticketId)}/${noteId}`)
 }
 
-export const createTicketNote = (ticketId, noteData, files = []) => {
-    const formData = new FormData()
-    formData.append('note', noteData.note)
-    formData.append('noteType', noteData.noteType)
+export const createTicketNote = (ticketId, data, hasFiles = false) => {
+    if (hasFiles) {
+        // For file uploads, send as FormData
+        return httpClient.post(getEndpoint(ticketId), data, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    }
     
-    files.forEach(file => {
-        formData.append('files', file)
-    })
-
-    return httpClient.post(getEndpoint(ticketId), formData, {
+    // For text-only notes, send as JSON with application/json content type
+    return httpClient.post(getEndpoint(ticketId), JSON.stringify(data), {
         headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json'
         }
-    })
+    });
 }
 
 export const downloadNoteAttachment = (ticketId, noteId, attachmentId) => {
-    return httpClient.get(`${getEndpoint(ticketId)}/${noteId}/attachments/${attachmentId}/download`, {
-        responseType: 'blob'
-    })
+    return httpClient.get(
+        `${getEndpoint(ticketId)}/${noteId}/attachments/${attachmentId}/download`,
+        {
+            responseType: 'blob'
+        }
+    )
 }
 
 export const deleteNoteAttachment = (ticketId, noteId, attachmentId) => {
-    return httpClient.delete(`${getEndpoint(ticketId)}/${noteId}/attachments/${attachmentId}`)
+    return httpClient.delete(
+        `${getEndpoint(ticketId)}/${noteId}/attachments/${attachmentId}`
+    )
 } 

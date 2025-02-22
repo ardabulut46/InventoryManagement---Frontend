@@ -21,6 +21,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Alert,
 } from '@mui/material';
 import {
     AttachFile as AttachmentIcon,
@@ -39,6 +40,7 @@ import {
     downloadNoteAttachment,
     deleteNoteAttachment,
 } from '../api/TicketNoteService';
+import { getCurrentUser } from '../api/auth';
 
 const FilePreview = ({ file, onRemove }) => (
     <Box sx={{
@@ -63,13 +65,15 @@ const FilePreview = ({ file, onRemove }) => (
     </Box>
 );
 
-const TicketNotes = ({ ticketId }) => {
+const TicketNotes = ({ ticketId, ticket }) => {
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showFilesDialog, setShowFilesDialog] = useState(false);
+    const currentUser = getCurrentUser();
+    const canCreateNotes = ticket?.createdById === currentUser?.id || ticket?.userId === currentUser?.id;
 
     useEffect(() => {
         fetchNotes();
@@ -94,18 +98,49 @@ const TicketNotes = ({ ticketId }) => {
 
         try {
             setLoading(true);
-            const noteData = {
-                note: newNote || 'Dosya eklendi',
-                noteType: 'Yorum'
-            };
+            setError(''); // Clear any previous errors
 
-            await createTicketNote(ticketId, noteData, selectedFiles);
+            const noteText = newNote.trim();
+            const noteType = 'Yorum';
+
+            if (selectedFiles.length > 0) {
+                // Create FormData for file upload
+                const formData = new FormData();
+                // Add the note text and type
+                formData.append('Note', noteText || 'Dosya eklendi');
+                formData.append('NoteType', noteType);
+                // Add files one by one
+                selectedFiles.forEach(file => {
+                    formData.append('Files', file);
+                });
+
+                await createTicketNote(ticketId, formData, true);
+            } else {
+                // Simple JSON payload for text-only notes
+                const noteData = {
+                    Note: noteText,
+                    NoteType: noteType
+                };
+
+                await createTicketNote(ticketId, noteData, false);
+            }
+            
+            // Clear form
             setNewNote('');
             setSelectedFiles([]);
+            
+            // Refresh notes list
             await fetchNotes();
         } catch (err) {
-            setError('Not eklenirken bir hata oluştu');
             console.error('Error adding note:', err);
+            // Enhanced error handling
+            let errorMessage = 'Not eklenirken bir hata oluştu';
+            if (err.response?.data) {
+                errorMessage = typeof err.response.data === 'string' 
+                    ? err.response.data 
+                    : err.response.data.detail || err.response.data.message || JSON.stringify(err.response.data);
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -164,183 +199,201 @@ const TicketNotes = ({ ticketId }) => {
                 </Box>
 
                 {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
+                    <Alert 
+                        severity="error" 
+                        onClose={() => setError('')}
+                        sx={{ mb: 2 }}
+                    >
                         {error}
-                    </Typography>
+                    </Alert>
                 )}
 
-                <List>
-                    {notes.map((note, index) => (
-                        <React.Fragment key={note.id}>
-                            {index > 0 && <Divider />}
-                            <ListItem
-                                sx={{ py: 2 }}
-                                alignItems="flex-start"
+                {/* Note Creation Section - Updated visibility condition */}
+                {canCreateNotes ? (
+                    <Box component="form" onSubmit={handleSubmit} sx={{ mb: 3 }}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            variant="outlined"
+                            placeholder="Not ekle..."
+                            value={newNote}
+                            onChange={(e) => setNewNote(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileSelect}
+                                    style={{ display: 'none' }}
+                                    id="file-input"
+                                />
+                                <label htmlFor="file-input">
+                                    <Button
+                                        component="span"
+                                        startIcon={<AttachmentIcon />}
+                                        sx={{ mr: 1 }}
+                                    >
+                                        Dosya Ekle
+                                    </Button>
+                                </label>
+                                {selectedFiles.length > 0 && (
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => setShowFilesDialog(true)}
+                                    >
+                                        {selectedFiles.length} dosya seçildi
+                                    </Button>
+                                )}
+                            </Box>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                type="submit"
+                                disabled={loading || (!newNote.trim() && selectedFiles.length === 0)}
+                                startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
                             >
-                                <Box sx={{ width: '100%' }}>
-                                    {/* Header */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
-                                            {note.createdByEmail}
+                                Gönder
+                            </Button>
+                        </Box>
+                    </Box>
+                ) : (
+                    <Alert 
+                        severity="info" 
+                        sx={{ mb: 3 }}
+                    >
+                        Bu çağrıya sadece çağrıyı oluşturan veya atanan kişi not ekleyebilir.
+                    </Alert>
+                )}
+
+                {/* Notes List */}
+                <List>
+                    {notes.length === 0 ? (
+                        <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            align="center"
+                            sx={{ py: 4 }}
+                        >
+                            Henüz not eklenmemiş.
+                        </Typography>
+                    ) : (
+                        notes.map((note, index) => (
+                            <React.Fragment key={note.id}>
+                                {index > 0 && <Divider />}
+                                <ListItem
+                                    sx={{ py: 2 }}
+                                    alignItems="flex-start"
+                                >
+                                    <Box sx={{ width: '100%' }}>
+                                        {/* Header */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
+                                                {note.createdByEmail}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {format(new Date(note.createdDate), 'dd.MM.yyyy HH:mm', { locale: tr })}
+                                            </Typography>
+                                            {note.noteType && (
+                                                <Chip
+                                                    label={note.noteType}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color="primary"
+                                                />
+                                            )}
+                                        </Box>
+                                        
+                                        {/* Note Content */}
+                                        <Typography
+                                            variant="body2"
+                                            color="text.primary"
+                                            sx={{ whiteSpace: 'pre-wrap', mb: note.attachments?.length > 0 ? 1 : 0 }}
+                                        >
+                                            {note.note}
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {format(new Date(note.createdDate), 'dd.MM.yyyy HH:mm', { locale: tr })}
-                                        </Typography>
-                                        {note.noteType && (
-                                            <Chip
-                                                label={note.noteType}
-                                                size="small"
-                                                variant="outlined"
-                                                color="primary"
-                                            />
+
+                                        {/* Attachments */}
+                                        {note.attachments?.length > 0 && (
+                                            <Stack spacing={1} sx={{ mt: 1 }}>
+                                                {note.attachments.map((attachment) => (
+                                                    <Box
+                                                        key={attachment.id}
+                                                        sx={{ 
+                                                            display: 'flex', 
+                                                            alignItems: 'center', 
+                                                            gap: 1,
+                                                            bgcolor: 'grey.100',
+                                                            p: 1,
+                                                            borderRadius: 1,
+                                                            maxWidth: 'fit-content'
+                                                        }}
+                                                    >
+                                                        <FileIcon fontSize="small" color="primary" />
+                                                        <Box>
+                                                            <Typography variant="body2">
+                                                                {attachment.fileName}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {(attachment.fileSize / 1024).toFixed(1)} KB
+                                                            </Typography>
+                                                        </Box>
+                                                        <Stack direction="row" spacing={1}>
+                                                            <Tooltip title="Dosyayı İndir">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleDownload(note.id, attachment.fileName, attachment.id)}
+                                                                >
+                                                                    <DownloadIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Dosyayı Sil">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleDeleteAttachment(note.id, attachment.id)}
+                                                                >
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Stack>
+                                                    </Box>
+                                                ))}
+                                            </Stack>
                                         )}
                                     </Box>
-                                    
-                                    {/* Note Content */}
-                                    <Typography
-                                        variant="body2"
-                                        color="text.primary"
-                                        sx={{ whiteSpace: 'pre-wrap', mb: note.attachments?.length > 0 ? 1 : 0 }}
-                                    >
-                                        {note.note}
-                                    </Typography>
-
-                                    {/* Attachments */}
-                                    {note.attachments?.length > 0 && (
-                                        <Stack spacing={1} sx={{ mt: 1 }}>
-                                            {note.attachments.map((attachment) => (
-                                                <Box
-                                                    key={attachment.id}
-                                                    sx={{ 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
-                                                        gap: 1,
-                                                        bgcolor: 'grey.100',
-                                                        p: 1,
-                                                        borderRadius: 1,
-                                                        maxWidth: 'fit-content'
-                                                    }}
-                                                >
-                                                    <FileIcon fontSize="small" color="primary" />
-                                                    <Box>
-                                                        <Typography variant="body2">
-                                                            {attachment.fileName}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {(attachment.fileSize / 1024).toFixed(1)} KB
-                                                        </Typography>
-                                                    </Box>
-                                                    <Stack direction="row" spacing={1}>
-                                                        <Tooltip title="Dosyayı İndir">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDownload(note.id, attachment.fileName, attachment.id)}
-                                                            >
-                                                                <DownloadIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Dosyayı Sil">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteAttachment(note.id, attachment.id)}
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Stack>
-                                                </Box>
-                                            ))}
-                                        </Stack>
-                                    )}
-                                </Box>
-                            </ListItem>
-                        </React.Fragment>
-                    ))}
+                                </ListItem>
+                            </React.Fragment>
+                        ))
+                    )}
                 </List>
 
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={3}
-                        variant="outlined"
-                        placeholder="Not ekle..."
-                        value={newNote}
-                        onChange={(e) => setNewNote(e.target.value)}
-                        disabled={loading}
-                    />
-                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, gap: 2 }}>
-                        <Button
-                            component="label"
-                            startIcon={<AttachmentIcon />}
-                            disabled={loading}
-                            onClick={() => setShowFilesDialog(true)}
-                        >
-                            Dosya Ekle
-                        </Button>
-                        {selectedFiles.length > 0 && (
-                            <Button
-                                variant="text"
-                                size="small"
-                                onClick={() => setShowFilesDialog(true)}
-                            >
-                                {selectedFiles.length} dosya seçildi
-                            </Button>
-                        )}
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Button
-                            variant="contained"
-                            endIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
-                            type="submit"
-                            disabled={loading || (!newNote.trim() && selectedFiles.length === 0)}
-                        >
-                            Not Ekle
-                        </Button>
-                    </Box>
-                </Box>
+                {/* Files Dialog */}
+                <Dialog
+                    open={showFilesDialog}
+                    onClose={() => setShowFilesDialog(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Seçilen Dosyalar</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={1}>
+                            {selectedFiles.map((file, index) => (
+                                <FilePreview
+                                    key={index}
+                                    file={file}
+                                    onRemove={() => handleRemoveFile(file)}
+                                />
+                            ))}
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setShowFilesDialog(false)}>Kapat</Button>
+                    </DialogActions>
+                </Dialog>
             </CardContent>
-
-            {/* File Selection Dialog */}
-            <Dialog 
-                open={showFilesDialog} 
-                onClose={() => setShowFilesDialog(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Dosya Ekle</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mb: 2 }}>
-                        <Button
-                            component="label"
-                            variant="outlined"
-                            startIcon={<AttachmentIcon />}
-                            fullWidth
-                            sx={{ mt: 2 }}
-                        >
-                            Dosya Seç
-                            <input
-                                type="file"
-                                hidden
-                                multiple
-                                onChange={handleFileSelect}
-                                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
-                            />
-                        </Button>
-                    </Box>
-                    <Stack spacing={1}>
-                        {selectedFiles.map((file, index) => (
-                            <FilePreview
-                                key={index}
-                                file={file}
-                                onRemove={() => handleRemoveFile(file)}
-                            />
-                        ))}
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowFilesDialog(false)}>Kapat</Button>
-                </DialogActions>
-            </Dialog>
         </Card>
     );
 };

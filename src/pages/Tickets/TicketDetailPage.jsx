@@ -30,6 +30,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Snackbar,
+  Fade,
+  Slide,
 } from '@mui/material';
 import {
   Timeline,
@@ -112,6 +115,8 @@ function TicketDetailPage() {
     description: '',
   });
   const [groups, setGroups] = useState([]);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchTicket();
@@ -144,9 +149,19 @@ function TicketDetailPage() {
     navigate(`/tickets/${id}/solutions/create`, { state: { isClosing: true } });
   };
 
+  const handleAssignConfirmOpen = () => {
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignConfirmClose = () => {
+    setAssignDialogOpen(false);
+  };
+
   const handleAssignTicket = async () => {
     try {
       await assignTicket(id);
+      handleAssignConfirmClose();
+      setSuccessMessage('Çağrı başarıyla üzerinize atandı!');
       await fetchTicket(); // Refresh ticket data
     } catch (err) {
       console.error('Error assigning ticket:', err);
@@ -163,6 +178,10 @@ function TicketDetailPage() {
       'Cancelled': 100,
     };
     return statusMap[ticket?.status] || 0;
+  };
+
+  const getStatusColor = () => {
+    return statusColors[ticket?.status] || theme.palette.primary.main;
   };
 
   const handleTransferDialogOpen = () => {
@@ -255,7 +274,7 @@ function TicketDetailPage() {
                     variant="contained"
                     color="primary"
                     startIcon={<PersonIcon />}
-                    onClick={handleAssignTicket}
+                    onClick={handleAssignConfirmOpen}
                     sx={{ borderRadius: 2, textTransform: 'none' }}
                   >
                     Çağrıyı Üstlen
@@ -286,37 +305,105 @@ function TicketDetailPage() {
               </Stack>
             </Box>
 
-            {/* Status Progress Bar */}
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
-                <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  Durum İlerlemesi
-                </Typography>
-                <Chip
-                  label={ticket.status}
-                  sx={{
-                    bgcolor: `${statusColors[ticket.status]}15`,
-                    color: statusColors[ticket.status],
-                    fontWeight: 'medium',
-                    borderRadius: '8px',
-                    '& .MuiChip-label': { px: 2 },
+            {/* Enhanced Progress Bar */}
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                p: 3, 
+                mb: 3, 
+                borderRadius: 2,
+                background: `linear-gradient(45deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <Box sx={{ position: 'relative' }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 1,
+                    color: getStatusColor(),
+                    fontWeight: 'bold'
                   }}
-                />
+                >
+                  Çağrı Durumu
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ flex: 1, mr: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={getStatusProgress()}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: `${getStatusColor()}20`,
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 5,
+                          backgroundColor: getStatusColor(),
+                          backgroundImage: `linear-gradient(45deg, 
+                            rgba(255,255,255,0.15) 25%, 
+                            transparent 25%, 
+                            transparent 50%, 
+                            rgba(255,255,255,0.15) 50%, 
+                            rgba(255,255,255,0.15) 75%, 
+                            transparent 75%, 
+                            transparent)`,
+                          backgroundSize: '40px 40px',
+                          animation: 'progress-animation 2s linear infinite',
+                        },
+                        '@keyframes progress-animation': {
+                          '0%': {
+                            backgroundPosition: '40px 0',
+                          },
+                          '100%': {
+                            backgroundPosition: '0 0',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      minWidth: 35,
+                      color: getStatusColor(),
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {getStatusProgress()}%
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                  <Chip
+                    label="Yeni"
+                    size="small"
+                    sx={{
+                      bgcolor: getStatusProgress() >= 25 ? getStatusColor() : 'grey.300',
+                      color: getStatusProgress() >= 25 ? 'white' : 'text.secondary',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                  <Chip
+                    label="İşlemde"
+                    size="small"
+                    sx={{
+                      bgcolor: getStatusProgress() >= 50 ? getStatusColor() : 'grey.300',
+                      color: getStatusProgress() >= 50 ? 'white' : 'text.secondary',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                  <Chip
+                    label="Tamamlandı"
+                    size="small"
+                    sx={{
+                      bgcolor: getStatusProgress() >= 100 ? getStatusColor() : 'grey.300',
+                      color: getStatusProgress() >= 100 ? 'white' : 'text.secondary',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </Box>
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={getStatusProgress()}
-                sx={{
-                  height: 10,
-                  borderRadius: 5,
-                  bgcolor: 'grey.100',
-                  '& .MuiLinearProgress-bar': {
-                    bgcolor: statusColors[ticket.status],
-                    borderRadius: 5,
-                  },
-                }}
-              />
-            </Box>
+            </Paper>
 
             {/* Quick Info Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -438,7 +525,7 @@ function TicketDetailPage() {
             </TabPanel>
 
             <TabPanel value={activeTab} index={2}>
-              {ticket && <TicketNotes ticketId={ticket.id} />}
+              {ticket && <TicketNotes ticketId={ticket.id} ticket={ticket} />}
             </TabPanel>
 
             {ticket.attachmentPath && (
@@ -623,6 +710,73 @@ function TicketDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Assignment Confirmation Dialog */}
+      <Dialog
+        open={assignDialogOpen}
+        onClose={handleAssignConfirmClose}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          color: theme.palette.primary.main,
+          fontWeight: 'bold'
+        }}>
+          <AssignmentIcon />
+          Çağrı Üstlenme Onayı
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Bu çağrıyı üstlenmek istediğinizden emin misiniz?
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Çağrıyı üstlendiğinizde, çağrı sizin sorumluluğunuza atanacak ve durumu "İşlemde" olarak güncellenecektir.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button 
+            onClick={handleAssignConfirmClose}
+            variant="outlined"
+            color="inherit"
+          >
+            İptal
+          </Button>
+          <Button 
+            onClick={handleAssignTicket}
+            variant="contained"
+            color="primary"
+            startIcon={<AssignmentIcon />}
+          >
+            Evet, Üstlen
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={Boolean(successMessage)}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        TransitionComponent={Slide}
+      >
+        <Alert 
+          onClose={() => setSuccessMessage('')}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
