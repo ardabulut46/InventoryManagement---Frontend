@@ -57,6 +57,13 @@ const statusColors = {
     'Cancelled': 'error',
 };
 
+const statusTranslations = {
+    'New': 'Yeni',
+    'In Progress': 'Devam Eden',
+    'Completed': 'Tamamlanan',
+    'Cancelled': 'İptal Edilen'
+};
+
 const statusIcons = {
     'New': <NewIcon />,
     'In Progress': <WarningIcon />,
@@ -175,40 +182,112 @@ function MyTicketsPage() {
             </Box>
 
             {/* Stats Section */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        bgcolor: theme.palette.primary.light,
+                        boxShadow: `0 4px 20px ${theme.palette.primary.main}40`,
+                        height: '100%' 
+                    }}>
+                        <CardContent>
+                            <Typography variant="h6" sx={{ color: theme.palette.primary.contrastText, mb: 2 }}>
+                                Toplam Çağrı
+                            </Typography>
+                            <Typography variant="h3" sx={{ color: theme.palette.primary.contrastText }}>
+                                {tickets.length}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        bgcolor: theme.palette.warning.light,
+                        boxShadow: `0 4px 20px ${theme.palette.warning.main}40`,
+                        height: '100%'
+                    }}>
+                        <CardContent>
+                            <Typography variant="h6" sx={{ color: theme.palette.warning.contrastText, mb: 2 }}>
+                                Devam Eden
+                            </Typography>
+                            <Typography variant="h3" sx={{ color: theme.palette.warning.contrastText }}>
+                                {tickets.filter(t => t.status === 'In Progress').length}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        bgcolor: theme.palette.success.light,
+                        boxShadow: `0 4px 20px ${theme.palette.success.main}40`,
+                        height: '100%'
+                    }}>
+                        <CardContent>
+                            <Typography variant="h6" sx={{ color: theme.palette.success.contrastText, mb: 2 }}>
+                                Tamamlanan
+                            </Typography>
+                            <Typography variant="h3" sx={{ color: theme.palette.success.contrastText }}>
+                                {tickets.filter(t => t.status === 'Completed').length}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        bgcolor: theme.palette.error.light,
+                        boxShadow: `0 4px 20px ${theme.palette.error.main}40`,
+                        height: '100%'
+                    }}>
+                        <CardContent>
+                            <Typography variant="h6" sx={{ color: theme.palette.error.contrastText, mb: 2 }}>
+                                Kritik Öncelikli
+                            </Typography>
+                            <Typography variant="h3" sx={{ color: theme.palette.error.contrastText }}>
+                                {tickets.filter(t => t.priority === 1).length}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Status Filter Cards */}
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 {Object.entries(statusStats).map(([status, count]) => (
-                    <Grid item xs={6} sm={3} key={status}>
+                    <Grid item xs={12} sm={6} md={3} key={status}>
                         <Paper
                             elevation={0}
+                            onClick={() => setSelectedStatus(status)}
                             sx={{
                                 p: 2,
                                 borderRadius: 2,
-                                bgcolor: `${statusColors[status]}.50`,
+                                bgcolor: selectedStatus === status ? `${statusColors[status]}.50` : 'background.paper',
                                 border: 1,
-                                borderColor: `${statusColors[status]}.200`,
+                                borderColor: selectedStatus === status ? `${statusColors[status]}.main` : 'divider',
                                 cursor: 'pointer',
-                                transition: 'transform 0.2s',
+                                transition: 'all 0.2s',
                                 '&:hover': {
                                     transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                                 }
                             }}
-                            onClick={() => setSelectedStatus(status)}
                         >
                             <Stack direction="row" spacing={2} alignItems="center">
                                 <Avatar 
                                     sx={{ 
-                                        bgcolor: `${statusColors[status]}.main`,
-                                        boxShadow: `0 4px 12px ${theme.palette[statusColors[status]].main}40`
+                                        bgcolor: selectedStatus === status ? `${statusColors[status]}.main` : 'grey.200',
+                                        boxShadow: selectedStatus === status ? `0 4px 12px ${theme.palette[statusColors[status]].main}40` : 'none'
                                     }}
                                 >
                                     {statusIcons[status]}
                                 </Avatar>
                                 <Box>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: `${statusColors[status]}.main` }}>
-                                        {count}
+                                    <Typography variant="h6" sx={{ 
+                                        fontWeight: 'bold', 
+                                        color: selectedStatus === status ? `${statusColors[status]}.main` : 'text.primary'
+                                    }}>
+                                        {statusTranslations[status]}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        {status}
+                                        {count} adet
                                     </Typography>
                                 </Box>
                             </Stack>

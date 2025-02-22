@@ -64,7 +64,7 @@ function DepartmentTicketsPage() {
             setTickets(response.data);
             setError('');
         } catch (err) {
-            setError('Departman çağrıları yüklenirken bir hata oluştu.');
+            setError('Grup çağrıları yüklenirken bir hata oluştu.');
             console.error('Error fetching department tickets:', err);
         } finally {
             setLoading(false);
@@ -93,7 +93,7 @@ function DepartmentTicketsPage() {
                     <Stack spacing={2}>
                         <LinearProgress />
                         <Typography align="center" color="text.secondary">
-                            Departman çağrıları yükleniyor...
+                            Grup çağrıları yükleniyor...
                         </Typography>
                     </Stack>
                 </Paper>
@@ -113,7 +113,7 @@ function DepartmentTicketsPage() {
                         </Typography>
                     </Box>
                     <Typography variant="body1" color="text.secondary" gutterBottom>
-                        Departmanınıza atanmış tüm çağrıları buradan takip edebilirsiniz
+                        Grubunuza atanmış tüm çağrıları buradan takip edebilirsiniz
                     </Typography>
                 </Box>
 
@@ -147,7 +147,7 @@ function DepartmentTicketsPage() {
                         <Card sx={{ bgcolor: theme.palette.success.light }}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ color: theme.palette.success.contrastText }}>
-                                    Tamamlanan
+                                    Çözümlenen
                                 </Typography>
                                 <Typography variant="h3" sx={{ color: theme.palette.success.contrastText }}>
                                     {tickets.filter(t => t.status === 'Completed').length}

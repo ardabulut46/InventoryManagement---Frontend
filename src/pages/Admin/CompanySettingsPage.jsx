@@ -13,33 +13,24 @@ import {
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
-    Timer as TimerIcon,
-    Category as CategoryIcon,
-    Build as BuildIcon,
-    Schedule as ScheduleIcon,
-    Group as GroupIcon,
+    Business as BusinessIcon,
+    AccountTree as DepartmentIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 // Import your services
-import SolutionTimeService from '../../api/SolutionTimeService';
-import { getProblemTypes } from '../../api/ProblemTypeService';
-import SolutionTypeService from '../../api/SolutionTypeService';
-import { getAssignmentTimes } from '../../api/AssignmentTimeService';
-import { getGroups } from '../../api/GroupService';
+import { getCompanies } from '../../api/CompanyService';
+import { getDepartments } from '../../api/DepartmentService';
 
-function TicketSettingsPage() {
+function CompanySettingsPage() {
     const theme = useTheme();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     // States for different settings
-    const [solutionTimes, setSolutionTimes] = useState([]);
-    const [problemTypes, setProblemTypes] = useState([]);
-    const [solutionTypes, setSolutionTypes] = useState([]);
-    const [assignmentTimes, setAssignmentTimes] = useState([]);
-    const [groups, setGroups] = useState([]);
+    const [companies, setCompanies] = useState([]);
+    const [departments, setDepartments] = useState([]);
 
     useEffect(() => {
         fetchData();
@@ -48,25 +39,13 @@ function TicketSettingsPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [
-                solutionTimesRes,
-                problemTypesRes,
-                solutionTypesRes,
-                assignmentTimesRes,
-                groupsRes
-            ] = await Promise.all([
-                SolutionTimeService.getAllSolutionTimes(),
-                getProblemTypes(),
-                SolutionTypeService.getSolutionTypes(),
-                getAssignmentTimes(),
-                getGroups()
+            const [companiesRes, departmentsRes] = await Promise.all([
+                getCompanies(),
+                getDepartments()
             ]);
 
-            setSolutionTimes(solutionTimesRes.data);
-            setProblemTypes(problemTypesRes.data);
-            setSolutionTypes(solutionTypesRes.data);
-            setAssignmentTimes(assignmentTimesRes.data);
-            setGroups(groupsRes.data);
+            setCompanies(companiesRes.data);
+            setDepartments(departmentsRes.data);
             setError('');
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -78,44 +57,20 @@ function TicketSettingsPage() {
 
     const settingsCards = [
         {
-            title: 'Çözüm Süreleri',
-            description: 'Problem tiplerine göre çözüm sürelerini yönet',
-            icon: <TimerIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/ticket-settings/solution-times',
-            color: '#1976d2',
-            count: solutionTimes.length
-        },
-        {
-            title: 'Problem Tipleri',
-            description: 'Çağrı problem tiplerini yönet',
-            icon: <CategoryIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/ticket-settings/problem-types',
+            title: 'Şirket Yönetimi',
+            description: 'Şirketleri görüntüle, düzenle ve yönet',
+            icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/companies',
             color: '#2e7d32',
-            count: problemTypes.length
+            count: companies.length
         },
         {
-            title: 'Çözüm Tipleri',
-            description: 'Çağrı çözüm tiplerini yönet',
-            icon: <BuildIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/ticket-settings/solution-types',
-            color: '#ed6c02',
-            count: solutionTypes.length
-        },
-        {
-            title: 'Atama Süreleri',
-            description: 'Problem tiplerine göre atama sürelerini yönet',
-            icon: <ScheduleIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/ticket-settings/assignment-times',
+            title: 'Departman Yönetimi',
+            description: 'Departmanları görüntüle, düzenle ve yönet',
+            icon: <DepartmentIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/departments',
             color: '#9c27b0',
-            count: assignmentTimes.length
-        },
-        {
-            title: 'Grup Atama Ayarları',
-            description: 'Grup atamalarını görüntüle, düzenle ve yönet',
-            icon: <GroupIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/groups',
-            color: '#ed6c02',
-            count: groups.length
+            count: departments.length
         }
     ];
 
@@ -147,7 +102,7 @@ function TicketSettingsPage() {
                         color: 'transparent',
                     }}
                 >
-                    Çağrı Ayarları
+                    Şirket ve Konum Ayarları
                 </Typography>
 
                 <Grid container spacing={3}>
@@ -231,4 +186,4 @@ function TicketSettingsPage() {
     );
 }
 
-export default TicketSettingsPage; 
+export default CompanySettingsPage; 

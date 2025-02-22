@@ -441,25 +441,11 @@ function AdminPage() {
             color: '#1976d2'
         },
         {
-            title: 'Şirket Yönetimi',
-            description: 'Şirketleri görüntüle, düzenle ve yönet',
+            title: 'Şirket ve Konum Ayarları',
+            description: 'Şirket ve departman yönetimini yapılandır',
             icon: <BusinessIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/companies',
+            path: '/admin/company-settings',
             color: '#2e7d32'
-        },
-        {
-            title: 'Grup Yönetimi',
-            description: 'Grupları görüntüle, düzenle ve yönet',
-            icon: <GroupIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/groups',
-            color: '#ed6c02'
-        },
-        {
-            title: 'Departman Yönetimi',
-            description: 'Departmanları görüntüle, düzenle ve yönet',
-            icon: <DepartmentIcon sx={{ fontSize: 40 }} />,
-            path: '/admin/departments',
-            color: '#9c27b0'
         }
     ];
 

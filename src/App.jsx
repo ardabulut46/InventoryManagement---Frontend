@@ -42,6 +42,7 @@ import ProblemTypesPage from './pages/Admin/ProblemTypesPage'
 import SolutionTypesPage from './pages/Admin/SolutionTypesPage'
 import AssignmentTimesPage from './pages/Admin/AssignmentTimesPage'
 import MyTicketsPage from './pages/Tickets/MyTicketsPage'
+import CompanySettingsPage from './pages/Admin/CompanySettingsPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -129,6 +130,7 @@ function App() {
                             <Route path="/admin/users" element={<UsersPage />} />
                             <Route path="/admin/users/create" element={<CreateUserPage />} />
                             <Route path="/admin/users/edit/:id" element={<EditUserPage />} />
+                            <Route path="/admin/company-settings" element={<CompanySettingsPage />} />
                             <Route path="/admin/companies" element={<CompaniesPage />} />
                             <Route path="/admin/companies/create" element={<CreateCompanyPage />} />
                             <Route path="/admin/companies/edit/:id" element={<EditCompanyPage />} />
