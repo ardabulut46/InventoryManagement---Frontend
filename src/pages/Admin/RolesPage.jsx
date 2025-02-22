@@ -142,6 +142,7 @@ const RolesPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
+                    onClick={() => navigate('/admin/roles/create')}
                     sx={{
                         background: 'linear-gradient(45deg, #1976d2, #64b5f6)',
                         boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
