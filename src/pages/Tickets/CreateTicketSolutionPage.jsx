@@ -18,7 +18,9 @@ import {
     Spin,
     Tag,
     Tooltip,
-    Badge
+    Badge,
+    Checkbox,
+    Upload
 } from 'antd';
 import {
     CheckCircleOutlined,
@@ -31,10 +33,11 @@ import {
     UserOutlined,
     EnvironmentOutlined,
     FileTextOutlined,
-    TagOutlined
+    TagOutlined,
+    UploadOutlined
 } from '@ant-design/icons';
 import SolutionTypeService from '../../api/SolutionTypeService';
-import { createTicketSolution } from '../../api/TicketSolutionService';
+import { createTicketSolution, uploadSolutionAttachments } from '../../api/TicketSolutionService';
 import { getTicketById } from '../../api/TicketService';
 
 const { Title, Text, Paragraph } = Typography;
@@ -98,13 +101,20 @@ const CreateTicketSolutionPage = () => {
             content: (
                 <div>
                     <Paragraph>Bu işlem geri alınamaz.</Paragraph>
+                    {values.isChronicle && (
+                        <Paragraph style={{ color: '#1890ff' }}>
+                            <InfoCircleOutlined style={{ marginRight: 8 }} />
+                            Çağrıyı kronik olarak işaretlediniz.
+                        </Paragraph>
+                    )}
                     <Divider />
                     <Text strong>Çözüm Detayları:</Text>
                     <Paragraph style={{ marginTop: 8 }}>
                         <Text type="secondary">Başlık:</Text> {values.subject}
                     </Paragraph>
                     <Paragraph>
-                        <Text type="secondary">Çözüm Türü:</Text> {solutionTypes.find(t => t.id === values.solutionTypeId)?.name}
+                        <Text type="secondary">Çözüm Türü:</Text> {' '}
+                        {solutionTypes.find(t => t.id === values.solutionTypeId)?.name}
                     </Paragraph>
                 </div>
             ),
@@ -139,10 +149,19 @@ const CreateTicketSolutionPage = () => {
             const solutionData = {
                 ...values,
                 ticketId: parsedTicketId,
-                solutionTypeId: parseInt(values.solutionTypeId)
+                solutionTypeId: parseInt(values.solutionTypeId),
+                isChronicle: values.isChronicle || false
             };
             
-            await createTicketSolution(solutionData);
+            const response = await createTicketSolution(solutionData);
+            const newSolutionId = response.data.id;
+
+            // Upload attachments if any
+            if (values.attachments && values.attachments.length > 0) {
+                const files = values.attachments.map(file => file.originFileObj);
+                await uploadSolutionAttachments(newSolutionId, files);
+            }
+
             setCurrentStep(2);
             message.success({
                 content: 'Çağrı başarıyla kapatıldı.',
@@ -395,6 +414,38 @@ const CreateTicketSolutionPage = () => {
                                         minHeight: 120
                                     }}
                                 />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="isChronicle"
+                                valuePropName="checked"
+                            >
+                                <Checkbox>
+                                    Kronik Çözüm
+                                </Checkbox>
+                            </Form.Item>
+
+                            <Form.Item
+                                name="attachments"
+                                label="Dosya Ekleri"
+                                valuePropName="fileList"
+                                getValueFromEvent={(e) => {
+                                    if (Array.isArray(e)) {
+                                        return e;
+                                    }
+                                    return e?.fileList;
+                                }}
+                            >
+                                <Upload
+                                    multiple
+                                    beforeUpload={() => false}
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                                >
+                                    <Button icon={<UploadOutlined />}>Dosya Seç</Button>
+                                    <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
+                                        Birden fazla dosya seçebilirsiniz
+                                    </Typography.Text>
+                                </Upload>
                             </Form.Item>
 
                             <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>

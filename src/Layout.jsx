@@ -145,6 +145,7 @@ function Layout() {
             path: '/tickets',
             subItems: [
                 { text: 'Tüm Çağrılar', path: '/tickets' },
+                { text: 'Üzerimdeki Çağrılar', path: '/tickets/my-tickets' },
                 { text: 'Grubumun Çağrıları', path: '/tickets/department' },
                 { text: 'Benim Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
                 { text: 'Süresi Aşılan Çağrılar', path: '/tickets/idle-breach' },
@@ -364,7 +365,7 @@ function Layout() {
                                 letterSpacing: '0.5px'
                             }}
                         >
-                            Inventory System
+                            Hizmet Yönetim Sistemi
                         </Typography>
                     </Box>
                     <Divider sx={{ mx: 2, mb: 2 }} />

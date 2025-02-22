@@ -58,4 +58,8 @@ export const getMyAllTickets = () => {
     return httpClient.get(`${endpoint}/my-all-tickets`)
 }
 
+export const transferTicket = (ticketId, transferTicketDto) => {
+    return httpClient.post(`${endpoint}/${ticketId}/transfer`, transferTicketDto)
+}
+
 // Add more ticket-specific operations as needed

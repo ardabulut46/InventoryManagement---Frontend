@@ -41,6 +41,7 @@ import SolutionTimesPage from './pages/Admin/SolutionTimesPage'
 import ProblemTypesPage from './pages/Admin/ProblemTypesPage'
 import SolutionTypesPage from './pages/Admin/SolutionTypesPage'
 import AssignmentTimesPage from './pages/Admin/AssignmentTimesPage'
+import MyTicketsPage from './pages/Tickets/MyTicketsPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -115,6 +116,7 @@ function App() {
                             <Route path="/tickets/:id/solutions/create" element={<CreateTicketSolutionPage />} />
                             <Route path="/tickets/:id/solutions/edit/:solutionId" element={<EditTicketSolutionPage />} />
                             <Route path="/tickets/my-created-tickets" element={<MyCreatedTicketsPage />} />
+                            <Route path="/tickets/my-tickets" element={<MyTicketsPage />} />
                             <Route path="/tickets/idle-breach" element={<IdleBreachTicketsPage />} />
                             <Route path="/tickets/department" element={<DepartmentTicketsPage />} />
                             <Route path="/tickets/assigned" element={<AssignedTicketsPage />} />

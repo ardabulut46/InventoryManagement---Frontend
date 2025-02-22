@@ -21,6 +21,15 @@ import {
   Tabs,
   Tab,
   Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Timeline,
@@ -45,10 +54,12 @@ import {
   Business as BusinessIcon,
   Flag as FlagIcon,
   Description as DescriptionIcon,
+  SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
-import { getTicketById, assignTicket } from '../../api/TicketService';
+import { getTicketById, assignTicket, transferTicket } from '../../api/TicketService';
 import { API_URL } from '../../config';
 import { getCurrentUser } from '../../api/auth';
+import TicketNotes from '../../components/TicketNotes';
 
 const statusColors = {
   'New': '#2196f3',
@@ -94,10 +105,28 @@ function TicketDetailPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const currentUser = getCurrentUser();
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferData, setTransferData] = useState({
+    groupId: '',
+    subject: '',
+    description: '',
+  });
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
     fetchTicket();
+    fetchGroups();
   }, [id]);
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/Group`);
+      const data = await response.json();
+      setGroups(data);
+    } catch (err) {
+      console.error('Error fetching groups:', err);
+    }
+  };
 
   const fetchTicket = async () => {
     try {
@@ -134,6 +163,38 @@ function TicketDetailPage() {
       'Cancelled': 100,
     };
     return statusMap[ticket?.status] || 0;
+  };
+
+  const handleTransferDialogOpen = () => {
+    setTransferDialogOpen(true);
+  };
+
+  const handleTransferDialogClose = () => {
+    setTransferDialogOpen(false);
+    setTransferData({
+      groupId: '',
+      subject: '',
+      description: '',
+    });
+  };
+
+  const handleTransferDataChange = (e) => {
+    const { name, value } = e.target;
+    setTransferData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleTransferTicket = async () => {
+    try {
+      await transferTicket(id, transferData);
+      handleTransferDialogClose();
+      await fetchTicket();
+    } catch (err) {
+      console.error('Error transferring ticket:', err);
+      setError('Çağrı transfer edilirken bir hata oluştu.');
+    }
   };
 
   if (error) {
@@ -201,15 +262,26 @@ function TicketDetailPage() {
                   </Button>
                 )}
                 {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && isAssignedToCurrentUser && (
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<CheckCircleIcon />}
-                    onClick={handleCloseTicket}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
-                  >
-                    Çağrıyı Kapat
-                  </Button>
+                  <>
+                    <Button
+                      variant="contained"
+                      color="info"
+                      startIcon={<SwapHorizIcon />}
+                      onClick={handleTransferDialogOpen}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Çağrıyı Transfer Et
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<CheckCircleIcon />}
+                      onClick={handleCloseTicket}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Çağrıyı Kapat
+                    </Button>
+                  </>
                 )}
               </Stack>
             </Box>
@@ -302,6 +374,11 @@ function TicketDetailPage() {
                   label="Konum" 
                   iconPosition="start"
                 />
+                <Tab 
+                  icon={<InfoIcon />} 
+                  label="Notlar" 
+                  iconPosition="start"
+                />
                 {ticket.attachmentPath && (
                   <Tab 
                     icon={<AttachmentIcon />} 
@@ -360,8 +437,12 @@ function TicketDetailPage() {
               </Grid>
             </TabPanel>
 
+            <TabPanel value={activeTab} index={2}>
+              {ticket && <TicketNotes ticketId={ticket.id} />}
+            </TabPanel>
+
             {ticket.attachmentPath && (
-              <TabPanel value={activeTab} index={2}>
+              <TabPanel value={activeTab} index={3}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -489,6 +570,59 @@ function TicketDetailPage() {
           </Stack>
         </Grid>
       </Grid>
+
+      {/* Transfer Dialog */}
+      <Dialog open={transferDialogOpen} onClose={handleTransferDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Çağrıyı Transfer Et</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel id="group-select-label">Grup</InputLabel>
+              <Select
+                labelId="group-select-label"
+                id="group-select"
+                name="groupId"
+                value={transferData.groupId}
+                label="Grup"
+                onChange={handleTransferDataChange}
+              >
+                {groups.map((group) => (
+                  <MenuItem key={group.id} value={group.id}>
+                    {group.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Konu"
+              name="subject"
+              value={transferData.subject}
+              onChange={handleTransferDataChange}
+            />
+            <TextField
+              fullWidth
+              label="Açıklama"
+              name="description"
+              value={transferData.description}
+              onChange={handleTransferDataChange}
+              multiline
+              rows={4}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleTransferDialogClose}>İptal</Button>
+          <Button 
+            onClick={handleTransferTicket} 
+            variant="contained" 
+            color="primary"
+            disabled={!transferData.groupId || !transferData.subject || !transferData.description}
+          >
+            Transfer Et
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
