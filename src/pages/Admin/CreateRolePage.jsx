@@ -115,34 +115,50 @@ const CreateRolePage = () => {
         try {
             setInitialLoading(true);
             const response = await httpClient.get(`/api/Roles/${id}`);
-            const roleData = response.data;
+            
+            // The httpClient interceptor might convert the response to an array
+            // Get the first item if it's an array, otherwise use the response data directly
+            const roleData = Array.isArray(response.data) ? response.data[0] : response.data;
+            
+            // Debug log to see the structure
+            console.log('Role data from API:', roleData);
+            
+            if (!roleData) {
+                throw new Error('No role data found');
+            }
             
             // Update form data
             setFormData({
-                name: roleData.name,
-                description: roleData.description,
-                permissions: roleData.permissions
+                name: roleData.name || '',
+                description: roleData.description || '',
+                permissions: []
             });
             
             // Update selected permissions
             const updatedPermissions = { ...selectedPermissions };
             
             // Process permissions (handle both string and object formats)
-            roleData.permissions.forEach(permission => {
-                const permissionName = typeof permission === 'string' ? permission : permission.name;
-                if (!permissionName) return;
-                
-                const [resource] = permissionName.split(':');
-                
-                if (updatedPermissions[resource] && updatedPermissions[resource][permissionName] !== undefined) {
-                    updatedPermissions[resource][permissionName] = true;
-                }
-            });
+            if (roleData.permissions && Array.isArray(roleData.permissions)) {
+                console.log('Permissions array:', roleData.permissions);
+                roleData.permissions.forEach(permission => {
+                    const permissionName = typeof permission === 'string' ? permission : permission.name;
+                    if (!permissionName) return;
+                    
+                    const [resource] = permissionName.split(':');
+                    
+                    if (updatedPermissions[resource] && updatedPermissions[resource][permissionName] !== undefined) {
+                        updatedPermissions[resource][permissionName] = true;
+                    }
+                });
+            } else {
+                console.warn('No permissions array found in the response:', roleData);
+            }
             
             setSelectedPermissions(updatedPermissions);
             setError('');
         } catch (err) {
             console.error('Error fetching role:', err);
+            console.error('Error details:', err.response?.data || err.message);
             setError('Rol bilgileri yüklenirken bir hata oluştu.');
         } finally {
             setInitialLoading(false);
