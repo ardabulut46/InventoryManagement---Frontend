@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Container,
     Box,
@@ -21,6 +21,8 @@ import {
     Avatar,
     useTheme,
     Tooltip,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -37,57 +39,114 @@ import {
     Group as GroupIcon,
     Business as BusinessIcon,
     Inventory as InventoryIcon,
+    ConfirmationNumber as TicketIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import httpClient from '../../api/httpClient';
 
-// Mock data for demonstration
-const mockRoles = [
-    {
-        id: 1,
-        name: 'Sistem Yöneticisi',
-        description: 'Tam sistem erişimi olan yönetici rolü',
-        icon: <AdminIcon />,
-        color: '#1976d2',
-        userCount: 3,
-        permissions: ['Tam Erişim', 'Kullanıcı Yönetimi', 'Rol Yönetimi', 'Sistem Ayarları']
-    },
-    {
-        id: 2,
-        name: 'Teknisyen',
-        description: 'Teknik destek ve çağrı yönetimi rolü',
-        icon: <TechnicianIcon />,
-        color: '#2e7d32',
-        userCount: 8,
-        permissions: ['Çağrı Yönetimi', 'Envanter Görüntüleme', 'Rapor Oluşturma']
-    },
-    {
-        id: 3,
-        name: 'Departman Yöneticisi',
-        description: 'Departman seviyesinde yönetim rolü',
-        icon: <BusinessIcon />,
-        color: '#ed6c02',
-        userCount: 12,
-        permissions: ['Departman Yönetimi', 'Çağrı Atama', 'Rapor Görüntüleme']
-    },
-    {
-        id: 4,
-        name: 'Standart Kullanıcı',
-        description: 'Temel sistem kullanıcısı',
-        icon: <UserIcon />,
-        color: '#0288d1',
-        userCount: 45,
-        permissions: ['Çağrı Oluşturma', 'Kendi Çağrılarını Görüntüleme']
-    },
-];
+// Helper function to get icon based on role name
+const getRoleIcon = (roleName) => {
+    const name = roleName.toLowerCase();
+    if (name.includes('admin') || name.includes('yönetici')) {
+        return <AdminIcon />;
+    } else if (name.includes('teknisyen') || name.includes('teknik')) {
+        return <TechnicianIcon />;
+    } else if (name.includes('envanter')) {
+        return <InventoryIcon />;
+    } else if (name.includes('çağrı') || name.includes('ticket')) {
+        return <TicketIcon />;
+    } else if (name.includes('departman')) {
+        return <BusinessIcon />;
+    } else {
+        return <SecurityIcon />;
+    }
+};
+
+// Helper function to get color based on role name
+const getRoleColor = (roleName) => {
+    const name = roleName.toLowerCase();
+    if (name.includes('admin') || name.includes('yönetici')) {
+        return '#1976d2';
+    } else if (name.includes('teknisyen') || name.includes('teknik')) {
+        return '#2e7d32';
+    } else if (name.includes('envanter')) {
+        return '#ed6c02';
+    } else if (name.includes('çağrı') || name.includes('ticket')) {
+        return '#9c27b0';
+    } else if (name.includes('departman')) {
+        return '#0288d1';
+    } else {
+        return '#607d8b';
+    }
+};
+
+// Helper function to categorize permissions
+const categorizePermissions = (permissions) => {
+    const categories = {
+        'Inventory': [],
+        'Users': [],
+        'Tickets': [],
+        'Other': []
+    };
+
+    permissions.forEach(permission => {
+        // Check if permission is an object with a name property
+        const permissionName = typeof permission === 'string' ? permission : permission.name;
+        
+        if (!permissionName) return; // Skip if no valid permission name
+        
+        const [resource, action] = permissionName.split(':');
+        if (categories[resource]) {
+            categories[resource].push(permissionName);
+        } else {
+            categories.Other.push(permissionName);
+        }
+    });
+
+    return categories;
+};
 
 const RolesPage = () => {
     const theme = useTheme();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const [roles, setRoles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const filteredRoles = mockRoles.filter(role =>
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                setLoading(true);
+                const response = await httpClient.get('/api/Roles');
+                setRoles(response.data);
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching roles:', err);
+                setError('Roller yüklenirken bir hata oluştu.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRoles();
+    }, []);
+
+    const handleDeleteRole = async (id) => {
+        if (window.confirm('Bu rolü silmek istediğinizden emin misiniz?')) {
+            try {
+                await httpClient.delete(`/api/Roles/${id}`);
+                setRoles(roles.filter(role => role.id !== id));
+            } catch (err) {
+                console.error('Error deleting role:', err);
+                alert('Rol silinirken bir hata oluştu.');
+            }
+        }
+    };
+
+    const filteredRoles = roles.filter(role =>
         role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        role.description.toLowerCase().includes(searchTerm.toLowerCase())
+        role.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -156,87 +215,144 @@ const RolesPage = () => {
                 </Button>
             </Box>
 
-            {/* Roles Grid */}
-            <Grid container spacing={3}>
-                {filteredRoles.map((role) => (
-                    <Grid item xs={12} sm={6} md={6} key={role.id}>
-                        <Card
-                            sx={{
-                                height: '100%',
-                                transition: 'transform 0.2s, box-shadow 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                }
-                            }}
-                        >
-                            <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                                    <Avatar
+            {/* Error message */}
+            {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                </Alert>
+            )}
+
+            {/* Loading indicator */}
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                    <CircularProgress />
+                </Box>
+            ) : (
+                /* Roles Grid */
+                <Grid container spacing={3}>
+                    {filteredRoles.length === 0 ? (
+                        <Grid item xs={12}>
+                            <Alert severity="info">
+                                {searchTerm ? 'Arama kriterlerine uygun rol bulunamadı.' : 'Henüz hiç rol oluşturulmamış.'}
+                            </Alert>
+                        </Grid>
+                    ) : (
+                        filteredRoles.map((role) => {
+                            const roleColor = getRoleColor(role.name);
+                            const roleIcon = getRoleIcon(role.name);
+                            const permissionCategories = categorizePermissions(role.permissions);
+                            
+                            return (
+                                <Grid item xs={12} sm={6} md={6} key={role.id}>
+                                    <Card
                                         sx={{
-                                            bgcolor: `${role.color}15`,
-                                            color: role.color,
-                                            width: 56,
-                                            height: 56,
-                                            mr: 2
+                                            height: '100%',
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                            }
                                         }}
                                     >
-                                        {role.icon}
-                                    </Avatar>
-                                    <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: role.color }}>
-                                                {role.name}
-                                            </Typography>
-                                            <Box>
-                                                <Tooltip title="Düzenle">
-                                                    <IconButton size="small" sx={{ color: role.color }}>
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Sil">
-                                                    <IconButton size="small" color="error">
-                                                        <DeleteIcon />
-                                                    </IconButton>
-                                                </Tooltip>
+                                        <CardContent>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                                                <Avatar
+                                                    sx={{
+                                                        bgcolor: `${roleColor}15`,
+                                                        color: roleColor,
+                                                        width: 56,
+                                                        height: 56,
+                                                        mr: 2
+                                                    }}
+                                                >
+                                                    {roleIcon}
+                                                </Avatar>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: roleColor }}>
+                                                            {role.name}
+                                                        </Typography>
+                                                        <Box>
+                                                            <Tooltip title="Düzenle">
+                                                                <IconButton 
+                                                                    size="small" 
+                                                                    sx={{ color: roleColor }}
+                                                                    onClick={() => navigate(`/admin/roles/edit/${role.id}`)}
+                                                                >
+                                                                    <EditIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Sil">
+                                                                <IconButton 
+                                                                    size="small" 
+                                                                    color="error"
+                                                                    onClick={() => handleDeleteRole(role.id)}
+                                                                >
+                                                                    <DeleteIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Box>
+                                                    </Box>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                        {role.description}
+                                                    </Typography>
+                                                </Box>
                                             </Box>
-                                        </Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            {role.description}
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <GroupIcon sx={{ fontSize: 20, color: 'text.secondary', mr: 1 }} />
-                                            <Typography variant="body2" color="text.secondary">
-                                                {role.userCount} kullanıcı
+                                            <Divider sx={{ my: 2 }} />
+                                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                                                Yetkiler
                                             </Typography>
-                                        </Box>
-                                    </Box>
-                                </Box>
-                                <Divider sx={{ my: 2 }} />
-                                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-                                    Yetkiler
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {role.permissions.map((permission, index) => (
-                                        <Chip
-                                            key={index}
-                                            label={permission}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: `${role.color}15`,
-                                                color: role.color,
-                                                '&:hover': {
-                                                    bgcolor: `${role.color}25`,
-                                                }
-                                            }}
-                                        />
-                                    ))}
-                                </Box>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
+                                            {Object.entries(permissionCategories).map(([category, perms]) => 
+                                                perms.length > 0 && (
+                                                    <Box key={category} sx={{ mb: 2 }}>
+                                                        <Typography variant="caption" sx={{ fontWeight: 'bold', color: roleColor }}>
+                                                            {category === 'Inventory' ? 'Envanter' : 
+                                                             category === 'Users' ? 'Kullanıcılar' : 
+                                                             category === 'Tickets' ? 'Çağrılar' : 'Diğer'}
+                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+                                                            {perms.map((permission, index) => {
+                                                                // Get the permission name (handle both string and object formats)
+                                                                const permissionName = typeof permission === 'string' ? permission : permission.name;
+                                                                if (!permissionName) return null;
+                                                                
+                                                                const [resource, action] = permissionName.split(':');
+                                                                let actionText = action;
+                                                                
+                                                                // Translate action to Turkish
+                                                                if (action === 'View') actionText = 'Görüntüleme';
+                                                                else if (action === 'Create') actionText = 'Oluşturma';
+                                                                else if (action === 'Edit') actionText = 'Düzenleme';
+                                                                else if (action === 'Delete') actionText = 'Silme';
+                                                                else if (action === 'Assign') actionText = 'Atama';
+                                                                
+                                                                return (
+                                                                    <Chip
+                                                                        key={index}
+                                                                        label={actionText}
+                                                                        size="small"
+                                                                        sx={{
+                                                                            bgcolor: `${roleColor}15`,
+                                                                            color: roleColor,
+                                                                            '&:hover': {
+                                                                                bgcolor: `${roleColor}25`,
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                );
+                                                            })}
+                                                        </Box>
+                                                    </Box>
+                                                )
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            );
+                        })
+                    )}
+                </Grid>
+            )}
         </Container>
     );
 };

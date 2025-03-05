@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Container,
     Box,
@@ -21,6 +21,7 @@ import {
     Stack,
     useTheme,
     Alert,
+    CircularProgress,
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
@@ -29,35 +30,52 @@ import {
     Remove as RemoveIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import httpClient from '../../api/httpClient';
 
-// Mock permissions for demonstration
+// Define permissions based on backend constants
 const availablePermissions = {
-    'Kullanıcı Yönetimi': [
-        'Kullanıcı Oluşturma',
-        'Kullanıcı Düzenleme',
-        'Kullanıcı Silme',
-        'Kullanıcı Görüntüleme'
+    'Inventory': [
+        'Inventory:View',
+        'Inventory:Create',
+        'Inventory:Edit',
+        'Inventory:Delete'
     ],
-    'Çağrı Yönetimi': [
-        'Çağrı Oluşturma',
-        'Çağrı Düzenleme',
-        'Çağrı Silme',
-        'Çağrı Atama',
-        'Çağrı Çözümleme'
+    'Users': [
+        'Users:View',
+        'Users:Create',
+        'Users:Edit',
+        'Users:Delete'
     ],
-    'Envanter Yönetimi': [
-        'Envanter Oluşturma',
-        'Envanter Düzenleme',
-        'Envanter Silme',
-        'Envanter Görüntüleme',
-        'Envanter Atama'
-    ],
-    'Sistem Yönetimi': [
-        'Rol Yönetimi',
-        'Departman Yönetimi',
-        'Şirket Yönetimi',
-        'Sistem Ayarları'
+    'Tickets': [
+        'Tickets:View',
+        'Tickets:Create',
+        'Tickets:Edit',
+        'Tickets:Delete',
+        'Tickets:Assign'
     ]
+};
+
+// Helper function to get permission display name
+const getPermissionDisplayName = (permission) => {
+    const [resource, action] = permission.split(':');
+    
+    let actionText = action;
+    // Translate action to Turkish
+    if (action === 'View') actionText = 'Görüntüleme';
+    else if (action === 'Create') actionText = 'Oluşturma';
+    else if (action === 'Edit') actionText = 'Düzenleme';
+    else if (action === 'Delete') actionText = 'Silme';
+    else if (action === 'Assign') actionText = 'Atama';
+    
+    return actionText;
+};
+
+// Helper function to get category display name
+const getCategoryDisplayName = (category) => {
+    if (category === 'Inventory') return 'Envanter';
+    if (category === 'Users') return 'Kullanıcılar';
+    if (category === 'Tickets') return 'Çağrılar';
+    return category;
 };
 
 const CreateRolePage = () => {
@@ -66,13 +84,14 @@ const CreateRolePage = () => {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        color: '#1976d2',
-        permissions: {}
+        permissions: []
     });
+    const [selectedPermissions, setSelectedPermissions] = useState({});
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     // Initialize permissions structure
-    React.useEffect(() => {
+    useEffect(() => {
         const initialPermissions = {};
         Object.keys(availablePermissions).forEach(category => {
             initialPermissions[category] = {};
@@ -80,7 +99,7 @@ const CreateRolePage = () => {
                 initialPermissions[category][permission] = false;
             });
         });
-        setFormData(prev => ({ ...prev, permissions: initialPermissions }));
+        setSelectedPermissions(initialPermissions);
     }, []);
 
     const handleInputChange = (e) => {
@@ -92,28 +111,22 @@ const CreateRolePage = () => {
     };
 
     const handlePermissionChange = (category, permission) => {
-        setFormData(prev => ({
+        setSelectedPermissions(prev => ({
             ...prev,
-            permissions: {
-                ...prev.permissions,
-                [category]: {
-                    ...prev.permissions[category],
-                    [permission]: !prev.permissions[category][permission]
-                }
+            [category]: {
+                ...prev[category],
+                [permission]: !prev[category][permission]
             }
         }));
     };
 
     const handleCategorySelectAll = (category, value) => {
-        setFormData(prev => ({
+        setSelectedPermissions(prev => ({
             ...prev,
-            permissions: {
-                ...prev.permissions,
-                [category]: Object.keys(prev.permissions[category] || {}).reduce((acc, permission) => {
-                    acc[permission] = value;
-                    return acc;
-                }, {})
-            }
+            [category]: Object.keys(prev[category] || {}).reduce((acc, permission) => {
+                acc[permission] = value;
+                return acc;
+            }, {})
         }));
     };
 
@@ -126,19 +139,40 @@ const CreateRolePage = () => {
             return;
         }
 
-        // Here you would typically make an API call to create the role
-        console.log('Creating role:', formData);
-        
-        // Navigate back to roles page after successful creation
-        navigate('/admin/roles');
+        // Collect selected permissions
+        const selectedPermissionsList = [];
+        Object.entries(selectedPermissions).forEach(([category, permissions]) => {
+            Object.entries(permissions).forEach(([permission, isSelected]) => {
+                if (isSelected) {
+                    selectedPermissionsList.push(permission);
+                }
+            });
+        });
+
+        // Prepare data for API
+        const roleData = {
+            name: formData.name,
+            description: formData.description,
+            permissions: selectedPermissionsList
+        };
+
+        try {
+            setLoading(true);
+            await httpClient.post('/api/Roles', roleData);
+            navigate('/admin/roles');
+        } catch (err) {
+            console.error('Error creating role:', err);
+            setError('Rol oluşturulurken bir hata oluştu.');
+            setLoading(false);
+        }
     };
 
     const isCategorySelected = (category) => {
-        return formData.permissions[category] && Object.values(formData.permissions[category]).some(value => value);
+        return selectedPermissions[category] && Object.values(selectedPermissions[category]).some(value => value);
     };
 
     const isAllCategorySelected = (category) => {
-        return formData.permissions[category] && Object.values(formData.permissions[category]).every(value => value);
+        return selectedPermissions[category] && Object.values(selectedPermissions[category]).every(value => value);
     };
 
     return (
@@ -190,6 +224,7 @@ const CreateRolePage = () => {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     required
+                                    placeholder="Örn: Çağrı Yöneticisi"
                                 />
                                 <TextField
                                     fullWidth
@@ -199,20 +234,7 @@ const CreateRolePage = () => {
                                     onChange={handleInputChange}
                                     multiline
                                     rows={3}
-                                />
-                                <TextField
-                                    fullWidth
-                                    label="Renk"
-                                    name="color"
-                                    type="color"
-                                    value={formData.color}
-                                    onChange={handleInputChange}
-                                    sx={{
-                                        '& input': {
-                                            height: '50px',
-                                            padding: '0 10px'
-                                        }
-                                    }}
+                                    placeholder="Rolün görev ve yetkilerini açıklayın"
                                 />
                             </Stack>
                         </Grid>
@@ -226,8 +248,8 @@ const CreateRolePage = () => {
                                 {Object.entries(availablePermissions).map(([category, permissions]) => (
                                     <Box key={category}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <FormLabel component="legend" sx={{ flex: 1 }}>
-                                                {category}
+                                            <FormLabel component="legend" sx={{ flex: 1, fontWeight: 'bold' }}>
+                                                {getCategoryDisplayName(category)}
                                             </FormLabel>
                                             <Button
                                                 size="small"
@@ -244,11 +266,11 @@ const CreateRolePage = () => {
                                                         <FormControlLabel
                                                             control={
                                                                 <Checkbox
-                                                                    checked={formData.permissions[category]?.[permission] || false}
+                                                                    checked={selectedPermissions[category]?.[permission] || false}
                                                                     onChange={() => handlePermissionChange(category, permission)}
                                                                 />
                                                             }
-                                                            label={permission}
+                                                            label={getPermissionDisplayName(permission)}
                                                         />
                                                     </Grid>
                                                 ))}
@@ -267,13 +289,15 @@ const CreateRolePage = () => {
                         <Button
                             variant="outlined"
                             onClick={() => navigate('/admin/roles')}
+                            disabled={loading}
                         >
                             İptal
                         </Button>
                         <Button
                             variant="contained"
                             type="submit"
-                            startIcon={<SaveIcon />}
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                            disabled={loading}
                             sx={{
                                 background: 'linear-gradient(45deg, #1976d2, #64b5f6)',
                                 '&:hover': {
@@ -281,7 +305,7 @@ const CreateRolePage = () => {
                                 }
                             }}
                         >
-                            Rolü Oluştur
+                            {loading ? 'Oluşturuluyor...' : 'Rolü Oluştur'}
                         </Button>
                     </Box>
                 </form>
