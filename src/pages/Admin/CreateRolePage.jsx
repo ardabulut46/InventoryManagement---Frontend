@@ -29,7 +29,7 @@ import {
     Add as AddIcon,
     Remove as RemoveIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import httpClient from '../../api/httpClient';
 
 // Define permissions based on backend constants
@@ -81,6 +81,9 @@ const getCategoryDisplayName = (category) => {
 const CreateRolePage = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const { id } = useParams(); // Get the role ID from URL if editing
+    const isEditMode = !!id;
+    
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -89,6 +92,7 @@ const CreateRolePage = () => {
     const [selectedPermissions, setSelectedPermissions] = useState({});
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(isEditMode);
 
     // Initialize permissions structure
     useEffect(() => {
@@ -100,7 +104,50 @@ const CreateRolePage = () => {
             });
         });
         setSelectedPermissions(initialPermissions);
-    }, []);
+        
+        // If in edit mode, fetch the role data
+        if (isEditMode) {
+            fetchRoleData();
+        }
+    }, [id]);
+    
+    const fetchRoleData = async () => {
+        try {
+            setInitialLoading(true);
+            const response = await httpClient.get(`/api/Roles/${id}`);
+            const roleData = response.data;
+            
+            // Update form data
+            setFormData({
+                name: roleData.name,
+                description: roleData.description,
+                permissions: roleData.permissions
+            });
+            
+            // Update selected permissions
+            const updatedPermissions = { ...selectedPermissions };
+            
+            // Process permissions (handle both string and object formats)
+            roleData.permissions.forEach(permission => {
+                const permissionName = typeof permission === 'string' ? permission : permission.name;
+                if (!permissionName) return;
+                
+                const [resource] = permissionName.split(':');
+                
+                if (updatedPermissions[resource] && updatedPermissions[resource][permissionName] !== undefined) {
+                    updatedPermissions[resource][permissionName] = true;
+                }
+            });
+            
+            setSelectedPermissions(updatedPermissions);
+            setError('');
+        } catch (err) {
+            console.error('Error fetching role:', err);
+            setError('Rol bilgileri yüklenirken bir hata oluştu.');
+        } finally {
+            setInitialLoading(false);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -158,11 +205,19 @@ const CreateRolePage = () => {
 
         try {
             setLoading(true);
-            await httpClient.post('/api/Roles', roleData);
+            
+            if (isEditMode) {
+                // Update existing role
+                await httpClient.put(`/api/Roles/${id}`, roleData);
+            } else {
+                // Create new role
+                await httpClient.post('/api/Roles', roleData);
+            }
+            
             navigate('/admin/roles');
         } catch (err) {
-            console.error('Error creating role:', err);
-            setError('Rol oluşturulurken bir hata oluştu.');
+            console.error(`Error ${isEditMode ? 'updating' : 'creating'} role:`, err);
+            setError(`Rol ${isEditMode ? 'güncellenirken' : 'oluşturulurken'} bir hata oluştu.`);
             setLoading(false);
         }
     };
@@ -174,6 +229,16 @@ const CreateRolePage = () => {
     const isAllCategorySelected = (category) => {
         return selectedPermissions[category] && Object.values(selectedPermissions[category]).every(value => value);
     };
+
+    if (initialLoading) {
+        return (
+            <Container maxWidth="xl" sx={{ py: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                    <CircularProgress />
+                </Box>
+            </Container>
+        );
+    }
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -198,7 +263,7 @@ const CreateRolePage = () => {
                         mb: 3
                     }}
                 >
-                    Yeni Rol Oluştur
+                    {isEditMode ? 'Rolü Düzenle' : 'Yeni Rol Oluştur'}
                 </Typography>
             </Box>
 
@@ -305,7 +370,7 @@ const CreateRolePage = () => {
                                 }
                             }}
                         >
-                            {loading ? 'Oluşturuluyor...' : 'Rolü Oluştur'}
+                            {loading ? (isEditMode ? 'Güncelleniyor...' : 'Oluşturuluyor...') : (isEditMode ? 'Rolü Güncelle' : 'Rolü Oluştur')}
                         </Button>
                     </Box>
                 </form>

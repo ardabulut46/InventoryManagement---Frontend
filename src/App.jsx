@@ -131,6 +131,7 @@ function App() {
                             <Route path="/admin" element={<AdminPage />} />
                             <Route path="/admin/roles" element={<RolesPage />} />
                             <Route path="/admin/roles/create" element={<CreateRolePage />} />
+                            <Route path="/admin/roles/edit/:id" element={<CreateRolePage />} />
                             <Route path="/admin/users" element={<UsersPage />} />
                             <Route path="/admin/users/create" element={<CreateUserPage />} />
                             <Route path="/admin/users/edit/:id" element={<EditUserPage />} />

@@ -23,6 +23,8 @@ import {
     Tooltip,
     CircularProgress,
     Alert,
+    Collapse,
+    CardActionArea,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -40,6 +42,8 @@ import {
     Business as BusinessIcon,
     Inventory as InventoryIcon,
     ConfirmationNumber as TicketIcon,
+    ExpandMore as ExpandMoreIcon,
+    ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import httpClient from '../../api/httpClient';
@@ -113,6 +117,7 @@ const RolesPage = () => {
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [expandedRoleId, setExpandedRoleId] = useState(null);
 
     useEffect(() => {
         const fetchRoles = async () => {
@@ -132,7 +137,10 @@ const RolesPage = () => {
         fetchRoles();
     }, []);
 
-    const handleDeleteRole = async (id) => {
+    const handleDeleteRole = async (id, event) => {
+        // Prevent the card click event from triggering
+        event.stopPropagation();
+        
         if (window.confirm('Bu rolü silmek istediğinizden emin misiniz?')) {
             try {
                 await httpClient.delete(`/api/Roles/${id}`);
@@ -142,6 +150,16 @@ const RolesPage = () => {
                 alert('Rol silinirken bir hata oluştu.');
             }
         }
+    };
+
+    const handleEditRole = (id, event) => {
+        // Prevent the card click event from triggering
+        event.stopPropagation();
+        navigate(`/admin/roles/edit/${id}`);
+    };
+
+    const handleCardClick = (id) => {
+        setExpandedRoleId(expandedRoleId === id ? null : id);
     };
 
     const filteredRoles = roles.filter(role =>
@@ -241,6 +259,7 @@ const RolesPage = () => {
                             const roleColor = getRoleColor(role.name);
                             const roleIcon = getRoleIcon(role.name);
                             const permissionCategories = categorizePermissions(role.permissions);
+                            const isExpanded = expandedRoleId === role.id;
                             
                             return (
                                 <Grid item xs={12} sm={6} md={6} key={role.id}>
@@ -249,10 +268,11 @@ const RolesPage = () => {
                                             height: '100%',
                                             transition: 'transform 0.2s, box-shadow 0.2s',
                                             '&:hover': {
-                                                transform: 'translateY(-4px)',
                                                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                            }
+                                            },
+                                            cursor: 'pointer'
                                         }}
+                                        onClick={() => handleCardClick(role.id)}
                                     >
                                         <CardContent>
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
@@ -277,7 +297,7 @@ const RolesPage = () => {
                                                                 <IconButton 
                                                                     size="small" 
                                                                     sx={{ color: roleColor }}
-                                                                    onClick={() => navigate(`/admin/roles/edit/${role.id}`)}
+                                                                    onClick={(e) => handleEditRole(role.id, e)}
                                                                 >
                                                                     <EditIcon />
                                                                 </IconButton>
@@ -286,65 +306,77 @@ const RolesPage = () => {
                                                                 <IconButton 
                                                                     size="small" 
                                                                     color="error"
-                                                                    onClick={() => handleDeleteRole(role.id)}
+                                                                    onClick={(e) => handleDeleteRole(role.id, e)}
                                                                 >
                                                                     <DeleteIcon />
                                                                 </IconButton>
                                                             </Tooltip>
                                                         </Box>
                                                     </Box>
-                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                                         {role.description}
                                                     </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {isExpanded ? 'Yetkileri gizle' : 'Yetkileri göster'}
+                                                        </Typography>
+                                                        {isExpanded ? 
+                                                            <ExpandLessIcon fontSize="small" color="action" sx={{ ml: 0.5 }} /> : 
+                                                            <ExpandMoreIcon fontSize="small" color="action" sx={{ ml: 0.5 }} />
+                                                        }
+                                                    </Box>
                                                 </Box>
                                             </Box>
-                                            <Divider sx={{ my: 2 }} />
-                                            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-                                                Yetkiler
-                                            </Typography>
-                                            {Object.entries(permissionCategories).map(([category, perms]) => 
-                                                perms.length > 0 && (
-                                                    <Box key={category} sx={{ mb: 2 }}>
-                                                        <Typography variant="caption" sx={{ fontWeight: 'bold', color: roleColor }}>
-                                                            {category === 'Inventory' ? 'Envanter' : 
-                                                             category === 'Users' ? 'Kullanıcılar' : 
-                                                             category === 'Tickets' ? 'Çağrılar' : 'Diğer'}
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                                                            {perms.map((permission, index) => {
-                                                                // Get the permission name (handle both string and object formats)
-                                                                const permissionName = typeof permission === 'string' ? permission : permission.name;
-                                                                if (!permissionName) return null;
-                                                                
-                                                                const [resource, action] = permissionName.split(':');
-                                                                let actionText = action;
-                                                                
-                                                                // Translate action to Turkish
-                                                                if (action === 'View') actionText = 'Görüntüleme';
-                                                                else if (action === 'Create') actionText = 'Oluşturma';
-                                                                else if (action === 'Edit') actionText = 'Düzenleme';
-                                                                else if (action === 'Delete') actionText = 'Silme';
-                                                                else if (action === 'Assign') actionText = 'Atama';
-                                                                
-                                                                return (
-                                                                    <Chip
-                                                                        key={index}
-                                                                        label={actionText}
-                                                                        size="small"
-                                                                        sx={{
-                                                                            bgcolor: `${roleColor}15`,
-                                                                            color: roleColor,
-                                                                            '&:hover': {
-                                                                                bgcolor: `${roleColor}25`,
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                );
-                                                            })}
+                                            
+                                            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                                <Divider sx={{ my: 2 }} />
+                                                <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                                                    Yetkiler
+                                                </Typography>
+                                                {Object.entries(permissionCategories).map(([category, perms]) => 
+                                                    perms.length > 0 && (
+                                                        <Box key={category} sx={{ mb: 2 }}>
+                                                            <Typography variant="caption" sx={{ fontWeight: 'bold', color: roleColor }}>
+                                                                {category === 'Inventory' ? 'Envanter' : 
+                                                                category === 'Users' ? 'Kullanıcılar' : 
+                                                                category === 'Tickets' ? 'Çağrılar' : 'Diğer'}
+                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+                                                                {perms.map((permission, index) => {
+                                                                    // Get the permission name (handle both string and object formats)
+                                                                    const permissionName = typeof permission === 'string' ? permission : permission.name;
+                                                                    if (!permissionName) return null;
+                                                                    
+                                                                    const [resource, action] = permissionName.split(':');
+                                                                    let actionText = action;
+                                                                    
+                                                                    // Translate action to Turkish
+                                                                    if (action === 'View') actionText = 'Görüntüleme';
+                                                                    else if (action === 'Create') actionText = 'Oluşturma';
+                                                                    else if (action === 'Edit') actionText = 'Düzenleme';
+                                                                    else if (action === 'Delete') actionText = 'Silme';
+                                                                    else if (action === 'Assign') actionText = 'Atama';
+                                                                    
+                                                                    return (
+                                                                        <Chip
+                                                                            key={index}
+                                                                            label={actionText}
+                                                                            size="small"
+                                                                            sx={{
+                                                                                bgcolor: `${roleColor}15`,
+                                                                                color: roleColor,
+                                                                                '&:hover': {
+                                                                                    bgcolor: `${roleColor}25`,
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    );
+                                                                })}
+                                                            </Box>
                                                         </Box>
-                                                    </Box>
-                                                )
-                                            )}
+                                                    )
+                                                )}
+                                            </Collapse>
                                         </CardContent>
                                     </Card>
                                 </Grid>
