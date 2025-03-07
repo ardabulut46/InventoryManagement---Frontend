@@ -29,6 +29,9 @@ import {
     Tabs,
     Tab,
     alpha,
+    Card,
+    CardContent,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -41,10 +44,39 @@ import {
     Download as DownloadIcon,
     Upload as UploadIcon,
     FileDownload as FileDownloadIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
+    Warning as WarningIcon,
+    CheckCircle as CheckCircleIcon,
+    Error as ErrorIcon,
+    Info as InfoIcon,
+    Timeline as TimelineIcon,
+    Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { getInventories, deleteInventory, getAssignmentHistory, downloadInvoice, downloadExcelTemplate, importExcel } from '../../api/InventoryService';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { 
+    PieChart, 
+    Pie, 
+    Cell, 
+    ResponsiveContainer, 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    Tooltip as RechartsTooltip, 
+    Legend,
+    LineChart,
+    Line,
+    CartesianGrid,
+    AreaChart,
+    Area,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
+} from 'recharts';
 import { useTheme } from '@mui/material/styles';
 import { 
     getActiveWarrantyInventories,
@@ -94,7 +126,17 @@ const CURRENCY_MAP = {
     3: 'EUR'
 };
 
-const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'];
+// Turkish translation map for status values
+const statusTranslations = {
+    'Available': 'Müsait',
+    'In Use': 'Kullanımda',
+    'Under Maintenance': 'Bakımda',
+    'Retired': 'Emekli',
+    'Lost': 'Kayıp'
+};
+
+// Enhanced color palette for better visualization
+const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0', '#00bcd4', '#3f51b5', '#e91e63'];
 
 function InventoryStats({ inventories, warrantyData }) {
     const theme = useTheme();
@@ -102,16 +144,14 @@ function InventoryStats({ inventories, warrantyData }) {
 
     // Calculate status distribution
     const statusDistribution = inventories.reduce((acc, inv) => {
-        acc[inv.status] = (acc[inv.status] || 0) + 1;
+        const status = inv.status;
+        const translatedStatus = statusTranslations[status] || status;
+        acc[translatedStatus] = (acc[translatedStatus] || 0) + 1;
         return acc;
     }, {});
 
     const pieData = Object.entries(statusDistribution).map(([name, value]) => ({
-        name: name === 'Available' ? 'Müsait' :
-             name === 'In Use' ? 'Kullanımda' :
-             name === 'Under Maintenance' ? 'Bakımda' :
-             name === 'Retired' ? 'Emekli' :
-             name === 'Lost' ? 'Kayıp' : name,
+        name,
         value
     }));
 
@@ -130,6 +170,60 @@ function InventoryStats({ inventories, warrantyData }) {
             value
         }));
 
+    // Calculate brand distribution
+    const brandDistribution = inventories.reduce((acc, inv) => {
+        const brand = inv.brand || 'Belirtilmemiş';
+        acc[brand] = (acc[brand] || 0) + 1;
+        return acc;
+    }, {});
+
+    const brandData = Object.entries(brandDistribution)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value]) => ({
+            name,
+            value
+        }));
+
+    // Calculate inventory age distribution
+    const currentYear = new Date().getFullYear();
+    const ageDistribution = inventories.reduce((acc, inv) => {
+        if (!inv.purchaseDate) return acc;
+        
+        const purchaseYear = new Date(inv.purchaseDate).getFullYear();
+        const age = currentYear - purchaseYear;
+        
+        let ageGroup;
+        if (age < 1) ageGroup = '< 1 Yıl';
+        else if (age < 2) ageGroup = '1-2 Yıl';
+        else if (age < 3) ageGroup = '2-3 Yıl';
+        else if (age < 5) ageGroup = '3-5 Yıl';
+        else ageGroup = '5+ Yıl';
+        
+        acc[ageGroup] = (acc[ageGroup] || 0) + 1;
+        return acc;
+    }, {});
+
+    // Sort age groups in chronological order
+    const ageOrder = ['< 1 Yıl', '1-2 Yıl', '2-3 Yıl', '3-5 Yıl', '5+ Yıl'];
+    const ageData = ageOrder
+        .filter(group => ageDistribution[group])
+        .map(group => ({
+            name: group,
+            value: ageDistribution[group] || 0
+        }));
+
+    // Calculate warranty status percentages
+    const totalInventoriesWithWarranty = inventories.filter(inv => inv.warrantyEndDate).length;
+    const activeWarrantyPercentage = totalInventoriesWithWarranty ? 
+        ((warrantyData.active?.length || 0) / totalInventoriesWithWarranty * 100).toFixed(1) : 0;
+    const expiredWarrantyPercentage = totalInventoriesWithWarranty ? 
+        ((warrantyData.expired?.length || 0) / totalInventoriesWithWarranty * 100).toFixed(1) : 0;
+    const expiringMonthPercentage = totalInventoriesWithWarranty ? 
+        ((warrantyData.expiringInMonth?.length || 0) / totalInventoriesWithWarranty * 100).toFixed(1) : 0;
+    const expiringFifteenPercentage = totalInventoriesWithWarranty ? 
+        ((warrantyData.expiringInFifteenDays?.length || 0) / totalInventoriesWithWarranty * 100).toFixed(1) : 0;
+
     const handleWarrantyCardClick = (type) => {
         navigate('/inventories/warranty-status', { 
             state: { 
@@ -146,6 +240,28 @@ function InventoryStats({ inventories, warrantyData }) {
         });
     };
 
+    // Calculate total inventory value
+    const totalValue = inventories.reduce((sum, inv) => {
+        if (!inv.purchasePrice) return sum;
+        return sum + parseFloat(inv.purchasePrice);
+    }, 0);
+
+    // Calculate value by currency
+    const valueByCategory = inventories.reduce((acc, inv) => {
+        if (!inv.purchasePrice || !inv.purchaseCurrency) return acc;
+        
+        const currency = CURRENCY_MAP[inv.purchaseCurrency] || 'Diğer';
+        if (!acc[currency]) acc[currency] = 0;
+        acc[currency] += parseFloat(inv.purchasePrice);
+        
+        return acc;
+    }, {});
+
+    const currencyData = Object.entries(valueByCategory).map(([currency, value]) => ({
+        name: currency,
+        value: parseFloat(value.toFixed(2))
+    }));
+
     return (
         <Box sx={{ 
             mb: 4, 
@@ -156,9 +272,104 @@ function InventoryStats({ inventories, warrantyData }) {
                 ? '0 4px 24px rgba(0, 0, 0, 0.3)'
                 : '0 4px 24px rgba(0, 0, 0, 0.1)',
         }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Envanter Analizi</Typography>
+            <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: theme.palette.primary.main }}>
+                Envanter Analiz Paneli
+            </Typography>
+            
+            {/* Summary Cards */}
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        height: '100%', 
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s',
+                        '&:hover': { transform: 'translateY(-4px)' }
+                    }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">Toplam Envanter</Typography>
+                                <InfoIcon color="primary" />
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{inventories.length}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Sistemde kayıtlı tüm envanter sayısı
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        height: '100%', 
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s',
+                        '&:hover': { transform: 'translateY(-4px)' }
+                    }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">Kullanımda</Typography>
+                                <CheckCircleIcon color="success" />
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                                {statusDistribution['Kullanımda'] || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Aktif olarak kullanılan envanter sayısı
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        height: '100%', 
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s',
+                        '&:hover': { transform: 'translateY(-4px)' }
+                    }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">Bakımda</Typography>
+                                <WarningIcon color="warning" />
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                                {statusDistribution['Bakımda'] || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Bakım/onarım sürecindeki envanter sayısı
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ 
+                        height: '100%', 
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s',
+                        '&:hover': { transform: 'translateY(-4px)' }
+                    }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">Toplam Değer</Typography>
+                                <TimelineIcon color="info" />
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                                {totalValue.toLocaleString('tr-TR')} ₺
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Tüm envanterin toplam değeri
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
             
             {/* Warranty and Repair Stats */}
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: theme.palette.text.primary }}>
+                Garanti Durumu
+            </Typography>
+            
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
                     <Box sx={{ 
@@ -188,11 +399,29 @@ function InventoryStats({ inventories, warrantyData }) {
                                 border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
                             }}
                         >
-                            <Typography variant="subtitle2" color="success.main" sx={{ mb: 1, fontWeight: 600 }}>
-                                Garanti Süresi Devam Eden
-                            </Typography>
-                            <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600 }}>
+                                    Garanti Süresi Devam Eden
+                                </Typography>
+                                <CheckCircleIcon color="success" fontSize="small" />
+                            </Box>
+                            <Typography variant="h4" color="success.main" sx={{ fontWeight: 700, mb: 1 }}>
                                 {warrantyData.active?.length || 0}
+                            </Typography>
+                            <LinearProgress 
+                                variant="determinate" 
+                                value={parseFloat(activeWarrantyPercentage)} 
+                                sx={{ 
+                                    height: 8, 
+                                    borderRadius: 4,
+                                    bgcolor: alpha(theme.palette.success.main, 0.2),
+                                    '& .MuiLinearProgress-bar': {
+                                        bgcolor: theme.palette.success.main
+                                    }
+                                }} 
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Toplam garantili envanterın %{activeWarrantyPercentage}'i
                             </Typography>
                         </Paper>
 
@@ -207,11 +436,29 @@ function InventoryStats({ inventories, warrantyData }) {
                                 border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                             }}
                         >
-                            <Typography variant="subtitle2" color="error.main" sx={{ mb: 1, fontWeight: 600 }}>
-                                Garanti Süresi Biten
-                            </Typography>
-                            <Typography variant="h4" color="error.main" sx={{ fontWeight: 700 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="error.main" sx={{ fontWeight: 600 }}>
+                                    Garanti Süresi Biten
+                                </Typography>
+                                <ErrorIcon color="error" fontSize="small" />
+                            </Box>
+                            <Typography variant="h4" color="error.main" sx={{ fontWeight: 700, mb: 1 }}>
                                 {warrantyData.expired?.length || 0}
+                            </Typography>
+                            <LinearProgress 
+                                variant="determinate" 
+                                value={parseFloat(expiredWarrantyPercentage)} 
+                                sx={{ 
+                                    height: 8, 
+                                    borderRadius: 4,
+                                    bgcolor: alpha(theme.palette.error.main, 0.2),
+                                    '& .MuiLinearProgress-bar': {
+                                        bgcolor: theme.palette.error.main
+                                    }
+                                }} 
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Toplam garantili envanterın %{expiredWarrantyPercentage}'i
                             </Typography>
                         </Paper>
 
@@ -226,11 +473,29 @@ function InventoryStats({ inventories, warrantyData }) {
                                 border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
                             }}
                         >
-                            <Typography variant="subtitle2" color="warning.main" sx={{ mb: 1, fontWeight: 600 }}>
-                                1 Ay İçinde Sona Erecek
-                            </Typography>
-                            <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="warning.main" sx={{ fontWeight: 600 }}>
+                                    1 Ay İçinde Sona Erecek
+                                </Typography>
+                                <WarningIcon color="warning" fontSize="small" />
+                            </Box>
+                            <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700, mb: 1 }}>
                                 {warrantyData.expiringInMonth?.length || 0}
+                            </Typography>
+                            <LinearProgress 
+                                variant="determinate" 
+                                value={parseFloat(expiringMonthPercentage)} 
+                                sx={{ 
+                                    height: 8, 
+                                    borderRadius: 4,
+                                    bgcolor: alpha(theme.palette.warning.main, 0.2),
+                                    '& .MuiLinearProgress-bar': {
+                                        bgcolor: theme.palette.warning.main
+                                    }
+                                }} 
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Toplam garantili envanterın %{expiringMonthPercentage}'i
                             </Typography>
                         </Paper>
 
@@ -245,11 +510,29 @@ function InventoryStats({ inventories, warrantyData }) {
                                 border: `1px solid ${alpha(theme.palette.warning.dark, 0.2)}`,
                             }}
                         >
-                            <Typography variant="subtitle2" color="warning.dark" sx={{ mb: 1, fontWeight: 600 }}>
-                                15 Gün İçinde Sona Erecek
-                            </Typography>
-                            <Typography variant="h4" color="warning.dark" sx={{ fontWeight: 700 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="warning.dark" sx={{ fontWeight: 600 }}>
+                                    15 Gün İçinde Sona Erecek
+                                </Typography>
+                                <WarningIcon sx={{ color: theme.palette.warning.dark }} fontSize="small" />
+                            </Box>
+                            <Typography variant="h4" color="warning.dark" sx={{ fontWeight: 700, mb: 1 }}>
                                 {warrantyData.expiringInFifteenDays?.length || 0}
+                            </Typography>
+                            <LinearProgress 
+                                variant="determinate" 
+                                value={parseFloat(expiringFifteenPercentage)} 
+                                sx={{ 
+                                    height: 8, 
+                                    borderRadius: 4,
+                                    bgcolor: alpha(theme.palette.warning.dark, 0.2),
+                                    '& .MuiLinearProgress-bar': {
+                                        bgcolor: theme.palette.warning.dark
+                                    }
+                                }} 
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Toplam garantili envanterın %{expiringFifteenPercentage}'i
                             </Typography>
                         </Paper>
 
@@ -264,11 +547,18 @@ function InventoryStats({ inventories, warrantyData }) {
                                 border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
                             }}
                         >
-                            <Typography variant="subtitle2" color="info.main" sx={{ mb: 1, fontWeight: 600 }}>
-                                En Çok Tamir Gören
-                            </Typography>
-                            <Typography variant="h4" color="info.main" sx={{ fontWeight: 700 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="info.main" sx={{ fontWeight: 600 }}>
+                                    En Çok Tamir Gören
+                                </Typography>
+                                <TrendingUpIcon color="info" fontSize="small" />
+                            </Box>
+                            <Typography variant="h4" color="info.main" sx={{ fontWeight: 700, mb: 1 }}>
                                 {warrantyData.mostRepaired?.length || 0}
+                            </Typography>
+                            <Box sx={{ height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.info.main, 0.2) }} />
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Sık bakım gerektiren envanter sayısı
                             </Typography>
                         </Paper>
                     </Box>
@@ -276,49 +566,146 @@ function InventoryStats({ inventories, warrantyData }) {
             </Grid>
 
             {/* Charts */}
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: theme.palette.text.primary }}>
+                Envanter Dağılımı
+            </Typography>
+            
             <Grid container spacing={3}>
+                {/* Status and Warranty Distribution - Combined Chart */}
                 <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Durum Dağılımı</Typography>
-                    <Box sx={{ height: 300, width: '100%' }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                    data={pieData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} (%${(percent * 100).toFixed(0)})`}
+                    <Paper sx={{ p: 3, height: '100%', borderRadius: 2, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>Durum ve Garanti Analizi</Typography>
+                        <Box sx={{ height: 350, width: '100%' }}>
+                            <ResponsiveContainer>
+                                <BarChart
+                                    data={[
+                                        {
+                                            name: 'Kullanımda',
+                                            'Garantili': inventories.filter(inv => 
+                                                inv.status === 'InUse' && 
+                                                inv.warrantyEndDate && 
+                                                new Date(inv.warrantyEndDate) > new Date()
+                                            ).length,
+                                            'Garantisiz': inventories.filter(inv => 
+                                                inv.status === 'InUse' && 
+                                                (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
+                                            ).length,
+                                        },
+                                        {
+                                            name: 'Depoda',
+                                            'Garantili': inventories.filter(inv => 
+                                                inv.status === 'InStorage' && 
+                                                inv.warrantyEndDate && 
+                                                new Date(inv.warrantyEndDate) > new Date()
+                                            ).length,
+                                            'Garantisiz': inventories.filter(inv => 
+                                                inv.status === 'InStorage' && 
+                                                (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
+                                            ).length,
+                                        },
+                                        {
+                                            name: 'Bakımda',
+                                            'Garantili': inventories.filter(inv => 
+                                                inv.status === 'InMaintenance' && 
+                                                inv.warrantyEndDate && 
+                                                new Date(inv.warrantyEndDate) > new Date()
+                                            ).length,
+                                            'Garantisiz': inventories.filter(inv => 
+                                                inv.status === 'InMaintenance' && 
+                                                (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
+                                            ).length,
+                                        },
+                                        {
+                                            name: 'Arızalı',
+                                            'Garantili': inventories.filter(inv => 
+                                                inv.status === 'Broken' && 
+                                                inv.warrantyEndDate && 
+                                                new Date(inv.warrantyEndDate) > new Date()
+                                            ).length,
+                                            'Garantisiz': inventories.filter(inv => 
+                                                inv.status === 'Broken' && 
+                                                (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
+                                            ).length,
+                                        },
+                                    ]}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                 >
-                                    {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </Box>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <RechartsTooltip 
+                                        formatter={(value, name) => [
+                                            `${value} adet`, 
+                                            name === 'Garantili' ? 'Garantisi Devam Eden' : 'Garantisi Bitmiş/Yok'
+                                        ]} 
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="Garantili" stackId="a" fill={theme.palette.success.main} />
+                                    <Bar dataKey="Garantisiz" stackId="a" fill={theme.palette.error.main} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+                            Bu grafik, her durumdaki envanterlerin garanti durumunu gösterir. Yeşil alanlar garantisi devam eden, kırmızı alanlar garantisi bitmiş veya olmayan envanterleri temsil eder.
+                        </Typography>
+                    </Paper>
                 </Grid>
+                
+                {/* Value Distribution by Category/Type */}
                 <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>En Çok Envantere Sahip 5 Departman</Typography>
-                    <Box sx={{ height: 300, width: '100%' }}>
-                        <ResponsiveContainer>
-                            <BarChart data={barData}>
-                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="value" fill={theme.palette.primary.main}>
-                                    {barData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Box>
+                    <Paper sx={{ p: 3, height: '100%', borderRadius: 2, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>Kategori Bazlı Değer Dağılımı</Typography>
+                        <Box sx={{ height: 350, width: '100%' }}>
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={(() => {
+                                            // Group by type and calculate total value
+                                            const typeValueMap = inventories.reduce((acc, inv) => {
+                                                if (!inv.purchasePrice) return acc;
+                                                
+                                                const type = inv.type || 'Diğer';
+                                                if (!acc[type]) acc[type] = 0;
+                                                acc[type] += parseFloat(inv.purchasePrice);
+                                                return acc;
+                                            }, {});
+                                            
+                                            // Convert to array and sort by value
+                                            return Object.entries(typeValueMap)
+                                                .map(([name, value]) => ({ 
+                                                    name, 
+                                                    value: parseFloat(value.toFixed(2)),
+                                                    count: inventories.filter(inv => inv.type === name).length
+                                                }))
+                                                .sort((a, b) => b.value - a.value);
+                                        })()}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={120}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        label={({ name, percent }) => 
+                                            `${name} (%${(percent * 100).toFixed(1)})`
+                                        }
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip 
+                                        formatter={(value, name, props) => [
+                                            `${value.toLocaleString('tr-TR')} ₺ (${props.payload.count} adet)`, 
+                                            name
+                                        ]} 
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+                            Bu grafik, envanter tipine göre toplam değer dağılımını gösterir. Her dilim, o tipteki envanterlerin toplam değerini ve yüzdesini temsil eder.
+                        </Typography>
+                    </Paper>
                 </Grid>
             </Grid>
         </Box>
@@ -326,6 +713,7 @@ function InventoryStats({ inventories, warrantyData }) {
 }
 
 function InventoriesPage() {
+    const theme = useTheme();
     const [inventories, setInventories] = useState([]);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -564,7 +952,7 @@ function InventoriesPage() {
                             color: 'transparent',
                         }}
                     >
-                        Inventories
+                        Envanterler
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <Button
@@ -582,7 +970,7 @@ function InventoriesPage() {
                                 }
                             }}
                         >
-                            Columns
+                            Sütunlar
                         </Button>
                         <Button
                             variant="outlined"
@@ -593,7 +981,7 @@ function InventoriesPage() {
                                 textTransform: 'none',
                             }}
                         >
-                            Download Template
+                            Şablon İndir
                         </Button>
                         <Button
                             variant="outlined"
@@ -604,7 +992,25 @@ function InventoriesPage() {
                                 textTransform: 'none',
                             }}
                         >
-                            Import Excel
+                            Excel İçe Aktar
+                        </Button>
+                        <Button
+                            component={Link}
+                            to="/inventories/upload-invoice"
+                            variant="outlined"
+                            startIcon={<ReceiptIcon />}
+                            sx={{
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                borderColor: theme.palette.warning.main,
+                                color: theme.palette.warning.main,
+                                '&:hover': {
+                                    borderColor: theme.palette.warning.dark,
+                                    backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                                }
+                            }}
+                        >
+                            Fatura Yükle
                         </Button>
                         <input
                             type="file"
@@ -629,7 +1035,7 @@ function InventoriesPage() {
                                 }
                             }}
                         >
-                            Create New Inventory
+                            Yeni Envanter Oluştur
                         </Button>
                     </Box>
                 </Box>

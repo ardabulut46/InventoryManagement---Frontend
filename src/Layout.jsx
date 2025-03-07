@@ -137,6 +137,7 @@ function Layout() {
             path: '/inventories',
             subItems: [
                 { text: 'Tüm Envanterler', path: '/inventories' },
+                { text: 'Fatura Yükle', path: '/inventories/upload-invoice' },
             ]
         },
         { 
@@ -158,7 +159,7 @@ function Layout() {
             subItems: [
                 { text: 'Genel Ayarlar', path: '/admin' },
                 { text: 'Çağrı Ayarları', path: '/admin/ticket-settings' },
-                { text: 'Envanter Ayarları', path: '/admin?section=inventory' }
+                { text: 'Envanter Ayarları', path: '/admin/inventory-settings' }
             ]
         },
     ];

@@ -16,11 +16,34 @@ import {
   TableHead,
   TableRow,
   LinearProgress,
-  Stack
+  Stack,
+  IconButton,
+  Tooltip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Snackbar
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, Download as DownloadIcon, Edit as EditIcon } from '@mui/icons-material';
+import { 
+  ArrowBack as ArrowBackIcon, 
+  Download as DownloadIcon, 
+  Edit as EditIcon,
+  InsertDriveFile as FileIcon,
+  PictureAsPdf as PdfIcon,
+  Image as ImageIcon,
+  Description as DefaultFileIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import { getInventoryById, downloadInvoice, getAssignmentHistory } from '../../api/InventoryService';
+import { getInventoryById, downloadInvoice, getAssignmentHistory, downloadAttachment, deleteAttachment } from '../../api/InventoryService';
+import axios from 'axios';
 
 const statusColors = {
   'Müsait': 'success',
@@ -44,6 +67,12 @@ const InventoryDetailPage = () => {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +125,97 @@ const InventoryDetailPage = () => {
       console.error('Error downloading invoice:', error);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (attachmentId, fileName) => {
+    try {
+      setDownloadingAttachmentId(attachmentId);
+      const response = await downloadAttachment(inventory.id, attachmentId);
+      
+      let filename = fileName;
+      const disposition = response.headers['content-disposition'];
+      if (disposition && disposition.indexOf('filename=') !== -1) {
+        const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      const contentType = response.headers['content-type'];
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
+
+  const handleDeleteClick = (attachment) => {
+    setAttachmentToDelete(attachment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setAttachmentToDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!attachmentToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteAttachment(inventory.id, attachmentToDelete.id);
+      
+      // Update the inventory state to remove the deleted attachment
+      setInventory(prev => ({
+        ...prev,
+        attachments: prev.attachments.filter(a => a.id !== attachmentToDelete.id)
+      }));
+      
+      setSnackbarMessage('Ek başarıyla silindi.');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      setSnackbarMessage('Ek silinirken bir hata oluştu.');
+      setSnackbarOpen(true);
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setAttachmentToDelete(null);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  const getFileIcon = (contentType) => {
+    if (contentType.includes('pdf')) {
+      return <PdfIcon color="error" />;
+    } else if (contentType.includes('image')) {
+      return <ImageIcon color="primary" />;
+    } else {
+      return <DefaultFileIcon color="action" />;
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) {
+      return bytes + ' B';
+    } else if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(2) + ' KB';
+    } else {
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
   };
 
@@ -326,9 +446,9 @@ const InventoryDetailPage = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Assignment History */}
+        {/* Right Column: Assignment History and Attachments */}
         <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 3 }}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main, mb: 2 }}>
               Atama Geçmişi
             </Typography>
@@ -359,8 +479,118 @@ const InventoryDetailPage = () => {
               <Typography variant="body2" color="text.secondary">Atama geçmişi bulunamadı.</Typography>
             )}
           </Paper>
+
+          {/* Attachments Section */}
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.primary.main, mb: 2 }}>
+              Ekler
+            </Typography>
+            {inventory.attachments && inventory.attachments.length > 0 ? (
+              <List>
+                {inventory.attachments.map((attachment, index) => (
+                  <React.Fragment key={attachment.id}>
+                    {index > 0 && <Divider component="li" />}
+                    <ListItem
+                      secondaryAction={
+                        <Box sx={{ display: 'flex' }}>
+                          <Tooltip title="İndir">
+                            <IconButton 
+                              edge="end" 
+                              aria-label="download"
+                              onClick={() => handleDownloadAttachment(attachment.id, attachment.fileName)}
+                              disabled={downloadingAttachmentId === attachment.id}
+                              sx={{ mr: 1 }}
+                            >
+                              <DownloadIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Sil">
+                            <IconButton 
+                              edge="end" 
+                              aria-label="delete"
+                              onClick={() => handleDeleteClick(attachment)}
+                              color="error"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      }
+                    >
+                      <ListItemIcon>
+                        {getFileIcon(attachment.contentType)}
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={attachment.fileName} 
+                        secondary={
+                          <>
+                            <Typography variant="body2" component="span">
+                              {formatFileSize(attachment.fileSize)}
+                            </Typography>
+                            <Typography variant="body2" component="span" sx={{ ml: 2 }}>
+                              {new Date(attachment.uploadDate).toLocaleDateString()}
+                            </Typography>
+                            {attachment.description && (
+                              <Typography variant="body2" component="div" sx={{ mt: 0.5 }}>
+                                {attachment.description}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body2" color="text.secondary">Ek bulunamadı.</Typography>
+            )}
+          </Paper>
         </Grid>
       </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Eki silmek istediğinizden emin misiniz?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            {attachmentToDelete && (
+              <>
+                <strong>{attachmentToDelete.fileName}</strong> adlı eki silmek üzeresiniz. 
+                Bu işlem geri alınamaz. Devam etmek istiyor musunuz?
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary" disabled={isDeleting}>
+            İptal
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            autoFocus
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Siliniyor...' : 'Evet, Sil'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
     </Container>
   );
 };

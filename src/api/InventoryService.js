@@ -13,6 +13,15 @@ export const getInventoryById = (id) => {
 }
 
 export const createInventory = (createInventoryDto) => {
+    // Check if createInventoryDto is FormData (for file uploads)
+    if (createInventoryDto instanceof FormData) {
+        return httpClient.post(endpoint, createInventoryDto, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+    }
+    // Regular JSON submission (backward compatibility)
     return httpClient.post(endpoint, createInventoryDto)
 }
 
@@ -44,9 +53,24 @@ export const getAllAssignmentHistory = () => {
     return httpClient.get(`${endpoint}/all-assignment-history`)
 }
 
-export const uploadInvoice = (inventoryId, file) => {
+export const uploadInvoice = (inventoryId, files, description = '') => {
     const formData = new FormData()
-    formData.append('file', file)
+    
+    // Handle multiple files
+    if (Array.isArray(files)) {
+        files.forEach(file => {
+            formData.append('files', file)
+        })
+    } else {
+        // For backward compatibility
+        formData.append('files', files)
+    }
+    
+    // Add description if provided
+    if (description) {
+        formData.append('description', description)
+    }
+    
     return httpClient.post(`${endpoint}/${inventoryId}/upload-invoice`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -70,6 +94,28 @@ export const downloadInvoice = async (inventoryId) => {
         }
         throw error;
     }
+}
+
+export const downloadAttachment = async (inventoryId, attachmentId) => {
+    try {
+        const response = await axios.get(`${API_URL}${endpoint}/${inventoryId}/attachments/${attachmentId}/download`, {
+            responseType: 'blob',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Accept': '*/*'  // Accept any content type
+            }
+        });
+        return response;
+    } catch (error) {
+        if (error.response?.status === 404) {
+            throw new Error('Attachment not found');
+        }
+        throw error;
+    }
+}
+
+export const deleteAttachment = async (inventoryId, attachmentId) => {
+    return httpClient.delete(`${endpoint}/${inventoryId}/attachments/${attachmentId}`);
 }
 
 export const downloadExcelTemplate = async () => {

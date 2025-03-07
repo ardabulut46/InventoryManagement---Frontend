@@ -36,11 +36,11 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const STATUS_OPTIONS = [
-    'Available',
-    'In Use',
-    'Under Maintenance',
-    'Retired',
-    'Lost',
+    'Müsait',
+    'Kullanımda',
+    'Bakımda',
+    'Emekli',
+    'Kayıp',
 ];
 
 function EditInventoryPage() {
@@ -55,7 +55,7 @@ function EditInventoryPage() {
         brand: '',
         model: '',
         location: '',
-        status: 'Available',
+        status: 'Müsait',
         room: '',
         floor: '',
         block: '',
@@ -78,8 +78,6 @@ function EditInventoryPage() {
     const [submitError, setSubmitError] = useState('');
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [assignmentNotes, setAssignmentNotes] = useState('');
-    const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-    const [returnNotes, setReturnNotes] = useState('');
     const [invoiceFile, setInvoiceFile] = useState(null);
 
     useEffect(() => {
@@ -107,7 +105,7 @@ function EditInventoryPage() {
             }
         } catch (err) {
             console.error('Error loading inventory', err);
-            setSubmitError('Failed to load inventory details');
+            setSubmitError('Envanter detayları yüklenirken hata oluştu');
         }
     };
 
@@ -214,26 +212,10 @@ function EditInventoryPage() {
         }
     };
 
-    const handleReturnInventory = async () => {
-        try {
-            const dto = {
-                ...formData,
-                assignedUserId: null,
-                notes: returnNotes
-            }
-            await updateInventory(id, dto)
-            setReturnDialogOpen(false)
-            navigate('/inventories')
-        } catch (err) {
-            console.error('Error returning inventory:', err)
-            setSubmitError('Failed to return inventory. Please try again.')
-        }
-    }
-
     return (
         <Box component={Paper} sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom>
-                Edit Inventory Item
+                Envanter Düzenle
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
@@ -247,20 +229,12 @@ function EditInventoryPage() {
             {currentUser && (
                 <Box sx={{ mb: 3 }}>
                     <Typography variant="h6" gutterBottom>
-                        Current Assignment
+                        Mevcut Atama
                     </Typography>
                     <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
                         <Typography>
-                            Currently assigned to: <strong>{currentUser.email}</strong>
+                            Şu anda atanan kullanıcı: <strong>{currentUser.email}</strong>
                         </Typography>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => setReturnDialogOpen(true)}
-                            sx={{ mt: 1 }}
-                        >
-                            Return Inventory
-                        </Button>
                     </Paper>
                 </Box>
             )}
@@ -269,12 +243,12 @@ function EditInventoryPage() {
                 <Grid container spacing={3}>
                     {/* Basic Information */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Basic Information</Typography>
+                        <Typography variant="h6" gutterBottom>Temel Bilgiler</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={4}>
                                 <TextField
                                     fullWidth
-                                    label="Barcode"
+                                    label="Barkod"
                                     name="barcode"
                                     value={formData.barcode}
                                     onChange={handleChange}
@@ -286,7 +260,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={6} md={4}>
                                 <TextField
                                     fullWidth
-                                    label="Serial Number"
+                                    label="Seri Numarası"
                                     name="serialNumber"
                                     value={formData.serialNumber}
                                     onChange={handleChange}
@@ -299,7 +273,7 @@ function EditInventoryPage() {
                                 <TextField
                                     fullWidth
                                     select
-                                    label="Status"
+                                    label="Durum"
                                     name="status"
                                     value={formData.status}
                                     onChange={handleChange}
@@ -316,12 +290,12 @@ function EditInventoryPage() {
 
                     {/* Product Details */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Product Details</Typography>
+                        <Typography variant="h6" gutterBottom>Ürün Detayları</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
-                                    label="Family"
+                                    label="Aile"
                                     name="family"
                                     value={formData.family}
                                     onChange={handleChange}
@@ -333,7 +307,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
-                                    label="Type"
+                                    label="Tip"
                                     name="type"
                                     value={formData.type}
                                     onChange={handleChange}
@@ -345,7 +319,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
-                                    label="Brand"
+                                    label="Marka"
                                     name="brand"
                                     value={formData.brand}
                                     onChange={handleChange}
@@ -371,12 +345,12 @@ function EditInventoryPage() {
 
                     {/* Location Information */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Location Information</Typography>
+                        <Typography variant="h6" gutterBottom>Konum Bilgileri</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
-                                    label="Location"
+                                    label="Konum"
                                     name="location"
                                     value={formData.location}
                                     onChange={handleChange}
@@ -385,7 +359,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
-                                    label="Department"
+                                    label="Departman"
                                     name="department"
                                     value={formData.department}
                                     onChange={handleChange}
@@ -394,7 +368,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={4}>
                                 <TextField
                                     fullWidth
-                                    label="Room"
+                                    label="Oda"
                                     name="room"
                                     value={formData.room}
                                     onChange={handleChange}
@@ -403,7 +377,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={4}>
                                 <TextField
                                     fullWidth
-                                    label="Floor"
+                                    label="Kat"
                                     name="floor"
                                     value={formData.floor}
                                     onChange={handleChange}
@@ -412,7 +386,7 @@ function EditInventoryPage() {
                             <Grid item xs={12} sm={4}>
                                 <TextField
                                     fullWidth
-                                    label="Block"
+                                    label="Blok"
                                     name="block"
                                     value={formData.block}
                                     onChange={handleChange}
@@ -423,13 +397,13 @@ function EditInventoryPage() {
 
                     {/* Warranty Information */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Warranty Information</Typography>
+                        <Typography variant="h6" gutterBottom>Garanti Bilgileri</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
                                     type="date"
-                                    label="Warranty Start Date"
+                                    label="Garanti Başlangıç Tarihi"
                                     name="warrantyStartDate"
                                     value={formData.warrantyStartDate}
                                     onChange={handleChange}
@@ -440,7 +414,7 @@ function EditInventoryPage() {
                                 <TextField
                                     fullWidth
                                     type="date"
-                                    label="Warranty End Date"
+                                    label="Garanti Bitiş Tarihi"
                                     name="warrantyEndDate"
                                     value={formData.warrantyEndDate}
                                     onChange={handleChange}
@@ -450,7 +424,7 @@ function EditInventoryPage() {
                             <Grid item xs={12}>
                                 <TextField
                                     fullWidth
-                                    label="Supplier"
+                                    label="Tedarikçi"
                                     name="supplier"
                                     value={formData.supplier}
                                     onChange={handleChange}
@@ -460,7 +434,7 @@ function EditInventoryPage() {
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     {formData.invoiceAttachmentPath && (
                                         <Typography variant="body2" color="text.secondary">
-                                            Current invoice: {formData.invoiceAttachmentPath}
+                                            Mevcut fatura: {formData.invoiceAttachmentPath}
                                         </Typography>
                                     )}
                                     <Button
@@ -469,7 +443,7 @@ function EditInventoryPage() {
                                         startIcon={<CloudUploadIcon />}
                                         sx={{ mt: 1, width: 'fit-content' }}
                                     >
-                                        {formData.invoiceAttachmentPath ? 'Change Invoice' : 'Upload Invoice'}
+                                        {formData.invoiceAttachmentPath ? 'Faturayı Değiştir' : 'Fatura Yükle'}
                                         <input
                                             type="file"
                                             hidden
@@ -479,7 +453,7 @@ function EditInventoryPage() {
                                     </Button>
                                     {invoiceFile && (
                                         <Typography variant="body2" sx={{ mt: 1, color: 'success.main' }}>
-                                            Selected file: {invoiceFile.name}
+                                            Seçilen dosya: {invoiceFile.name}
                                         </Typography>
                                     )}
                                 </Box>
@@ -489,7 +463,7 @@ function EditInventoryPage() {
 
                     {/* Assignment */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Assignment</Typography>
+                        <Typography variant="h6" gutterBottom>Atama</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                                 <Autocomplete
@@ -500,7 +474,7 @@ function EditInventoryPage() {
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Assigned User"
+                                            label="Atanan Kullanıcı"
                                             variant="outlined"
                                         />
                                     )}
@@ -515,7 +489,7 @@ function EditInventoryPage() {
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Support Company"
+                                            label="Destek Şirketi"
                                             variant="outlined"
                                         />
                                     )}
@@ -532,13 +506,13 @@ function EditInventoryPage() {
                                 variant="contained"
                                 color="primary"
                             >
-                                Update Inventory Item
+                                Envanteri Güncelle
                             </Button>
                             <Button 
                                 variant="outlined" 
                                 onClick={() => navigate('/inventories')}
                             >
-                                Cancel
+                                İptal
                             </Button>
                         </Box>
                     </Grid>
@@ -547,49 +521,25 @@ function EditInventoryPage() {
 
             {/* User Assignment Dialog */}
             <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)}>
-                <DialogTitle>User Assignment</DialogTitle>
+                <DialogTitle>Kullanıcı Ataması</DialogTitle>
                 <DialogContent>
                     <Typography gutterBottom>
-                        You are about to assign this item to: <strong>{selectedUser?.email}</strong>
+                        Bu öğeyi şu kullanıcıya atamak üzeresiniz: <strong>{selectedUser?.email}</strong>
                     </Typography>
                     <TextField
                         fullWidth
                         multiline
                         rows={3}
-                        label="Assignment Notes"
+                        label="Atama Notları"
                         value={assignmentNotes}
                         onChange={(e) => setAssignmentNotes(e.target.value)}
                         sx={{ mt: 2 }}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={() => setAssignDialogOpen(false)}>İptal</Button>
                     <Button onClick={handleAssignUser} color="primary" variant="contained">
-                        Confirm Assignment
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Return Dialog */}
-            <Dialog open={returnDialogOpen} onClose={() => setReturnDialogOpen(false)}>
-                <DialogTitle>Return Inventory</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Return Notes"
-                        type="text"
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={returnNotes}
-                        onChange={(e) => setReturnNotes(e.target.value)}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleReturnInventory} variant="contained" color="primary">
-                        Return
+                        Atamayı Onayla
                     </Button>
                 </DialogActions>
             </Dialog>

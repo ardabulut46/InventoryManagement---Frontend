@@ -45,6 +45,11 @@ import MyTicketsPage from './pages/Tickets/MyTicketsPage'
 import CompanySettingsPage from './pages/Admin/CompanySettingsPage'
 import RolesPage from './pages/Admin/RolesPage'
 import CreateRolePage from './pages/Admin/CreateRolePage'
+import InventorySettingsPage from './pages/Admin/InventorySettingsPage'
+import FamiliesPage from './pages/Admin/FamiliesPage'
+import InventoryTypesPage from './pages/Admin/InventoryTypesPage'
+import BrandsPage from './pages/Admin/BrandsPage'
+import ModelsPage from './pages/Admin/ModelsPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -146,6 +151,11 @@ function App() {
                             <Route path="/admin/ticket-settings/problem-types" element={<ProblemTypesPage />} />
                             <Route path="/admin/ticket-settings/solution-types" element={<SolutionTypesPage />} />
                             <Route path="/admin/ticket-settings/assignment-times" element={<AssignmentTimesPage />} />
+                            <Route path="/admin/inventory-settings" element={<InventorySettingsPage />} />
+                            <Route path="/admin/inventory-settings/families" element={<FamiliesPage />} />
+                            <Route path="/admin/inventory-settings/types" element={<InventoryTypesPage />} />
+                            <Route path="/admin/inventory-settings/brands" element={<BrandsPage />} />
+                            <Route path="/admin/inventory-settings/models" element={<ModelsPage />} />
                         </Route>
 
                         {/* Catch all other routes and redirect to login if not authenticated */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Container,
     Box,
@@ -137,9 +137,32 @@ const RolesPage = () => {
         fetchRoles();
     }, []);
 
+    // Memoize the handleCardClick function to prevent unnecessary re-renders
+    const handleCardClick = useCallback((roleId) => {
+        // Toggle: if this card is already expanded, collapse it, otherwise expand it
+        setExpandedRoleId(prevId => {
+            const newId = String(prevId) === String(roleId) ? null : String(roleId);
+            
+            // Add a small delay to allow the collapse animation to complete
+            if (newId) {
+                // Scroll the expanded card into view for better UX
+                setTimeout(() => {
+                    const element = document.getElementById(`role-card-${roleId}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            }
+            
+            return newId;
+        });
+    }, []);
+
     const handleDeleteRole = async (id, event) => {
         // Prevent the card click event from triggering
-        event.stopPropagation();
+        if (event) {
+            event.stopPropagation();
+        }
         
         if (window.confirm('Bu rolü silmek istediğinizden emin misiniz?')) {
             try {
@@ -154,12 +177,10 @@ const RolesPage = () => {
 
     const handleEditRole = (id, event) => {
         // Prevent the card click event from triggering
-        event.stopPropagation();
+        if (event) {
+            event.stopPropagation();
+        }
         navigate(`/admin/roles/edit/${id}`);
-    };
-
-    const handleCardClick = (id) => {
-        setExpandedRoleId(expandedRoleId === id ? null : id);
     };
 
     const filteredRoles = roles.filter(role =>
@@ -247,7 +268,7 @@ const RolesPage = () => {
                 </Box>
             ) : (
                 /* Roles Grid */
-                <Grid container spacing={3}>
+                <Grid container spacing={3} alignItems="flex-start">
                     {filteredRoles.length === 0 ? (
                         <Grid item xs={12}>
                             <Alert severity="info">
@@ -259,22 +280,40 @@ const RolesPage = () => {
                             const roleColor = getRoleColor(role.name);
                             const roleIcon = getRoleIcon(role.name);
                             const permissionCategories = categorizePermissions(role.permissions);
-                            const isExpanded = expandedRoleId === role.id;
+                            
+                            // Use strict string comparison for reliable equality check
+                            const isExpanded = String(expandedRoleId) === String(role.id);
                             
                             return (
-                                <Grid item xs={12} sm={6} md={6} key={role.id}>
+                                <Grid item xs={12} sm={6} md={6} key={role.id} sx={{ display: 'flex' }}>
                                     <Card
+                                        id={`role-card-${role.id}`}
                                         sx={{
-                                            height: '100%',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            width: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: isExpanded ? '0 8px 32px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.08)',
                                             '&:hover': {
                                                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                                             },
-                                            cursor: 'pointer'
+                                            cursor: 'pointer',
+                                            borderLeft: isExpanded ? `4px solid ${roleColor}` : 'none',
                                         }}
-                                        onClick={() => handleCardClick(role.id)}
                                     >
-                                        <CardContent>
+                                        <CardContent 
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleCardClick(role.id);
+                                            }}
+                                            sx={{ 
+                                                flex: '1 0 auto',
+                                                padding: 3,
+                                                display: 'flex',
+                                                flexDirection: 'column'
+                                            }}
+                                        >
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                 <Avatar
                                                     sx={{
@@ -314,7 +353,7 @@ const RolesPage = () => {
                                                         </Box>
                                                     </Box>
                                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                                        {role.description}
+                                                        {role.description || 'Bu rol için açıklama bulunmuyor.'}
                                                     </Typography>
                                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                         <Typography variant="caption" color="text.secondary">
@@ -328,7 +367,7 @@ const RolesPage = () => {
                                                 </Box>
                                             </Box>
                                             
-                                            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                            <Collapse in={isExpanded} timeout="auto" unmountOnExit sx={{ width: '100%' }}>
                                                 <Divider sx={{ my: 2 }} />
                                                 <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
                                                     Yetkiler

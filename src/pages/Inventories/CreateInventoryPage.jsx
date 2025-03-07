@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { createInventory } from '../../api/InventoryService'
 import { getUsers } from '../../api/UserService'
 import { getCompanies } from '../../api/CompanyService'
+import FamilyService from '../../api/FamilyService'
+import InventoryTypeService from '../../api/InventoryTypeService'
+import BrandService from '../../api/BrandService'
+import ModelService from '../../api/ModelService'
 import {
     Typography,
     TextField,
@@ -18,10 +22,18 @@ import {
     Tooltip,
     useTheme,
     Divider,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    ListItemSecondaryAction,
 } from '@mui/material'
 import {
     ArrowBack as ArrowBackIcon,
     Help as HelpIcon,
+    AttachFile as AttachFileIcon,
+    Delete as DeleteIcon,
+    Description as DescriptionIcon,
 } from '@mui/icons-material'
 
 const STATUS_OPTIONS = [
@@ -45,12 +57,12 @@ function CreateInventoryPage() {
     const [formData, setFormData] = useState({
         barcode: '',
         serialNumber: '',
-        family: '',
-        type: '',
-        brand: '',
-        model: '',
+        familyId: null,
+        typeId: null,
+        brandId: null,
+        modelId: null,
         location: '',
-        status: 'Available',
+        status: 'Kullanılabilir',
         room: '',
         floor: '',
         block: '',
@@ -63,20 +75,42 @@ function CreateInventoryPage() {
         supplier: '',
         assignedUserId: null,
         supportCompanyId: null,
-        invoiceAttachmentPath: null
     })
 
+    // New state for file uploads
+    const [files, setFiles] = useState([])
+    const [fileDescription, setFileDescription] = useState('')
+    
     const [users, setUsers] = useState([])
     const [companies, setCompanies] = useState([])
+    const [families, setFamilies] = useState([])
+    const [types, setTypes] = useState([])
+    const [brands, setBrands] = useState([])
+    const [models, setModels] = useState([])
     const [selectedUser, setSelectedUser] = useState(null)
     const [selectedCompany, setSelectedCompany] = useState(null)
     const [errors, setErrors] = useState({})
     const [submitError, setSubmitError] = useState('')
 
+    // Add loading state
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     useEffect(() => {
         loadUsers()
         loadCompanies()
+        loadFamilies()
+        loadTypes()
+        loadBrands()
     }, [])
+
+    // Add useEffect to load models when brand changes
+    useEffect(() => {
+        if (formData.brandId) {
+            loadModelsByBrand(formData.brandId)
+        } else {
+            setModels([])
+        }
+    }, [formData.brandId])
 
     const loadUsers = async () => {
         try {
@@ -96,6 +130,42 @@ function CreateInventoryPage() {
         }
     }
 
+    const loadFamilies = async () => {
+        try {
+            const response = await FamilyService.getActiveFamilies()
+            setFamilies(response.data)
+        } catch (err) {
+            console.error('Error fetching families', err)
+        }
+    }
+
+    const loadTypes = async () => {
+        try {
+            const response = await InventoryTypeService.getActiveTypes()
+            setTypes(response.data)
+        } catch (err) {
+            console.error('Error fetching inventory types', err)
+        }
+    }
+
+    const loadBrands = async () => {
+        try {
+            const response = await BrandService.getActiveBrands()
+            setBrands(response.data)
+        } catch (err) {
+            console.error('Error fetching brands', err)
+        }
+    }
+
+    const loadModelsByBrand = async (brandId) => {
+        try {
+            const response = await ModelService.getModelsByBrand(brandId)
+            setModels(response.data)
+        } catch (err) {
+            console.error('Error fetching models', err)
+        }
+    }
+
     const handleChange = (e) => {
         const { name, value } = e.target
         setFormData(prev => ({
@@ -111,10 +181,10 @@ function CreateInventoryPage() {
         const newErrors = {}
         if (!formData.barcode) newErrors.barcode = 'Barkod alanı zorunludur'
         if (!formData.serialNumber) newErrors.serialNumber = 'Seri numarası zorunludur'
-        if (!formData.family) newErrors.family = 'Aile bilgisi zorunludur'
-        if (!formData.type) newErrors.type = 'Tip bilgisi zorunludur'
-        if (!formData.brand) newErrors.brand = 'Marka bilgisi zorunludur'
-        if (!formData.model) newErrors.model = 'Model bilgisi zorunludur'
+        if (!formData.familyId) newErrors.familyId = 'Aile bilgisi zorunludur'
+        if (!formData.typeId) newErrors.typeId = 'Tip bilgisi zorunludur'
+        if (!formData.brandId) newErrors.brandId = 'Marka bilgisi zorunludur'
+        if (!formData.modelId) newErrors.modelId = 'Model bilgisi zorunludur'
         
         // Validate dates
         if (formData.warrantyStartDate && formData.warrantyEndDate) {
@@ -127,6 +197,24 @@ function CreateInventoryPage() {
         return Object.keys(newErrors).length === 0
     }
 
+    // Handle file selection
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files)
+            setFiles(prevFiles => [...prevFiles, ...newFiles])
+        }
+    }
+
+    // Remove a file from the list
+    const handleRemoveFile = (index) => {
+        setFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
+    }
+
+    // Handle file description change
+    const handleFileDescriptionChange = (e) => {
+        setFileDescription(e.target.value)
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSubmitError('')
@@ -134,6 +222,14 @@ function CreateInventoryPage() {
         if (!validateForm()) return
 
         try {
+            setIsSubmitting(true)
+            
+            // Get the selected objects for reference
+            const selectedFamily = families.find(f => f.id === formData.familyId) || null;
+            const selectedType = types.find(t => t.id === formData.typeId) || null;
+            const selectedBrand = brands.find(b => b.id === formData.brandId) || null;
+            const selectedModel = models.find(m => m.id === formData.modelId) || null;
+            
             const inventoryData = {
                 ...formData,
                 purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate).toISOString() : null,
@@ -143,13 +239,40 @@ function CreateInventoryPage() {
                 warrantyEndDate: formData.warrantyEndDate ? new Date(formData.warrantyEndDate).toISOString() : null,
                 assignedUserId: selectedUser?.id || null,
                 supportCompanyId: selectedCompany?.id || null,
+                // Include names for reference
+                familyName: selectedFamily?.name,
+                typeName: selectedType?.name,
+                brandName: selectedBrand?.name,
+                modelName: selectedModel?.name
             }
 
-            await createInventory(inventoryData)
+            // Create FormData for multipart/form-data submission
+            const formDataToSend = new FormData()
+            
+            // Append all inventory data fields
+            Object.keys(inventoryData).forEach(key => {
+                if (inventoryData[key] !== null && inventoryData[key] !== undefined) {
+                    formDataToSend.append(key, inventoryData[key])
+                }
+            })
+            
+            // Append files
+            files.forEach(file => {
+                formDataToSend.append('files', file)
+            })
+            
+            // Append file description if provided
+            if (fileDescription) {
+                formDataToSend.append('fileDescription', fileDescription)
+            }
+
+            await createInventory(formDataToSend)
             navigate('/inventories')
         } catch (err) {
             console.error('Error creating inventory', err)
             setSubmitError('Envanter oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -251,50 +374,91 @@ function CreateInventoryPage() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
+                                    select
                                     label="Aile"
-                                    name="family"
-                                    value={formData.family}
+                                    name="familyId"
+                                    value={formData.familyId || ''}
                                     onChange={handleChange}
                                     required
-                                    error={!!errors.family}
-                                    helperText={errors.family}
-                                />
+                                    error={!!errors.familyId}
+                                    helperText={errors.familyId}
+                                >
+                                    <MenuItem value="">
+                                        <em>Seçiniz</em>
+                                    </MenuItem>
+                                    {families.map((family) => (
+                                        <MenuItem key={family.id} value={family.id}>
+                                            {family.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
+                                    select
                                     label="Tip"
-                                    name="type"
-                                    value={formData.type}
+                                    name="typeId"
+                                    value={formData.typeId || ''}
                                     onChange={handleChange}
                                     required
-                                    error={!!errors.type}
-                                    helperText={errors.type}
-                                />
+                                    error={!!errors.typeId}
+                                    helperText={errors.typeId}
+                                >
+                                    <MenuItem value="">
+                                        <em>Seçiniz</em>
+                                    </MenuItem>
+                                    {types.map((type) => (
+                                        <MenuItem key={type.id} value={type.id}>
+                                            {type.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
+                                    select
                                     label="Marka"
-                                    name="brand"
-                                    value={formData.brand}
+                                    name="brandId"
+                                    value={formData.brandId || ''}
                                     onChange={handleChange}
                                     required
-                                    error={!!errors.brand}
-                                    helperText={errors.brand}
-                                />
+                                    error={!!errors.brandId}
+                                    helperText={errors.brandId}
+                                >
+                                    <MenuItem value="">
+                                        <em>Seçiniz</em>
+                                    </MenuItem>
+                                    {brands.map((brand) => (
+                                        <MenuItem key={brand.id} value={brand.id}>
+                                            {brand.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <TextField
                                     fullWidth
+                                    select
                                     label="Model"
-                                    name="model"
-                                    value={formData.model}
+                                    name="modelId"
+                                    value={formData.modelId || ''}
                                     onChange={handleChange}
                                     required
-                                    error={!!errors.model}
-                                    helperText={errors.model}
-                                />
+                                    error={!!errors.modelId}
+                                    helperText={errors.modelId || (formData.brandId ? '' : 'Önce marka seçiniz')}
+                                    disabled={!formData.brandId}
+                                >
+                                    <MenuItem value="">
+                                        <em>Seçiniz</em>
+                                    </MenuItem>
+                                    {models.map((model) => (
+                                        <MenuItem key={model.id} value={model.id}>
+                                            {model.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                             </Grid>
                         </Grid>
 
@@ -471,12 +635,82 @@ function CreateInventoryPage() {
                                 />
                             </Grid>
                         </Grid>
+
+                        <Divider sx={{ my: 3 }} />
+
+                        {/* File Upload Section */}
+                        <Typography variant="h6" sx={{ mb: 2, mt: 3, color: theme.palette.primary.main }}>
+                            Dosya Ekleri
+                        </Typography>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Dosya Açıklaması"
+                                    name="fileDescription"
+                                    value={fileDescription}
+                                    onChange={handleFileDescriptionChange}
+                                    placeholder="Tüm dosyalar için ortak açıklama"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Button
+                                    variant="outlined"
+                                    component="label"
+                                    startIcon={<AttachFileIcon />}
+                                    sx={{ mb: 2 }}
+                                >
+                                    Dosya Ekle
+                                    <input
+                                        type="file"
+                                        multiple
+                                        hidden
+                                        onChange={handleFileChange}
+                                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                                    />
+                                </Button>
+                                <Typography variant="caption" color="textSecondary" sx={{ ml: 2 }}>
+                                    İzin verilen dosya türleri: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG
+                                </Typography>
+                                
+                                {files.length > 0 && (
+                                    <Paper variant="outlined" sx={{ mt: 2, p: 2 }}>
+                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                            Yüklenecek Dosyalar ({files.length})
+                                        </Typography>
+                                        <List dense>
+                                            {files.map((file, index) => (
+                                                <ListItem key={index}>
+                                                    <ListItemIcon>
+                                                        <DescriptionIcon />
+                                                    </ListItemIcon>
+                                                    <ListItemText 
+                                                        primary={file.name}
+                                                        secondary={`${(file.size / 1024).toFixed(2)} KB`}
+                                                    />
+                                                    <ListItemSecondaryAction>
+                                                        <IconButton 
+                                                            edge="end" 
+                                                            aria-label="delete"
+                                                            onClick={() => handleRemoveFile(index)}
+                                                        >
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                    </ListItemSecondaryAction>
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                    </Paper>
+                                )}
+                            </Grid>
+                        </Grid>
                     </Paper>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
                         <Button
                             onClick={() => navigate('/inventories')}
                             variant="outlined"
+                            disabled={isSubmitting}
                         >
                             İptal
                         </Button>
@@ -484,8 +718,9 @@ function CreateInventoryPage() {
                             type="submit"
                             variant="contained"
                             color="primary"
+                            disabled={isSubmitting}
                         >
-                            Envanter Oluştur
+                            {isSubmitting ? 'Oluşturuluyor...' : 'Envanter Oluştur'}
                         </Button>
                     </Box>
                 </Box>

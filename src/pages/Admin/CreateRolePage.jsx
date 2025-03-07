@@ -131,22 +131,34 @@ const CreateRolePage = () => {
             setFormData({
                 name: roleData.name || '',
                 description: roleData.description || '',
-                permissions: []
+                permissions: Array.isArray(roleData.permissions) ? roleData.permissions : []
             });
             
-            // Update selected permissions
-            const updatedPermissions = { ...selectedPermissions };
+            // Create a fresh permissions object with all permissions set to false initially
+            const updatedPermissions = {};
+            Object.keys(availablePermissions).forEach(category => {
+                updatedPermissions[category] = {};
+                availablePermissions[category].forEach(permission => {
+                    updatedPermissions[category][permission] = false;
+                });
+            });
             
             // Process permissions (handle both string and object formats)
             if (roleData.permissions && Array.isArray(roleData.permissions)) {
                 console.log('Permissions array:', roleData.permissions);
+                
                 roleData.permissions.forEach(permission => {
+                    // Extract permission name whether it's a string or an object with a name property
                     const permissionName = typeof permission === 'string' ? permission : permission.name;
+                    
                     if (!permissionName) return;
                     
+                    // Split the permission to get the resource category
                     const [resource] = permissionName.split(':');
                     
+                    // Check if this permission exists in our available permissions
                     if (updatedPermissions[resource] && updatedPermissions[resource][permissionName] !== undefined) {
+                        // Set this permission to true
                         updatedPermissions[resource][permissionName] = true;
                     }
                 });
@@ -154,6 +166,7 @@ const CreateRolePage = () => {
                 console.warn('No permissions array found in the response:', roleData);
             }
             
+            // Update the state with the processed permissions
             setSelectedPermissions(updatedPermissions);
             setError('');
         } catch (err) {
