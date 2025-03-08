@@ -39,7 +39,10 @@ import {
   PictureAsPdf as PdfIcon,
   Image as ImageIcon,
   Description as DefaultFileIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Description as DescriptionIcon,
+  ReportProblem as ReportProblemIcon,
+  ErrorOutline as ErrorOutlineIcon
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { getInventoryById, downloadInvoice, getAssignmentHistory, downloadAttachment, deleteAttachment } from '../../api/InventoryService';
@@ -274,15 +277,38 @@ const InventoryDetailPage = () => {
               >
                 Envanter Detayları
               </Typography>
-              <Button
-                component={Link}
-                to={`/inventories/edit/${inventory.id}`}
-                variant="contained"
-                startIcon={<EditIcon />}
-                sx={{ borderRadius: 2, textTransform: 'none' }}
-              >
-                Envanteri Düzenle
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<DescriptionIcon />}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  Zimmet Tutanağı
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ReportProblemIcon />}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  Hasar Kaydı
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ErrorOutlineIcon />}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  Kayıp/Çalıntı
+                </Button>
+                <Button
+                  component={Link}
+                  to={`/inventories/edit/${inventory.id}`}
+                  variant="contained"
+                  startIcon={<EditIcon />}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  Envanteri Düzenle
+                </Button>
+              </Box>
             </Box>
 
             {/* Basic Information */}
