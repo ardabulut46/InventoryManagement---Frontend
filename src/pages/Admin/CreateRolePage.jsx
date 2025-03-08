@@ -22,12 +22,16 @@ import {
     useTheme,
     Alert,
     CircularProgress,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
     Save as SaveIcon,
     Add as AddIcon,
     Remove as RemoveIcon,
+    ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import httpClient from '../../api/httpClient';
@@ -93,6 +97,7 @@ const CreateRolePage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(isEditMode);
+    const [expandedCategory, setExpandedCategory] = useState(null);
 
     // Initialize permissions structure
     useEffect(() => {
@@ -204,6 +209,10 @@ const CreateRolePage = () => {
                 return acc;
             }, {})
         }));
+    };
+
+    const handleAccordionChange = (category) => (event, isExpanded) => {
+        setExpandedCategory(isExpanded ? category : null);
     };
 
     const handleSubmit = async (e) => {
@@ -338,42 +347,70 @@ const CreateRolePage = () => {
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Yetkiler
                             </Typography>
-                            <Stack spacing={3}>
+                            <Stack spacing={1}>
                                 {Object.entries(availablePermissions).map(([category, permissions]) => (
-                                    <Box key={category}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <FormLabel component="legend" sx={{ flex: 1, fontWeight: 'bold' }}>
-                                                {getCategoryDisplayName(category)}
-                                            </FormLabel>
-                                            <Button
-                                                size="small"
-                                                startIcon={isAllCategorySelected(category) ? <RemoveIcon /> : <AddIcon />}
-                                                onClick={() => handleCategorySelectAll(category, !isAllCategorySelected(category))}
-                                            >
-                                                {isAllCategorySelected(category) ? 'Tümünü Kaldır' : 'Tümünü Seç'}
-                                            </Button>
-                                        </Box>
-                                        <FormGroup>
-                                            <Grid container spacing={2}>
-                                                {permissions.map((permission) => (
-                                                    <Grid item xs={12} sm={6} key={permission}>
-                                                        <FormControlLabel
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={selectedPermissions[category]?.[permission] || false}
-                                                                    onChange={() => handlePermissionChange(category, permission)}
-                                                                />
-                                                            }
-                                                            label={getPermissionDisplayName(permission)}
-                                                        />
-                                                    </Grid>
-                                                ))}
-                                            </Grid>
-                                        </FormGroup>
-                                        {category !== Object.keys(availablePermissions).slice(-1)[0] && (
-                                            <Divider sx={{ mt: 2 }} />
-                                        )}
-                                    </Box>
+                                    <Accordion 
+                                        key={category}
+                                        expanded={expandedCategory === category}
+                                        onChange={handleAccordionChange(category)}
+                                        sx={{
+                                            '&.Mui-expanded': {
+                                                margin: '4px 0',
+                                            }
+                                        }}
+                                    >
+                                        <AccordionSummary
+                                            expandIcon={<ExpandMoreIcon />}
+                                            sx={{
+                                                backgroundColor: theme.palette.grey[50],
+                                                '&:hover': {
+                                                    backgroundColor: theme.palette.grey[100],
+                                                },
+                                            }}
+                                        >
+                                            <Box sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'space-between',
+                                                width: '100%',
+                                                pr: 2
+                                            }}>
+                                                <Typography sx={{ fontWeight: 'bold' }}>
+                                                    {getCategoryDisplayName(category)}
+                                                </Typography>
+                                                <Button
+                                                    size="small"
+                                                    startIcon={isAllCategorySelected(category) ? <RemoveIcon /> : <AddIcon />}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleCategorySelectAll(category, !isAllCategorySelected(category));
+                                                    }}
+                                                    sx={{ ml: 2 }}
+                                                >
+                                                    {isAllCategorySelected(category) ? 'Tümünü Kaldır' : 'Tümünü Seç'}
+                                                </Button>
+                                            </Box>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <FormGroup>
+                                                <Grid container spacing={2}>
+                                                    {permissions.map((permission) => (
+                                                        <Grid item xs={12} sm={6} key={permission}>
+                                                            <FormControlLabel
+                                                                control={
+                                                                    <Checkbox
+                                                                        checked={selectedPermissions[category]?.[permission] || false}
+                                                                        onChange={() => handlePermissionChange(category, permission)}
+                                                                    />
+                                                                }
+                                                                label={getPermissionDisplayName(permission)}
+                                                            />
+                                                        </Grid>
+                                                    ))}
+                                                </Grid>
+                                            </FormGroup>
+                                        </AccordionDetails>
+                                    </Accordion>
                                 ))}
                             </Stack>
                         </Grid>

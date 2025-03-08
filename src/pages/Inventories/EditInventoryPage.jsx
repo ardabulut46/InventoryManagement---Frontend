@@ -10,6 +10,10 @@ import {
 } from '../../api/InventoryService';
 import { getUsers } from '../../api/UserService';
 import { getCompanies } from '../../api/CompanyService';
+import FamilyService from '../../api/FamilyService';
+import InventoryTypeService from '../../api/InventoryTypeService';
+import BrandService from '../../api/BrandService';
+import ModelService from '../../api/ModelService';
 import {
     Typography,
     TextField,
@@ -41,7 +45,26 @@ const STATUS_OPTIONS = [
     'Bakımda',
     'Emekli',
     'Kayıp',
+    'Kullanılabilir',
 ];
+
+// Map legacy status values to current options if needed
+const mapStatusValue = (status) => {
+    if (!status) return 'Müsait'; // Default value
+    
+    // If the status is already in the options, return it
+    if (STATUS_OPTIONS.includes(status)) {
+        return status;
+    }
+    
+    // Map legacy values to current options
+    const statusMap = {
+        // Add mappings if needed in the future
+        // 'OldStatus': 'NewStatus',
+    };
+    
+    return statusMap[status] || 'Müsait'; // Return mapped value or default
+};
 
 function EditInventoryPage() {
     const navigate = useNavigate();
@@ -50,12 +73,12 @@ function EditInventoryPage() {
     const [formData, setFormData] = useState({
         barcode: '',
         serialNumber: '',
-        family: '',
-        type: '',
-        brand: '',
-        model: '',
+        familyId: null,
+        typeId: null,
+        brandId: null,
+        modelId: null,
         location: '',
-        status: 'Müsait',
+        status: mapStatusValue('Müsait'),
         room: '',
         floor: '',
         block: '',
@@ -70,8 +93,16 @@ function EditInventoryPage() {
 
     const [users, setUsers] = useState([]);
     const [companies, setCompanies] = useState([]);
+    const [families, setFamilies] = useState([]);
+    const [types, setTypes] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [models, setModels] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const [selectedFamily, setSelectedFamily] = useState(null);
+    const [selectedType, setSelectedType] = useState(null);
+    const [selectedBrand, setSelectedBrand] = useState(null);
+    const [selectedModel, setSelectedModel] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [inventoryHistory, setInventoryHistory] = useState([]);
     const [errors, setErrors] = useState({});
@@ -81,51 +112,189 @@ function EditInventoryPage() {
     const [invoiceFile, setInvoiceFile] = useState(null);
 
     useEffect(() => {
-        loadInventory();
-        loadUsers();
-        loadCompanies();
-        loadInventoryHistory();
+        const fetchAllData = async () => {
+            try {
+                // First load all the reference data
+                const [usersResponse, companiesResponse, familiesResponse, typesResponse, brandsResponse] = 
+                    await Promise.all([
+                        getUsers(),
+                        getCompanies(),
+                        FamilyService.getActiveFamilies(),
+                        InventoryTypeService.getActiveTypes(),
+                        BrandService.getActiveBrands()
+                    ]);
+                
+                // Set the reference data
+                setUsers(usersResponse.data);
+                setCompanies(companiesResponse.data);
+                setFamilies(familiesResponse.data);
+                setTypes(typesResponse.data);
+                setBrands(brandsResponse.data);
+                
+                // Now load the inventory data
+                const inventoryResponse = await getInventoryById(id);
+                const inventory = inventoryResponse.data;
+                
+                // Set form data
+                setFormData({
+                    ...inventory,
+                    warrantyStartDate: inventory.warrantyStartDate ? new Date(inventory.warrantyStartDate).toISOString().split('T')[0] : '',
+                    warrantyEndDate: inventory.warrantyEndDate ? new Date(inventory.warrantyEndDate).toISOString().split('T')[0] : '',
+                    status: mapStatusValue(inventory.status),
+                });
+                
+                // Set assigned user
+                if (inventory.assignedUser) {
+                    setCurrentUser(inventory.assignedUser);
+                    setSelectedUser(inventory.assignedUser);
+                }
+                
+                // Set support company
+                if (inventory.supportCompany) {
+                    setSelectedCompany(inventory.supportCompany);
+                }
+                
+                // Handle family selection - find the family by ID
+                if (inventory.familyId) {
+                    const family = familiesResponse.data.find(f => f.id === inventory.familyId);
+                    if (family) {
+                        setSelectedFamily(family);
+                    } else {
+                        // Create a family object from the inventory data
+                        const familyFromInventory = {
+                            id: inventory.familyId,
+                            name: inventory.familyName || `Family ID: ${inventory.familyId}`
+                        };
+                        setSelectedFamily(familyFromInventory);
+                    }
+                }
+                
+                // Handle type selection - find the type by ID
+                if (inventory.typeId) {
+                    const type = typesResponse.data.find(t => t.id === inventory.typeId);
+                    if (type) {
+                        setSelectedType(type);
+                    } else {
+                        // Create a type object from the inventory data
+                        const typeFromInventory = {
+                            id: inventory.typeId,
+                            name: inventory.typeName || `Type ID: ${inventory.typeId}`
+                        };
+                        setSelectedType(typeFromInventory);
+                    }
+                }
+                
+                // Handle brand selection - find the brand by ID
+                if (inventory.brandId) {
+                    const brand = brandsResponse.data.find(b => b.id === inventory.brandId);
+                    if (brand) {
+                        setSelectedBrand(brand);
+                    } else {
+                        // Create a brand object from the inventory data
+                        const brandFromInventory = {
+                            id: inventory.brandId,
+                            name: inventory.brandName || `Brand ID: ${inventory.brandId}`
+                        };
+                        setSelectedBrand(brandFromInventory);
+                    }
+                    
+                    // Load models for this brand
+                    try {
+                        const modelResponse = await ModelService.getModelsByBrand(inventory.brandId);
+                        
+                        // Always set the models array first
+                        setModels(modelResponse.data);
+                        
+                        // Handle model selection - find the model by ID
+                        if (inventory.modelId) {
+                            // Create a model object from the inventory data first
+                            const modelFromInventory = {
+                                id: inventory.modelId,
+                                name: inventory.modelName || `Model ID: ${inventory.modelId}`
+                            };
+                            
+                            // Try to find the model in the loaded models
+                            const model = modelResponse.data.find(m => m.id === inventory.modelId);
+                            
+                            if (model) {
+                                // Use setTimeout to ensure this happens after the models state is updated
+                                setTimeout(() => {
+                                    setSelectedModel(model);
+                                }, 100);
+                            } else {
+                                // Use setTimeout to ensure this happens after the models state is updated
+                                setTimeout(() => {
+                                    setSelectedModel(modelFromInventory);
+                                }, 100);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error loading models for brand:', err);
+                        
+                        // If we can't load models, still create a model object from inventory data
+                        if (inventory.modelId) {
+                            const modelFromInventory = {
+                                id: inventory.modelId,
+                                name: inventory.modelName || `Model ID: ${inventory.modelId}`
+                            };
+                            
+                            // Set an empty array for models to avoid errors
+                            setModels([modelFromInventory]);
+                            
+                            // Use setTimeout to ensure this happens after the models state is updated
+                            setTimeout(() => {
+                                setSelectedModel(modelFromInventory);
+                            }, 100);
+                        }
+                    }
+                }
+                
+                // Load inventory history
+                const historyResponse = await getAssignmentHistory(id);
+                setInventoryHistory(historyResponse.data);
+                
+            } catch (err) {
+                console.error('Error loading data:', err);
+                setSubmitError('Veri yüklenirken hata oluştu');
+            }
+        };
+        
+        fetchAllData();
     }, [id]);
 
-    const loadInventory = async () => {
-        try {
-            const response = await getInventoryById(id);
-            const inventory = response.data;
-            setFormData({
-                ...inventory,
-                warrantyStartDate: inventory.warrantyStartDate ? new Date(inventory.warrantyStartDate).toISOString().split('T')[0] : '',
-                warrantyEndDate: inventory.warrantyEndDate ? new Date(inventory.warrantyEndDate).toISOString().split('T')[0] : '',
-            });
-            if (inventory.assignedUser) {
-                setCurrentUser(inventory.assignedUser);
-                setSelectedUser(inventory.assignedUser);
-            }
-            if (inventory.supportCompany) {
-                setSelectedCompany(inventory.supportCompany);
-            }
-        } catch (err) {
-            console.error('Error loading inventory', err);
-            setSubmitError('Envanter detayları yüklenirken hata oluştu');
+    // This useEffect handles when the user changes the brand in the UI
+    useEffect(() => {
+        if (selectedBrand && selectedBrand.id) {
+            const loadModelsForSelectedBrand = async () => {
+                try {
+                    const response = await ModelService.getModelsByBrand(selectedBrand.id);
+                    
+                    // Set the models array
+                    setModels(response.data);
+                    
+                    // If we have a previously selected model and it belongs to this brand, try to keep it selected
+                    if (selectedModel && selectedModel.id) {
+                        const modelStillExists = response.data.find(m => m.id === selectedModel.id);
+                        if (!modelStillExists) {
+                            setSelectedModel(null);
+                        }
+                    } else {
+                        // No previously selected model or it's for a different brand
+                        setSelectedModel(null);
+                    }
+                } catch (err) {
+                    console.error('Error fetching models for brand', err);
+                    setModels([]);
+                    setSelectedModel(null);
+                }
+            };
+            
+            loadModelsForSelectedBrand();
+        } else {
+            setModels([]);
+            setSelectedModel(null);
         }
-    };
-
-    const loadUsers = async () => {
-        try {
-            const response = await getUsers();
-            setUsers(response.data);
-        } catch (err) {
-            console.error('Error fetching users', err);
-        }
-    };
-
-    const loadCompanies = async () => {
-        try {
-            const response = await getCompanies();
-            setCompanies(response.data);
-        } catch (err) {
-            console.error('Error fetching companies', err);
-        }
-    };
+    }, [selectedBrand]);
 
     const loadInventoryHistory = async () => {
         try {
@@ -138,10 +307,20 @@ function EditInventoryPage() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        // If the field is status, map the value to ensure it's valid
+        if (name === 'status') {
+            setFormData(prev => ({
+                ...prev,
+                [name]: mapStatusValue(value)
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+        
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -151,10 +330,10 @@ function EditInventoryPage() {
         const newErrors = {};
         if (!formData.barcode) newErrors.barcode = 'Barkod alanı zorunludur';
         if (!formData.serialNumber) newErrors.serialNumber = 'Seri numarası zorunludur';
-        if (!formData.family) newErrors.family = 'Aile bilgisi zorunludur';
-        if (!formData.type) newErrors.type = 'Tip bilgisi zorunludur';
-        if (!formData.brand) newErrors.brand = 'Marka bilgisi zorunludur';
-        if (!formData.model) newErrors.model = 'Model bilgisi zorunludur';
+        if (!selectedFamily) newErrors.familyId = 'Aile bilgisi zorunludur';
+        if (!selectedType) newErrors.typeId = 'Tip bilgisi zorunludur';
+        if (!selectedBrand) newErrors.brandId = 'Marka bilgisi zorunludur';
+        if (!selectedModel) newErrors.modelId = 'Model bilgisi zorunludur';
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -184,6 +363,10 @@ function EditInventoryPage() {
                 warrantyEndDate: formData.warrantyEndDate ? new Date(formData.warrantyEndDate).toISOString() : null,
                 assignedUserId: selectedUser?.id || null,
                 supportCompanyId: selectedCompany?.id || null,
+                familyId: selectedFamily?.id || null,
+                typeId: selectedType?.id || null,
+                brandId: selectedBrand?.id || null,
+                modelId: selectedModel?.id || null,
                 invoiceAttachmentPath: invoicePath
             };
 
@@ -208,9 +391,27 @@ function EditInventoryPage() {
             }
         } catch (err) {
             console.error('Error assigning user', err);
-            setSubmitError('Kullanıcı atama işlemi başarısız oldu.');
+            setSubmitError('Kullanıcı atanırken bir hata oluştu. Lütfen tekrar deneyin.');
         }
     };
+
+    // This useEffect ensures the model is properly selected when the models array changes
+    useEffect(() => {
+        // If we have a selected model ID but no selected model object, try to find it in the models array
+        if (formData.modelId && !selectedModel && models.length > 0) {
+            const model = models.find(m => m.id === formData.modelId);
+            if (model) {
+                setSelectedModel(model);
+            } else if (formData.modelName) {
+                // If we can't find the model in the array but have a name, create a model object
+                const modelFromFormData = {
+                    id: formData.modelId,
+                    name: formData.modelName
+                };
+                setSelectedModel(modelFromFormData);
+            }
+        }
+    }, [models, formData.modelId, formData.modelName, selectedModel]);
 
     return (
         <Box component={Paper} sx={{ p: 3 }}>
@@ -293,51 +494,81 @@ function EditInventoryPage() {
                         <Typography variant="h6" gutterBottom>Ürün Detayları</Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={3}>
-                                <TextField
-                                    fullWidth
-                                    label="Aile"
-                                    name="family"
-                                    value={formData.family}
-                                    onChange={handleChange}
-                                    required
-                                    error={!!errors.family}
-                                    helperText={errors.family}
+                                <Autocomplete
+                                    options={families || []}
+                                    getOptionLabel={(family) => family?.name || ''}
+                                    value={selectedFamily}
+                                    onChange={(event, newValue) => setSelectedFamily(newValue)}
+                                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Aile"
+                                            required
+                                            error={!!errors.familyId}
+                                            helperText={errors.familyId}
+                                        />
+                                    )}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <TextField
-                                    fullWidth
-                                    label="Tip"
-                                    name="type"
-                                    value={formData.type}
-                                    onChange={handleChange}
-                                    required
-                                    error={!!errors.type}
-                                    helperText={errors.type}
+                                <Autocomplete
+                                    options={types || []}
+                                    getOptionLabel={(type) => type?.name || ''}
+                                    value={selectedType}
+                                    onChange={(event, newValue) => setSelectedType(newValue)}
+                                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Tip"
+                                            required
+                                            error={!!errors.typeId}
+                                            helperText={errors.typeId}
+                                        />
+                                    )}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <TextField
-                                    fullWidth
-                                    label="Marka"
-                                    name="brand"
-                                    value={formData.brand}
-                                    onChange={handleChange}
-                                    required
-                                    error={!!errors.brand}
-                                    helperText={errors.brand}
+                                <Autocomplete
+                                    options={brands || []}
+                                    getOptionLabel={(brand) => brand?.name || ''}
+                                    value={selectedBrand}
+                                    onChange={(event, newValue) => {
+                                        setSelectedBrand(newValue);
+                                        setSelectedModel(null); // Reset model when brand changes
+                                    }}
+                                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Marka"
+                                            required
+                                            error={!!errors.brandId}
+                                            helperText={errors.brandId}
+                                        />
+                                    )}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <TextField
-                                    fullWidth
-                                    label="Model"
-                                    name="model"
-                                    value={formData.model}
-                                    onChange={handleChange}
-                                    required
-                                    error={!!errors.model}
-                                    helperText={errors.model}
+                                <Autocomplete
+                                    options={models || []}
+                                    getOptionLabel={(model) => model?.name || ''}
+                                    value={selectedModel}
+                                    onChange={(event, newValue) => {
+                                        setSelectedModel(newValue);
+                                    }}
+                                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                                    disabled={!selectedBrand}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Model"
+                                            required
+                                            error={!!errors.modelId}
+                                            helperText={errors.modelId || (!selectedBrand ? 'Önce marka seçiniz' : '')}
+                                        />
+                                    )}
                                 />
                             </Grid>
                         </Grid>
@@ -471,6 +702,7 @@ function EditInventoryPage() {
                                     getOptionLabel={(user) => user.email || ''}
                                     value={selectedUser}
                                     onChange={(event, newValue) => setSelectedUser(newValue)}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
@@ -486,6 +718,7 @@ function EditInventoryPage() {
                                     getOptionLabel={(company) => company.name || ''}
                                     value={selectedCompany}
                                     onChange={(event, newValue) => setSelectedCompany(newValue)}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}

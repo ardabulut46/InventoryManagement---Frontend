@@ -148,8 +148,8 @@ function Layout() {
                 { text: 'Tüm Çağrılar', path: '/tickets' },
                 { text: 'Üzerimdeki Çağrılar', path: '/tickets/my-tickets' },
                 { text: 'Grubumun Çağrıları', path: '/tickets/department' },
-                { text: 'Benim Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
-                { text: 'Süresi Aşılan Çağrılar', path: '/tickets/idle-breach' },
+                { text: 'Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
+                { text: 'Süresi Aşılan Talepler', path: '/tickets/idle-breach' },
             ]
         },
         { 

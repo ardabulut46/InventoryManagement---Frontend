@@ -804,12 +804,12 @@ function InventoriesPage() {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this inventory?')) {
+        if (window.confirm('Bu envanteri pasif duruma almak istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
             try {
                 await deleteInventory(id);
                 fetchInventories();
             } catch (err) {
-                setError('Failed to delete inventory.');
+                setError('Envanter pasif duruma alınırken bir hata oluştu.');
             }
         }
     };
@@ -1179,20 +1179,23 @@ function InventoriesPage() {
                                                         >
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
-                                                        <IconButton
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDelete(inventory.id);
-                                                            }}
-                                                            color="error"
-                                                            size="small"
-                                                            sx={{ 
-                                                                bgcolor: 'error.50',
-                                                                '&:hover': { bgcolor: 'error.100' }
-                                                            }}
-                                                        >
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
+                                                        <Tooltip title="Pasif duruma al">
+                                                            <IconButton
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(inventory.id);
+                                                                }}
+                                                                color="error"
+                                                                size="small"
+                                                                sx={{ 
+                                                                    bgcolor: 'error.50',
+                                                                    '&:hover': { bgcolor: 'error.100' }
+                                                                }}
+                                                                aria-label="Pasif duruma al"
+                                                            >
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
                                                     </Box>
                                                 </TableCell>
                                             );

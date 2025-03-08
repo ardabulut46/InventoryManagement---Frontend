@@ -81,7 +81,7 @@ function MyCreatedTicketsPage() {
             <Paper elevation={0} sx={{ p: 3, borderRadius: 2 }}>
                 <Box sx={{ mb: 4 }}>
                     <Typography variant="h4" component="h1" gutterBottom>
-                        Benim Açtığım Çağrılar
+                        Açtığım Çağrılar
                     </Typography>
                     <Typography variant="body1" color="text.secondary" gutterBottom>
                         Oluşturduğunuz tüm çağrıları buradan takip edebilirsiniz

@@ -453,6 +453,13 @@ function AdminPage() {
             icon: <AdminIcon sx={{ fontSize: 40 }} />,
             path: '/admin/roles',
             color: '#9c27b0'
+        },
+        {
+            title: 'Firma Yönetimi',
+            description: 'Firmaları görüntüle, düzenle ve yönet',
+            icon: <BusinessIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/companies',
+            color: '#ed6c02'
         }
     ];
 

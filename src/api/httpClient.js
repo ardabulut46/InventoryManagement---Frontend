@@ -41,7 +41,11 @@ httpClient.interceptors.response.use(
             '/api/Company',
             '/api/Group',
             '/api/Department',
-            '/api/Role'
+            '/api/Role',
+            '/api/Family/active',
+            '/api/InventoryType/active',
+            '/api/Brand/active',
+            '/api/Model/by-brand'
         ];
 
         // Check if the URL matches any of the array endpoints using regex
@@ -49,7 +53,7 @@ httpClient.interceptors.response.use(
             new RegExp(endpoint, 'i').test(response.config.url)
         );
 
-        if (shouldBeArray) {
+        if (shouldBeArray && !Array.isArray(response.data)) {
             // Ensure we have an array, even for empty or null responses
             response.data = Array.isArray(response.data) ? response.data : 
                            (response.data ? [response.data] : []);

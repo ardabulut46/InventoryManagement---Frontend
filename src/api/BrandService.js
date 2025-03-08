@@ -3,31 +3,31 @@ import httpClient from './httpClient'
 const endpoint = '/api/Brand'
 
 const getAllBrands = () => {
-    return httpClient.get(endpoint)
+    return httpClient.get(endpoint);
 }
 
 const getBrand = (id) => {
-    return httpClient.get(`${endpoint}/${id}`)
+    return httpClient.get(`${endpoint}/${id}`);
 }
 
 const createBrand = (brandDto) => {
-    return httpClient.post(endpoint, brandDto)
+    return httpClient.post(endpoint, brandDto);
 }
 
 const updateBrand = (id, brandDto) => {
-    return httpClient.put(`${endpoint}/${id}`, brandDto)
+    return httpClient.put(`${endpoint}/${id}`, brandDto);
 }
 
 const deleteBrand = (id) => {
-    return httpClient.delete(`${endpoint}/${id}`)
+    return httpClient.delete(`${endpoint}/${id}`);
 }
 
 const getActiveBrands = () => {
-    return httpClient.get(`${endpoint}/active`)
+    return httpClient.get(`${endpoint}/active`);
 }
 
 const getBrandModels = (brandId) => {
-    return httpClient.get(`${endpoint}/${brandId}/models`)
+    return httpClient.get(`${endpoint}/${brandId}/models`);
 }
 
 const BrandService = {

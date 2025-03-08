@@ -148,24 +148,6 @@ function TicketsPage() {
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <Button
-                            variant="outlined"
-                            startIcon={<AssignmentIcon />}
-                            component={Link}
-                            to="/tickets/assigned"
-                            sx={{
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                px: 3,
-                                py: 1,
-                                borderWidth: 1.5,
-                                '&:hover': {
-                                    borderWidth: 1.5,
-                                }
-                            }}
-                        >
-                            Üzerimdeki Çağrılar
-                        </Button>
-                        <Button
                             component={Link}
                             to="/tickets/create"
                             variant="contained"

@@ -300,16 +300,20 @@ const InventoryDetailPage = () => {
                   <Typography>{inventory.serialNumber || '-'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Marka & Model</Typography>
-                  <Typography>{inventory.brand} {inventory.model}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Aile</Typography>
+                  <Typography>{inventory.familyName || '-'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Tür</Typography>
-                  <Typography>{inventory.type || '-'}</Typography>
+                  <Typography>{inventory.typeName || '-'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Aile</Typography>
-                  <Typography>{inventory.family || '-'}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Marka</Typography>
+                  <Typography>{inventory.brandName || '-'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">Model</Typography>
+                  <Typography>{inventory.modelName || '-'}</Typography>
                 </Grid>
               </Grid>
             </Box>
