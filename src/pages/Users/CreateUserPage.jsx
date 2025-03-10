@@ -14,17 +14,19 @@ import {
     Checkbox,
     Card,
     CardContent,
+    Switch,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { createUser } from '../../api/UserService';
 import { getGroups } from '../../api/GroupService';
-
-const ROLES = ['Admin', 'User'];
+import httpClient from '../../api/httpClient';
 
 function CreateUserPage() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState([]);
+    const [roles, setRoles] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState(null);
+    const [selectedRole, setSelectedRole] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
@@ -38,16 +40,15 @@ function CreateUserPage() {
         city: '',
         district: '',
         address: '',
-        canView: false,
-        canCreate: false,
-        canEdit: false,
-        canDelete: false,
+        roleId: null,
+        isActive: true
     });
     const [errors, setErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
 
     useEffect(() => {
         fetchGroups();
+        fetchRoles();
     }, []);
 
     const fetchGroups = async () => {
@@ -56,7 +57,17 @@ function CreateUserPage() {
             setGroups(response.data);
         } catch (err) {
             console.error('Error fetching groups:', err);
-            setSubmitError('Failed to fetch groups');
+            setSubmitError('Gruplar alınırken hata oluştu');
+        }
+    };
+
+    const fetchRoles = async () => {
+        try {
+            const response = await httpClient.get('/api/Roles');
+            setRoles(response.data);
+        } catch (err) {
+            console.error('Error fetching roles:', err);
+            setSubmitError('Roller alınırken hata oluştu');
         }
     };
 
@@ -64,7 +75,7 @@ function CreateUserPage() {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' || type === 'switch' ? checked : value
         }));
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
@@ -79,14 +90,23 @@ function CreateUserPage() {
         }));
     };
 
+    const handleRoleChange = (event, newValue) => {
+        setSelectedRole(newValue);
+        setFormData(prev => ({
+            ...prev,
+            roleId: newValue?.id || null,
+            role: newValue?.name || ''
+        }));
+    };
+
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.name) newErrors.name = 'Name is required';
-        if (!formData.surname) newErrors.surname = 'Surname is required';
-        if (!formData.email) newErrors.email = 'Email is required';
-        if (!formData.password) newErrors.password = 'Password is required';
-        if (!formData.role) newErrors.role = 'Role is required';
-        if (!formData.groupId) newErrors.groupId = 'Group is required';
+        if (!formData.name) newErrors.name = 'İsim gereklidir';
+        if (!formData.surname) newErrors.surname = 'Soyisim gereklidir';
+        if (!formData.email) newErrors.email = 'E-posta gereklidir';
+        if (!formData.password) newErrors.password = 'Şifre gereklidir';
+        if (!formData.groupId) newErrors.groupId = 'Grup gereklidir';
+        if (!formData.roleId) newErrors.roleId = 'Rol gereklidir';
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -95,17 +115,7 @@ function CreateUserPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Enhanced validation
-        const newErrors = {};
-        if (!formData.name) newErrors.name = 'Name is required';
-        if (!formData.surname) newErrors.surname = 'Surname is required';
-        if (!formData.email) newErrors.email = 'Email is required';
-        if (!formData.password) newErrors.password = 'Password is required';
-        if (!formData.role) newErrors.role = 'Role is required';
-        if (!formData.groupId) newErrors.groupId = 'Group is required';
-        
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
+        if (!validateForm()) {
             return;
         }
 
@@ -113,13 +123,12 @@ function CreateUserPage() {
             const dataToSubmit = {
                 ...formData,
                 userName: formData.email,  // Set userName to email
-                groupId: formData.groupId || null
             };
             await createUser(dataToSubmit);
-            navigate('/admin');
+            navigate('/users');
         } catch (err) {
             console.error('Error creating user:', err);
-            const errorMessage = err.response?.data || 'Failed to create user. Please try again.';
+            const errorMessage = err.response?.data || 'Kullanıcı oluşturulurken hata oluştu. Lütfen tekrar deneyin.';
             setSubmitError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
         }
     };
@@ -128,7 +137,7 @@ function CreateUserPage() {
         <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 3 }}>
             <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
                 <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'medium' }}>
-                    Create New User
+                    Yeni Kullanıcı Oluştur
                 </Typography>
                 <Divider sx={{ mb: 4 }} />
 
@@ -145,13 +154,13 @@ function CreateUserPage() {
                             <Card variant="outlined" sx={{ mb: 1 }}>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium' }}>
-                                        Personal Information
+                                        Kişisel Bilgiler
                                     </Typography>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Name"
+                                                label="İsim"
                                                 name="name"
                                                 value={formData.name}
                                                 onChange={handleChange}
@@ -164,7 +173,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Surname"
+                                                label="Soyisim"
                                                 name="surname"
                                                 value={formData.surname}
                                                 onChange={handleChange}
@@ -177,7 +186,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Email"
+                                                label="E-posta"
                                                 name="email"
                                                 type="email"
                                                 value={formData.email}
@@ -191,7 +200,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Password"
+                                                label="Şifre"
                                                 name="password"
                                                 type="password"
                                                 value={formData.password}
@@ -212,28 +221,25 @@ function CreateUserPage() {
                             <Card variant="outlined" sx={{ mb: 1 }}>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium' }}>
-                                        Role and Department
+                                        Rol ve Departman
                                     </Typography>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                select
-                                                fullWidth
-                                                label="Role"
-                                                name="role"
-                                                value={formData.role}
-                                                onChange={handleChange}
-                                                error={!!errors.role}
-                                                helperText={errors.role}
-                                                required
-                                                size="medium"
-                                            >
-                                                {ROLES.map((role) => (
-                                                    <MenuItem key={role} value={role}>
-                                                        {role}
-                                                    </MenuItem>
-                                                ))}
-                                            </TextField>
+                                            <Autocomplete
+                                                options={roles}
+                                                getOptionLabel={(role) => role.name}
+                                                value={selectedRole}
+                                                onChange={handleRoleChange}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Rol"
+                                                        error={!!errors.roleId}
+                                                        helperText={errors.roleId}
+                                                        required
+                                                    />
+                                                )}
+                                            />
                                         </Grid>
                                         <Grid item xs={12} sm={6}>
                                             <Autocomplete
@@ -244,12 +250,25 @@ function CreateUserPage() {
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Group"
+                                                        label="Grup"
                                                         error={!!errors.groupId}
                                                         helperText={errors.groupId}
                                                         required
                                                     />
                                                 )}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <FormControlLabel
+                                                control={
+                                                    <Switch
+                                                        checked={formData.isActive}
+                                                        onChange={handleChange}
+                                                        name="isActive"
+                                                        color="primary"
+                                                    />
+                                                }
+                                                label="Aktif"
                                             />
                                         </Grid>
                                     </Grid>
@@ -262,13 +281,13 @@ function CreateUserPage() {
                             <Card variant="outlined" sx={{ mb: 1 }}>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium' }}>
-                                        Location Information
+                                        Konum Bilgileri
                                     </Typography>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Location"
+                                                label="Konum"
                                                 name="location"
                                                 value={formData.location}
                                                 onChange={handleChange}
@@ -278,7 +297,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={3}>
                                             <TextField
                                                 fullWidth
-                                                label="Floor"
+                                                label="Kat"
                                                 name="floor"
                                                 value={formData.floor}
                                                 onChange={handleChange}
@@ -288,7 +307,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={3}>
                                             <TextField
                                                 fullWidth
-                                                label="Room"
+                                                label="Oda"
                                                 name="room"
                                                 value={formData.room}
                                                 onChange={handleChange}
@@ -305,13 +324,13 @@ function CreateUserPage() {
                             <Card variant="outlined" sx={{ mb: 1 }}>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium' }}>
-                                        Address Information
+                                        Adres Bilgileri
                                     </Typography>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="City"
+                                                label="Şehir"
                                                 name="city"
                                                 value={formData.city}
                                                 onChange={handleChange}
@@ -321,7 +340,7 @@ function CreateUserPage() {
                                         <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
-                                                label="District"
+                                                label="İlçe"
                                                 name="district"
                                                 value={formData.district}
                                                 onChange={handleChange}
@@ -331,7 +350,7 @@ function CreateUserPage() {
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                label="Address"
+                                                label="Adres"
                                                 name="address"
                                                 value={formData.address}
                                                 onChange={handleChange}
@@ -345,67 +364,6 @@ function CreateUserPage() {
                             </Card>
                         </Grid>
 
-                        {/* Permissions Section */}
-                        <Grid item xs={12}>
-                            <Card variant="outlined" sx={{ mb: 1 }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 'medium' }}>
-                                        Permissions
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={formData.canView}
-                                                    onChange={handleChange}
-                                                    name="canView"
-                                                    color="primary"
-                                                />
-                                            }
-                                            label="Can View"
-                                            sx={{ minWidth: '120px' }}
-                                        />
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={formData.canCreate}
-                                                    onChange={handleChange}
-                                                    name="canCreate"
-                                                    color="primary"
-                                                />
-                                            }
-                                            label="Can Create"
-                                            sx={{ minWidth: '120px' }}
-                                        />
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={formData.canEdit}
-                                                    onChange={handleChange}
-                                                    name="canEdit"
-                                                    color="primary"
-                                                />
-                                            }
-                                            label="Can Edit"
-                                            sx={{ minWidth: '120px' }}
-                                        />
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={formData.canDelete}
-                                                    onChange={handleChange}
-                                                    name="canDelete"
-                                                    color="primary"
-                                                />
-                                            }
-                                            label="Can Delete"
-                                            sx={{ minWidth: '120px' }}
-                                        />
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
                         {/* Submit Buttons */}
                         <Grid item xs={12}>
                             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
@@ -414,7 +372,7 @@ function CreateUserPage() {
                                     onClick={() => navigate('/users')}
                                     size="large"
                                 >
-                                    Cancel
+                                    İptal
                                 </Button>
                                 <Button 
                                     type="submit" 
@@ -422,7 +380,7 @@ function CreateUserPage() {
                                     color="primary"
                                     size="large"
                                 >
-                                    Create User
+                                    Kullanıcı Oluştur
                                 </Button>
                             </Box>
                         </Grid>

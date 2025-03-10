@@ -7,6 +7,7 @@ export const getUsers = () => {
 }
 
 export const getUserById = (id) => {
+    console.log(`Fetching user with ID: ${id} from ${endpoint}/${id}`);
     return httpClient.get(`${endpoint}/${id}`)
 }
 
@@ -15,6 +16,7 @@ export const createUser = (createUserDto) => {
 }
 
 export const updateUser = (id, updateUserDto) => {
+    console.log(`Updating user with ID: ${id}`, updateUserDto);
     return httpClient.put(`${endpoint}/${id}`, updateUserDto)
 }
 

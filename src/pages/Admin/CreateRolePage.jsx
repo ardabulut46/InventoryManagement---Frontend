@@ -42,7 +42,8 @@ const availablePermissions = {
         'Inventory:View',
         'Inventory:Create',
         'Inventory:Edit',
-        'Inventory:Delete'
+        'Inventory:Delete',
+        'Inventory:UploadFile'
     ],
     'Users': [
         'Users:View',
@@ -56,6 +57,12 @@ const availablePermissions = {
         'Tickets:Edit',
         'Tickets:Delete',
         'Tickets:Assign'
+    ],
+    'Roles': [
+        'Roles:View',
+        'Roles:Create',
+        'Roles:Edit',
+        'Roles:Delete'
     ]
 };
 
@@ -70,6 +77,7 @@ const getPermissionDisplayName = (permission) => {
     else if (action === 'Edit') actionText = 'Düzenleme';
     else if (action === 'Delete') actionText = 'Silme';
     else if (action === 'Assign') actionText = 'Atama';
+    else if (action === 'UploadFile') actionText = 'Dosya Yükleme';
     
     return actionText;
 };
@@ -79,6 +87,7 @@ const getCategoryDisplayName = (category) => {
     if (category === 'Inventory') return 'Envanter';
     if (category === 'Users') return 'Kullanıcılar';
     if (category === 'Tickets') return 'Çağrılar';
+    if (category === 'Roles') return 'Rol Yönetimi';
     return category;
 };
 

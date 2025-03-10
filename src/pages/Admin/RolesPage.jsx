@@ -90,6 +90,7 @@ const categorizePermissions = (permissions) => {
         'Inventory': [],
         'Users': [],
         'Tickets': [],
+        'Roles': [],
         'Other': []
     };
 
@@ -378,7 +379,8 @@ const RolesPage = () => {
                                                             <Typography variant="caption" sx={{ fontWeight: 'bold', color: roleColor }}>
                                                                 {category === 'Inventory' ? 'Envanter' : 
                                                                 category === 'Users' ? 'Kullanıcılar' : 
-                                                                category === 'Tickets' ? 'Çağrılar' : 'Diğer'}
+                                                                category === 'Tickets' ? 'Çağrılar' : 
+                                                                category === 'Roles' ? 'Rol Yönetimi' : 'Diğer'}
                                                             </Typography>
                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
                                                                 {perms.map((permission, index) => {
@@ -395,6 +397,7 @@ const RolesPage = () => {
                                                                     else if (action === 'Edit') actionText = 'Düzenleme';
                                                                     else if (action === 'Delete') actionText = 'Silme';
                                                                     else if (action === 'Assign') actionText = 'Atama';
+                                                                    else if (action === 'UploadFile') actionText = 'Dosya Yükleme';
                                                                     
                                                                     return (
                                                                         <Chip
