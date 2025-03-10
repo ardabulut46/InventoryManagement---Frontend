@@ -61,12 +61,7 @@ function CreateInventoryPage() {
         typeId: null,
         brandId: null,
         modelId: null,
-        location: '',
         status: 'Kullanılabilir',
-        room: '',
-        floor: '',
-        block: '',
-        department: '',
         purchaseDate: '',
         purchasePrice: '',
         purchaseCurrency: 1,
@@ -556,54 +551,9 @@ function CreateInventoryPage() {
 
                         {/* Location and Assignment Section */}
                         <Typography variant="h6" sx={{ mb: 2, mt: 3, color: theme.palette.primary.main }}>
-                            Konum ve Atama Bilgileri
+                            Atama Bilgileri
                         </Typography>
                         <Grid container spacing={3}>
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Konum"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Departman"
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleChange}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={4}>
-                                <TextField
-                                    fullWidth
-                                    label="Oda"
-                                    name="room"
-                                    value={formData.room}
-                                    onChange={handleChange}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={4}>
-                                <TextField
-                                    fullWidth
-                                    label="Kat"
-                                    name="floor"
-                                    value={formData.floor}
-                                    onChange={handleChange}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={4}>
-                                <TextField
-                                    fullWidth
-                                    label="Blok"
-                                    name="block"
-                                    value={formData.block}
-                                    onChange={handleChange}
-                                />
-                            </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Autocomplete
                                     options={users}

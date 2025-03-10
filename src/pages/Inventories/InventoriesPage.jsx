@@ -854,13 +854,13 @@ function InventoriesPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', 'inventory_template.xlsx');
+            link.setAttribute('download', 'envanter_sablonu.xlsx');
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            setError('Failed to download template: ' + err.message);
+            setError('Şablon indirilemedi: ' + err.message);
         }
     };
 
@@ -872,13 +872,33 @@ function InventoriesPage() {
         const file = event.target.files?.[0];
         if (!file) return;
 
+        if (!file.name.endsWith('.xlsx')) {
+            setError('Lütfen bir Excel dosyası (.xlsx) yükleyin');
+            event.target.value = '';
+            return;
+        }
+
         try {
             const response = await importExcel(file);
-            setSuccessMessage(response.data.message);
-            fetchInventories(); // Refresh the inventory list
-            event.target.value = ''; // Reset file input
+            setSuccessMessage(response.data.message || 'Envanter başarıyla içe aktarıldı');
+            fetchInventories();
+            event.target.value = '';
         } catch (err) {
-            setError(err.response?.data?.errors?.join('\n') || 'Failed to import file');
+            if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+                setError(
+                    <div>
+                        <p>Excel içe aktarma sırasında hatalar oluştu:</p>
+                        <ul>
+                            {err.response.data.errors.map((error, index) => (
+                                <li key={index}>{error}</li>
+                            ))}
+                        </ul>
+                    </div>
+                );
+            } else {
+                setError(err.response?.data?.message || 'Dosya içe aktarılamadı');
+            }
+            event.target.value = '';
         }
     };
 
