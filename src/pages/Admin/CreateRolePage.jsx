@@ -38,6 +38,9 @@ import httpClient from '../../api/httpClient';
 
 // Define permissions based on backend constants
 const availablePermissions = {
+    'AdminPanel': [
+        'AdminPanel:View'
+    ],
     'Inventory': [
         'Inventory:View',
         'Inventory:Create',
@@ -79,6 +82,9 @@ const getPermissionDisplayName = (permission) => {
     else if (action === 'Assign') actionText = 'Atama';
     else if (action === 'UploadFile') actionText = 'Dosya Yükleme';
     
+    // Special case for AdminPanel:View
+    if (permission === 'AdminPanel:View') return 'Admin Paneline Erişim';
+    
     return actionText;
 };
 
@@ -88,6 +94,7 @@ const getCategoryDisplayName = (category) => {
     if (category === 'Users') return 'Kullanıcılar';
     if (category === 'Tickets') return 'Çağrılar';
     if (category === 'Roles') return 'Rol Yönetimi';
+    if (category === 'AdminPanel') return 'Admin Paneli';
     return category;
 };
 

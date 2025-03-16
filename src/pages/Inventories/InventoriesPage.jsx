@@ -88,28 +88,28 @@ import {
 
 const COLUMNS = [
     { id: 'id', label: 'ID', always: true },
-    { id: 'barcode', label: 'Barcode' },
-    { id: 'serialNumber', label: 'Serial Number' },
-    { id: 'family', label: 'Family' },
-    { id: 'type', label: 'Type' },
-    { id: 'brand', label: 'Brand' },
+    { id: 'barcode', label: 'Barkod' },
+    { id: 'serialNumber', label: 'Seri Numarası' },
+    { id: 'family', label: 'Aile' },
+    { id: 'type', label: 'Tip' },
+    { id: 'brand', label: 'Marka' },
     { id: 'model', label: 'Model' },
-    { id: 'location', label: 'Location' },
-    { id: 'status', label: 'Status' },
-    { id: 'room', label: 'Room' },
-    { id: 'floor', label: 'Floor' },
-    { id: 'block', label: 'Block' },
-    { id: 'department', label: 'Department' },
-    { id: 'purchasePrice', label: 'Purchase Price' },
-    { id: 'purchaseCurrency', label: 'Currency' },
-    { id: 'warrantyStartDate', label: 'Warranty Start' },
-    { id: 'warrantyEndDate', label: 'Warranty End' },
-    { id: 'supplier', label: 'Supplier' },
-    { id: 'supportCompany', label: 'Support Company' },
-    { id: 'assignedUser', label: 'Assigned User' },
-    { id: 'createdDate', label: 'Created Date' },
-    { id: 'updatedDate', label: 'Updated Date' },
-    { id: 'actions', label: 'Actions', always: true },
+    { id: 'location', label: 'Konum' },
+    { id: 'status', label: 'Durum' },
+    { id: 'room', label: 'Oda' },
+    { id: 'floor', label: 'Kat' },
+    { id: 'block', label: 'Blok' },
+    { id: 'department', label: 'Departman' },
+    { id: 'assignedUser', label: 'Atanan Kullanıcı' },
+    { id: 'createdUser', label: 'Oluşturan Kullanıcı' },
+    { id: 'warrantyStartDate', label: 'Garanti Başlangıç Tarihi' },
+    { id: 'warrantyEndDate', label: 'Garanti Bitiş Tarihi' },
+    { id: 'supplier', label: 'Tedarikçi' },
+    { id: 'purchasePrice', label: 'Satın Alma Fiyatı' },
+    { id: 'purchaseCurrency', label: 'Para Birimi' },
+    { id: 'createdDate', label: 'Oluşturma Tarihi' },
+    { id: 'updatedDate', label: 'Güncelleme Tarihi' },
+    { id: 'actions', label: 'İşlemler', always: true },
 ];
 
 const statusColors = {
@@ -977,23 +977,6 @@ function InventoriesPage() {
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <Button
                             variant="outlined"
-                            startIcon={<ViewColumnIcon />}
-                            onClick={() => setShowColumnsDialog(true)}
-                            sx={{
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                px: 3,
-                                py: 1,
-                                borderWidth: 1.5,
-                                '&:hover': {
-                                    borderWidth: 1.5,
-                                }
-                            }}
-                        >
-                            Sütunlar
-                        </Button>
-                        <Button
-                            variant="outlined"
                             startIcon={<FileDownloadIcon />}
                             onClick={handleDownloadTemplate}
                             sx={{
@@ -1091,46 +1074,65 @@ function InventoriesPage() {
                     }}
                 />
 
-                <TextField
-                    fullWidth
-                    variant="outlined"
-                    placeholder="Search inventories..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon color="action" />
-                            </InputAdornment>
-                        ),
-                        sx: {
-                            borderRadius: 2,
-                            bgcolor: 'grey.50',
-                            '&:hover': {
-                                bgcolor: 'grey.100',
-                            },
-                            '& fieldset': {
-                                borderColor: 'transparent',
-                            },
-                            '&:hover fieldset': {
-                                borderColor: 'transparent',
-                            },
-                            '&.Mui-focused fieldset': {
-                                borderColor: 'primary.main',
-                            },
-                        }
-                    }}
-                    sx={{
-                        mb: 3,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            '&:hover': {
-                                bgcolor: 'background.default',
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Envanterlerde ara..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                            sx: {
+                                borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                    bgcolor: 'grey.100',
+                                },
+                                '& fieldset': {
+                                    borderColor: 'transparent',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'transparent',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                },
                             }
-                        }
-                    }}
-                />
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                bgcolor: 'background.paper',
+                                '&:hover': {
+                                    bgcolor: 'background.default',
+                                }
+                            }
+                        }}
+                    />
+                    <Button
+                        variant="outlined"
+                        startIcon={<ViewColumnIcon />}
+                        onClick={() => setShowColumnsDialog(true)}
+                        sx={{
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            borderWidth: 1.5,
+                            '&:hover': {
+                                borderWidth: 1.5,
+                            },
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        Sütunlar
+                    </Button>
+                </Box>
 
                 <TableContainer 
                     sx={{ 
@@ -1174,7 +1176,7 @@ function InventoriesPage() {
                             {filteredInventories.map((inventory) => (
                                 <TableRow
                                     key={inventory.id}
-                                    onClick={() => navigate(`/inventories/detail/${inventory.id}`)}
+                                    onClick={() => handleInventoryClick(inventory)}
                                     sx={{ 
                                         cursor: 'pointer',
                                         '&:hover': { bgcolor: 'action.hover' }
@@ -1199,89 +1201,156 @@ function InventoriesPage() {
                                                         >
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
-                                                        <Tooltip title="Pasif duruma al">
-                                                            <IconButton
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDelete(inventory.id);
-                                                                }}
-                                                                color="error"
-                                                                size="small"
-                                                                sx={{ 
-                                                                    bgcolor: 'error.50',
-                                                                    '&:hover': { bgcolor: 'error.100' }
-                                                                }}
-                                                                aria-label="Pasif duruma al"
-                                                            >
-                                                                <DeleteIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <IconButton
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(inventory.id);
+                                                            }}
+                                                            color="error"
+                                                            size="small"
+                                                            sx={{ 
+                                                                bgcolor: 'error.50',
+                                                                '&:hover': { bgcolor: 'error.100' }
+                                                            }}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
                                                     </Box>
                                                 </TableCell>
                                             );
-                                        } else if (column.id === 'status') {
+                                        }
+                                        
+                                        if (column.id === 'id') {
                                             return (
                                                 <TableCell key={column.id} sx={{ py: 2 }}>
                                                     <Chip 
-                                                        label={inventory.status}
-                                                        color={statusColors[inventory.status] || 'default'}
+                                                        label={inventory.id} 
+                                                        size="small" 
+                                                        sx={{ 
+                                                            fontWeight: 'medium',
+                                                            bgcolor: 'primary.50',
+                                                            color: 'primary.main'
+                                                        }} 
+                                                    />
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'status') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    <Chip 
+                                                        label={inventory.status} 
                                                         size="small"
                                                         sx={{ 
-                                                            borderRadius: 1,
-                                                            '& .MuiChip-label': { px: 2 }
+                                                            bgcolor: 
+                                                                inventory.status === 'Aktif' ? 'success.50' :
+                                                                inventory.status === 'Bakımda' ? 'warning.50' :
+                                                                inventory.status === 'Arızalı' ? 'error.50' :
+                                                                'grey.50',
+                                                            color: 
+                                                                inventory.status === 'Aktif' ? 'success.main' :
+                                                                inventory.status === 'Bakımda' ? 'warning.main' :
+                                                                inventory.status === 'Arızalı' ? 'error.main' :
+                                                                'text.secondary',
                                                         }}
                                                     />
                                                 </TableCell>
                                             );
-                                        } else if (['warrantyStartDate', 'warrantyEndDate', 'createdDate', 'updatedDate'].includes(column.id)) {
+                                        }
+                                        
+                                        if (column.id === 'warrantyEndDate') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                                        <Typography variant="body2">
+                                                            {formatDate(inventory.warrantyEndDate)}
+                                                        </Typography>
+                                                        {getWarrantyStatusChip(inventory.warrantyEndDate)}
+                                                    </Box>
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'assignedUser') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.assignedUser ? 
+                                                        `${inventory.assignedUser.name} ${inventory.assignedUser.surname}` : 
+                                                        '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'createdUser') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.createdUser ? 
+                                                        `${inventory.createdUser.name} ${inventory.createdUser.surname}` : 
+                                                        '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'family') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.familyName || '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'type') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.typeName || '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'brand') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.brandName || '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'model') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.modelName || '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'purchasePrice') {
+                                            return (
+                                                <TableCell key={column.id} sx={{ py: 2 }}>
+                                                    {inventory.purchasePrice ? 
+                                                        `${inventory.purchasePrice} ${
+                                                            inventory.purchaseCurrency === 1 ? '₺' : 
+                                                            inventory.purchaseCurrency === 2 ? '$' : 
+                                                            inventory.purchaseCurrency === 3 ? '€' : ''
+                                                        }` : 
+                                                        '-'}
+                                                </TableCell>
+                                            );
+                                        }
+                                        
+                                        if (column.id === 'warrantyStartDate' || column.id === 'createdDate' || column.id === 'updatedDate') {
                                             return (
                                                 <TableCell key={column.id} sx={{ py: 2 }}>
                                                     {formatDate(inventory[column.id])}
                                                 </TableCell>
                                             );
-                                        } else if (column.id === 'department') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory.department?.name || '-'}
-                                                </TableCell>
-                                            );
-                                        } else if (column.id === 'supplier') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory.supplier?.name || '-'}
-                                                </TableCell>
-                                            );
-                                        } else if (column.id === 'supportCompany') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory.supportCompany?.name || '-'}
-                                                </TableCell>
-                                            );
-                                        } else if (column.id === 'assignedUser') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory.assignedUser?.email || '-'}
-                                                </TableCell>
-                                            );
-                                        } else if (column.id === 'purchasePrice') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory.purchasePrice ? `${inventory.purchasePrice.toLocaleString()} ${CURRENCY_MAP[inventory.purchaseCurrency] || '-'}` : '-'}
-                                                </TableCell>
-                                            );
-                                        } else if (column.id === 'purchaseCurrency') {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {CURRENCY_MAP[inventory.purchaseCurrency] || '-'}
-                                                </TableCell>
-                                            );
-                                        } else {
-                                            return (
-                                                <TableCell key={column.id} sx={{ py: 2 }}>
-                                                    {inventory[column.id] || '-'}
-                                                </TableCell>
-                                            );
                                         }
+                                        
+                                        return (
+                                            <TableCell key={column.id} sx={{ py: 2 }}>
+                                                {inventory[column.id] || '-'}
+                                            </TableCell>
+                                        );
                                     })}
                                 </TableRow>
                             ))}

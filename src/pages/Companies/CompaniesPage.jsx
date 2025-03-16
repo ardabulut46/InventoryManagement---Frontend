@@ -37,14 +37,15 @@ import {
 import { Link } from 'react-router-dom';
 import { getCompanies, deleteCompany } from '../../api/CompanyService';
 
+// Company type mapping (based on CompanyType enum)
 const typeColors = {
-    'Supplier': 'primary',
-    'Support': 'secondary',
+    1: 'secondary', // Support = 1
+    2: 'primary',   // Supplier = 2
 };
 
 const typeIcons = {
-    'Supplier': <SupplierIcon />,
-    'Support': <SupportIcon />,
+    1: <SupportIcon />,   // Support = 1
+    2: <SupplierIcon />,  // Supplier = 2
 };
 
 function CompaniesPage() {
@@ -73,8 +74,8 @@ function CompaniesPage() {
             // Calculate stats
             const companyStats = response.data.reduce((acc, company) => ({
                 total: acc.total + 1,
-                suppliers: acc.suppliers + (company.type === 'Supplier' ? 1 : 0),
-                support: acc.support + (company.type === 'Support' ? 1 : 0)
+                suppliers: acc.suppliers + (company.type === 2 ? 1 : 0),
+                support: acc.support + (company.type === 1 ? 1 : 0)
             }), { total: 0, suppliers: 0, support: 0 });
             
             setStats(companyStats);
@@ -260,7 +261,7 @@ function CompaniesPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Chip 
-                                            label={company.type === 'Supplier' ? 'Tedarikçi' : 'Destek'}
+                                            label={company.type === 2 ? 'Tedarikçi' : 'Destek'}
                                             color={typeColors[company.type]}
                                             size="small"
                                         />

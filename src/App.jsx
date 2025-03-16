@@ -50,6 +50,7 @@ import FamiliesPage from './pages/Admin/FamiliesPage'
 import InventoryTypesPage from './pages/Admin/InventoryTypesPage'
 import BrandsPage from './pages/Admin/BrandsPage'
 import ModelsPage from './pages/Admin/ModelsPage'
+import AssignedInventoriesPage from './pages/Inventories/AssignedInventoriesPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -113,6 +114,7 @@ function App() {
                             <Route path="/inventories/upload-invoice" element={<UploadInvoicePage />} />
                             <Route path="/inventories/detail/:id" element={<InventoryDetailPage />} />
                             <Route path="/inventories/warranty-status" element={<WarrantyStatusPage />} />
+                            <Route path="/inventories/assigned" element={<AssignedInventoriesPage />} />
 
                             {/* TICKETS */}
                             <Route path="/tickets" element={<TicketsPage />} />

@@ -87,6 +87,7 @@ const getRoleColor = (roleName) => {
 // Helper function to categorize permissions
 const categorizePermissions = (permissions) => {
     const categories = {
+        'AdminPanel': [],
         'Inventory': [],
         'Users': [],
         'Tickets': [],
@@ -380,13 +381,32 @@ const RolesPage = () => {
                                                                 {category === 'Inventory' ? 'Envanter' : 
                                                                 category === 'Users' ? 'Kullanıcılar' : 
                                                                 category === 'Tickets' ? 'Çağrılar' : 
-                                                                category === 'Roles' ? 'Rol Yönetimi' : 'Diğer'}
+                                                                category === 'Roles' ? 'Rol Yönetimi' : 
+                                                                category === 'AdminPanel' ? 'Admin Paneli' : 'Diğer'}
                                                             </Typography>
                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
                                                                 {perms.map((permission, index) => {
                                                                     // Get the permission name (handle both string and object formats)
                                                                     const permissionName = typeof permission === 'string' ? permission : permission.name;
                                                                     if (!permissionName) return null;
+                                                                    
+                                                                    // Special case for AdminPanel:View
+                                                                    if (permissionName === 'AdminPanel:View') {
+                                                                        return (
+                                                                            <Chip
+                                                                                key={index}
+                                                                                label="Admin Paneline Erişim"
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    bgcolor: `${roleColor}15`,
+                                                                                    color: roleColor,
+                                                                                    '&:hover': {
+                                                                                        bgcolor: `${roleColor}25`,
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        );
+                                                                    }
                                                                     
                                                                     const [resource, action] = permissionName.split(':');
                                                                     let actionText = action;
