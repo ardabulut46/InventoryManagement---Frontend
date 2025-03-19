@@ -41,6 +41,8 @@ import SolutionTimesPage from './pages/Admin/SolutionTimesPage'
 import ProblemTypesPage from './pages/Admin/ProblemTypesPage'
 import SolutionTypesPage from './pages/Admin/SolutionTypesPage'
 import AssignmentTimesPage from './pages/Admin/AssignmentTimesPage'
+import DelayReasonsPage from './pages/Admin/TicketSettings/DelayReasonsPage'
+import CancelReasonsPage from './pages/Admin/TicketSettings/CancelReasonsPage'
 import MyTicketsPage from './pages/Tickets/MyTicketsPage'
 import CompanySettingsPage from './pages/Admin/CompanySettingsPage'
 import RolesPage from './pages/Admin/RolesPage'
@@ -51,6 +53,7 @@ import InventoryTypesPage from './pages/Admin/InventoryTypesPage'
 import BrandsPage from './pages/Admin/BrandsPage'
 import ModelsPage from './pages/Admin/ModelsPage'
 import AssignedInventoriesPage from './pages/Inventories/AssignedInventoriesPage'
+import GroupInventoriesPage from './pages/Inventories/GroupInventoriesPage'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -115,6 +118,7 @@ function App() {
                             <Route path="/inventories/detail/:id" element={<InventoryDetailPage />} />
                             <Route path="/inventories/warranty-status" element={<WarrantyStatusPage />} />
                             <Route path="/inventories/assigned" element={<AssignedInventoriesPage />} />
+                            <Route path="/inventories/group" element={<GroupInventoriesPage />} />
 
                             {/* TICKETS */}
                             <Route path="/tickets" element={<TicketsPage />} />
@@ -153,6 +157,8 @@ function App() {
                             <Route path="/admin/ticket-settings/problem-types" element={<ProblemTypesPage />} />
                             <Route path="/admin/ticket-settings/solution-types" element={<SolutionTypesPage />} />
                             <Route path="/admin/ticket-settings/assignment-times" element={<AssignmentTimesPage />} />
+                            <Route path="/admin/ticket-settings/delay-reasons" element={<DelayReasonsPage />} />
+                            <Route path="/admin/ticket-settings/cancel-reasons" element={<CancelReasonsPage />} />
                             <Route path="/admin/inventory-settings" element={<InventorySettingsPage />} />
                             <Route path="/admin/inventory-settings/families" element={<FamiliesPage />} />
                             <Route path="/admin/inventory-settings/types" element={<InventoryTypesPage />} />

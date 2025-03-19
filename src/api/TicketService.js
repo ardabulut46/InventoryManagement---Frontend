@@ -31,7 +31,7 @@ export const deleteTicket = (id) => {
 }
 
 export const getMyTickets = () => {
-    return httpClient.get(`${endpoint}/my-tickets`)
+    return httpClient.get('/api/Ticket/my-tickets')
 }
 
 export const getDepartmentTickets = () => {
@@ -60,6 +60,10 @@ export const getMyAllTickets = () => {
 
 export const transferTicket = (ticketId, transferTicketDto) => {
     return httpClient.post(`${endpoint}/${ticketId}/transfer`, transferTicketDto)
+}
+
+export const getHighPriorityTickets = () => {
+    return httpClient.get('/api/Ticket/high-priority-tickets')
 }
 
 // Add more ticket-specific operations as needed

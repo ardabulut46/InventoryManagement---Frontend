@@ -45,6 +45,10 @@ export const getAssignedInventories = () => {
     return httpClient.get(`${endpoint}/assigned`)
 }
 
+export const getGroupInventories = () => {
+    return httpClient.get(`${endpoint}/group-inventories`)
+}
+
 export const getAssignmentHistory = (inventoryId) => {
     return httpClient.get(`${endpoint}/${inventoryId}/assignment-history`)
 }

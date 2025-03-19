@@ -58,11 +58,14 @@ import {
   Flag as FlagIcon,
   Description as DescriptionIcon,
   SwapHoriz as SwapHorizIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { getTicketById, assignTicket, transferTicket } from '../../api/TicketService';
 import { API_URL } from '../../config';
 import { getCurrentUser } from '../../api/auth';
 import TicketNotes from '../../components/TicketNotes';
+import CancelReasonService from '../../api/CancelReasonService';
+import httpClient from '../../api/httpClient';
 
 const statusColors = {
   'New': '#2196f3',
@@ -117,10 +120,17 @@ function TicketDetailPage() {
   const [groups, setGroups] = useState([]);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReasons, setCancelReasons] = useState([]);
+  const [cancelData, setCancelData] = useState({
+    cancelReasonId: '',
+    notes: ''
+  });
 
   useEffect(() => {
     fetchTicket();
     fetchGroups();
+    fetchCancelReasons();
   }, [id]);
 
   const fetchGroups = async () => {
@@ -130,6 +140,15 @@ function TicketDetailPage() {
       setGroups(data);
     } catch (err) {
       console.error('Error fetching groups:', err);
+    }
+  };
+
+  const fetchCancelReasons = async () => {
+    try {
+      const response = await CancelReasonService.getActiveCancelReasons();
+      setCancelReasons(response.data);
+    } catch (err) {
+      console.error('Error fetching cancel reasons:', err);
     }
   };
 
@@ -216,6 +235,69 @@ function TicketDetailPage() {
     }
   };
 
+  const handleCancelDialogOpen = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelDialogClose = () => {
+    setCancelDialogOpen(false);
+    setCancelData({
+      cancelReasonId: '',
+      notes: ''
+    });
+  };
+
+  const handleCancelDataChange = (e) => {
+    const { name, value } = e.target;
+    setCancelData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCancelTicket = async () => {
+    try {
+      await httpClient.post(`/api/Ticket/${id}/cancel`, cancelData);
+      handleCancelDialogClose();
+      setSuccessMessage('Çağrı başarıyla iptal edildi!');
+      await fetchTicket(); // Refresh ticket data
+    } catch (err) {
+      console.error('Error cancelling ticket:', err);
+      setError('Çağrı iptal edilirken bir hata oluştu.');
+    }
+  };
+
+  // Add a new function to handle file downloads
+  const handleDownloadAttachment = async () => {
+    try {
+      // Get the filename from the path
+      const fileName = ticket.attachmentPath.split('/').pop();
+      
+      // Fetch the file
+      const response = await fetch(`${API_URL}/${ticket.attachmentPath}`);
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName; // Set the filename for download
+      document.body.appendChild(link);
+      
+      // Trigger the download
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading attachment:', err);
+      setError('Dosya indirilirken bir hata oluştu.');
+    }
+  };
+
   if (error) {
     return (
       <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -280,7 +362,7 @@ function TicketDetailPage() {
                     Çağrıyı Üstlen
                   </Button>
                 )}
-                {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && isAssignedToCurrentUser && (
+                {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && ticket?.status !== 'Cancelled' && isAssignedToCurrentUser && (
                   <>
                     <Button
                       variant="contained"
@@ -290,6 +372,15 @@ function TicketDetailPage() {
                       sx={{ borderRadius: 2, textTransform: 'none' }}
                     >
                       Çağrıyı Transfer Et
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      startIcon={<CancelIcon />}
+                      onClick={handleCancelDialogOpen}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      İptal Et
                     </Button>
                     <Button
                       variant="contained"
@@ -553,8 +644,7 @@ function TicketDetailPage() {
                     variant="contained"
                     size="small"
                     startIcon={<DownloadIcon />}
-                    href={`${API_URL}/${ticket.attachmentPath}`}
-                    target="_blank"
+                    onClick={handleDownloadAttachment}
                     sx={{ borderRadius: 2, textTransform: 'none' }}
                   >
                     İndir
@@ -756,6 +846,73 @@ function TicketDetailPage() {
             startIcon={<AssignmentIcon />}
           >
             Evet, Üstlen
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onClose={handleCancelDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ 
+          pb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          color: theme.palette.error.main,
+          fontWeight: 'bold'
+        }}>
+          <CancelIcon />
+          Çağrıyı İptal Et
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Bu çağrıyı iptal etmek istediğinizden emin misiniz? İptal edilen çağrılar tekrar açılamaz.
+            </Typography>
+            <FormControl fullWidth required>
+              <InputLabel id="cancel-reason-select-label">İptal Sebebi</InputLabel>
+              <Select
+                labelId="cancel-reason-select-label"
+                id="cancel-reason-select"
+                name="cancelReasonId"
+                value={cancelData.cancelReasonId}
+                label="İptal Sebebi *"
+                onChange={handleCancelDataChange}
+              >
+                {cancelReasons.map((reason) => (
+                  <MenuItem key={reason.id} value={reason.id}>
+                    {reason.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Açıklama"
+              name="notes"
+              value={cancelData.notes}
+              onChange={handleCancelDataChange}
+              multiline
+              rows={4}
+              placeholder="İptal etme sebebinizi detaylandırın..."
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button 
+            onClick={handleCancelDialogClose}
+            variant="outlined"
+            color="inherit"
+          >
+            Vazgeç
+          </Button>
+          <Button 
+            onClick={handleCancelTicket}
+            variant="contained"
+            color="error"
+            startIcon={<CancelIcon />}
+            disabled={!cancelData.cancelReasonId}
+          >
+            İptal Et
           </Button>
         </DialogActions>
       </Dialog>

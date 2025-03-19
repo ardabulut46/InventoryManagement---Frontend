@@ -24,6 +24,7 @@ import {
     CardContent,
     Grid,
     Stack,
+    Avatar,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -31,6 +32,16 @@ import {
     Edit as EditIcon,
     Info as InfoIcon,
     Group as GroupIcon,
+    ArrowForward as ArrowForwardIcon,
+    CheckCircle as CheckCircleIcon,
+    Warning as WarningIcon,
+    Error as ErrorIcon,
+    NewReleases as NewIcon,
+    PriorityHigh as PriorityIcon,
+    Assignment as AssignmentIcon,
+    AccessTime as AccessTimeIcon,
+    ArrowBack as ArrowBackIcon,
+    Bolt as BoltIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getDepartmentTickets } from '../../api/TicketService';
@@ -46,6 +57,20 @@ const statusColors = {
     'Cancelled': 'error',
 };
 
+const statusTranslations = {
+    'New': 'Yeni',
+    'In Progress': 'Devam Eden',
+    'Completed': 'Tamamlanan',
+    'Cancelled': 'İptal Edilen'
+};
+
+const statusIcons = {
+    'New': <NewIcon />,
+    'In Progress': <WarningIcon />,
+    'Completed': <CheckCircleIcon />,
+    'Cancelled': <ErrorIcon />,
+};
+
 function DepartmentTicketsPage() {
     const navigate = useNavigate();
     const theme = useTheme();
@@ -53,6 +78,7 @@ function DepartmentTicketsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('all');
 
     useEffect(() => {
         fetchTickets();
@@ -71,11 +97,17 @@ function DepartmentTicketsPage() {
         }
     };
 
-    const filteredTickets = tickets.filter(ticket =>
-        Object.values(ticket).some(value =>
+    const handleStatusCardClick = (status) => {
+        setSelectedStatus(status);
+    };
+
+    const filteredTickets = tickets.filter(ticket => {
+        const matchesSearch = Object.values(ticket).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+        );
+        const matchesStatus = selectedStatus === 'all' || ticket.status === selectedStatus;
+        return matchesSearch && matchesStatus;
+    });
 
     const handleTicketClick = (ticketId) => {
         navigate(`/tickets/${ticketId}`);
@@ -108,7 +140,17 @@ function DepartmentTicketsPage() {
                 <Box sx={{ mb: 4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                         <GroupIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} />
-                        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+                        <Typography 
+                            variant="h4" 
+                            component="h1" 
+                            sx={{ 
+                                fontWeight: 'bold',
+                                background: 'linear-gradient(45deg, #1976d2, #64b5f6)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                color: 'transparent',
+                            }}
+                        >
                             Grubumun Çağrıları
                         </Typography>
                     </Box>
@@ -119,51 +161,308 @@ function DepartmentTicketsPage() {
 
                 {/* Summary Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ bgcolor: theme.palette.primary.light }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{ color: theme.palette.primary.contrastText }}>
-                                    Toplam Çağrı
-                                </Typography>
-                                <Typography variant="h3" sx={{ color: theme.palette.primary.contrastText }}>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(25, 118, 210, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(25, 118, 210, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3,
+                                    height: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        Toplam Çağrı
+                                    </Typography>
+                                    <AssignmentIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
                                     {tickets.length}
                                 </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                    Gruptaki tüm çağrılar
+                                </Typography>
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ bgcolor: theme.palette.warning.light }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{ color: theme.palette.warning.contrastText }}>
-                                    Devam Eden
-                                </Typography>
-                                <Typography variant="h3" sx={{ color: theme.palette.warning.contrastText }}>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(255, 152, 0, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(255, 152, 0, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`,
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                onClick={() => handleStatusCardClick('In Progress')} 
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3, 
+                                    cursor: 'pointer',
+                                    height: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        Devam Eden
+                                    </Typography>
+                                    <WarningIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
                                     {tickets.filter(t => t.status === 'In Progress').length}
                                 </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        Çalışma devam ediyor
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ bgcolor: theme.palette.success.light }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{ color: theme.palette.success.contrastText }}>
-                                    Çözümlenen
-                                </Typography>
-                                <Typography variant="h3" sx={{ color: theme.palette.success.contrastText }}>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(76, 175, 80, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(76, 175, 80, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: `linear-gradient(135deg, ${theme.palette.success.light} 0%, ${theme.palette.success.main} 100%)`,
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                onClick={() => handleStatusCardClick('Completed')} 
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3, 
+                                    cursor: 'pointer',
+                                    height: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        Tamamlanan
+                                    </Typography>
+                                    <CheckCircleIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
                                     {tickets.filter(t => t.status === 'Completed').length}
                                 </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        Tamamlanmış çağrılar
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ bgcolor: theme.palette.error.light }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{ color: theme.palette.error.contrastText }}>
-                                    Kritik Öncelikli
-                                </Typography>
-                                <Typography variant="h3" sx={{ color: theme.palette.error.contrastText }}>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(244, 67, 54, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(244, 67, 54, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: `linear-gradient(135deg, ${theme.palette.error.light} 0%, ${theme.palette.error.main} 100%)`,
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3,
+                                    height: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        Kritik Öncelikli
+                                    </Typography>
+                                    <BoltIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
                                     {tickets.filter(t => t.priority === 1).length}
                                 </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                    Hemen ilgilenilmeli
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(158, 158, 158, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(158, 158, 158, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: 'linear-gradient(135deg, #757575 0%, #424242 100%)',
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                onClick={() => handleStatusCardClick('Cancelled')} 
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3, 
+                                    cursor: 'pointer',
+                                    height: '100%',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        İptal Edilen
+                                    </Typography>
+                                    <ErrorIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                                    {tickets.filter(t => t.status === 'Cancelled').length}
+                                </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        İptal edilmiş çağrılar
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -177,7 +476,7 @@ function DepartmentTicketsPage() {
                     </Fade>
                 )}
 
-                <Box sx={{ mb: 4 }}>
+                <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <TextField
                         variant="outlined"
                         placeholder="Çağrılarda ara..."
@@ -198,6 +497,17 @@ function DepartmentTicketsPage() {
                             }
                         }}
                     />
+                    <Button
+                        variant="outlined"
+                        onClick={() => setSelectedStatus('all')}
+                        sx={{ 
+                            borderRadius: 2,
+                            borderColor: selectedStatus === 'all' ? 'primary.main' : 'divider',
+                            color: selectedStatus === 'all' ? 'primary.main' : 'text.secondary',
+                        }}
+                    >
+                        Tümü
+                    </Button>
                 </Box>
 
                 <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>

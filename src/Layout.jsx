@@ -270,6 +270,7 @@ function Layout() {
             subItems: [
                 { text: 'Tüm Envanterler', path: '/inventories' },
                 { text: 'Üzerimdeki Envanterler', path: '/inventories/assigned' },
+                { text: 'Grubumun Envanterleri', path: '/inventories/group' },
                 { text: 'Fatura Yükle', path: '/inventories/upload-invoice' },
             ]
         },

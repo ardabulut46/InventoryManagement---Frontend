@@ -144,7 +144,7 @@ function TicketsPage() {
                             color: 'transparent',
                         }}
                     >
-                        Tickets
+                        Çağrılar
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <Button
@@ -165,7 +165,7 @@ function TicketsPage() {
                                 }
                             }}
                         >
-                            Create New Ticket
+                            Yeni Çağrı Oluştur
                         </Button>
                     </Box>
                 </Box>
@@ -188,7 +188,7 @@ function TicketsPage() {
                 <TextField
                     fullWidth
                     variant="outlined"
-                    placeholder="Search tickets..."
+                    placeholder="Çağrılarda ara..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     InputProps={{
@@ -230,13 +230,13 @@ function TicketsPage() {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: 'background.default' }}>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Registration #</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Subject</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Department</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Location</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Created Date</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Kayıt No</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Konu</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Departman</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Konum</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Durum</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Oluşturma Tarihi</TableCell>
+                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>İşlemler</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -255,7 +255,7 @@ function TicketsPage() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             {ticket.registrationNumber}
                                             {ticket.attachmentPath && (
-                                                <Tooltip title="Has attachment">
+                                                <Tooltip title="Ek var">
                                                     <AttachmentIcon 
                                                         fontSize="small" 
                                                         sx={{ 
@@ -271,7 +271,7 @@ function TicketsPage() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Typography>{ticket.subject}</Typography>
                                             {ticket.attachmentPath && (
-                                                <Tooltip title="Has attachment">
+                                                <Tooltip title="Ek var">
                                                     <AttachmentIcon 
                                                         fontSize="small" 
                                                         sx={{ 
@@ -292,7 +292,7 @@ function TicketsPage() {
                                                 color="text.secondary"
                                                 sx={{ ml: 0.5 }}
                                             >
-                                                (Room: {ticket.room})
+                                                (Oda: {ticket.room})
                                             </Typography>
                                         )}
                                     </TableCell>
@@ -361,7 +361,7 @@ function TicketsPage() {
                                             fontStyle: 'italic'
                                         }}
                                     >
-                                        No tickets found.
+                                        Çağrı bulunamadı.
                                     </TableCell>
                                 </TableRow>
                             )}

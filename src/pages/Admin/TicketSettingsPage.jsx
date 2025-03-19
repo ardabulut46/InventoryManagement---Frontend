@@ -18,6 +18,8 @@ import {
     Build as BuildIcon,
     Schedule as ScheduleIcon,
     Group as GroupIcon,
+    HourglassEmpty as DelayIcon,
+    Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,6 +29,8 @@ import { getProblemTypes } from '../../api/ProblemTypeService';
 import SolutionTypeService from '../../api/SolutionTypeService';
 import { getAssignmentTimes } from '../../api/AssignmentTimeService';
 import { getGroups } from '../../api/GroupService';
+import DelayReasonService from '../../api/DelayReasonService';
+import CancelReasonService from '../../api/CancelReasonService';
 
 function TicketSettingsPage() {
     const theme = useTheme();
@@ -40,6 +44,8 @@ function TicketSettingsPage() {
     const [solutionTypes, setSolutionTypes] = useState([]);
     const [assignmentTimes, setAssignmentTimes] = useState([]);
     const [groups, setGroups] = useState([]);
+    const [delayReasons, setDelayReasons] = useState([]);
+    const [cancelReasons, setCancelReasons] = useState([]);
 
     useEffect(() => {
         fetchData();
@@ -53,13 +59,17 @@ function TicketSettingsPage() {
                 problemTypesRes,
                 solutionTypesRes,
                 assignmentTimesRes,
-                groupsRes
+                groupsRes,
+                delayReasonsRes,
+                cancelReasonsRes
             ] = await Promise.all([
                 SolutionTimeService.getAllSolutionTimes(),
                 getProblemTypes(),
                 SolutionTypeService.getSolutionTypes(),
                 getAssignmentTimes(),
-                getGroups()
+                getGroups(),
+                DelayReasonService.getAllDelayReasons(),
+                CancelReasonService.getAllCancelReasons()
             ]);
 
             setSolutionTimes(solutionTimesRes.data);
@@ -67,6 +77,8 @@ function TicketSettingsPage() {
             setSolutionTypes(solutionTypesRes.data);
             setAssignmentTimes(assignmentTimesRes.data);
             setGroups(groupsRes.data);
+            setDelayReasons(delayReasonsRes.data);
+            setCancelReasons(cancelReasonsRes.data);
             setError('');
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -116,6 +128,22 @@ function TicketSettingsPage() {
             path: '/admin/groups',
             color: '#ed6c02',
             count: groups.length
+        },
+        {
+            title: 'Gecikme Sebepleri',
+            description: 'Çağrı gecikme sebeplerini yönet',
+            icon: <DelayIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/ticket-settings/delay-reasons',
+            color: '#f44336',
+            count: delayReasons.length
+        },
+        {
+            title: 'İptal Etme Sebepleri',
+            description: 'Çağrı iptal etme sebeplerini yönet',
+            icon: <CancelIcon sx={{ fontSize: 40 }} />,
+            path: '/admin/ticket-settings/cancel-reasons',
+            color: '#795548',
+            count: cancelReasons.length
         }
     ];
 
