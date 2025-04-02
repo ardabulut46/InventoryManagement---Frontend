@@ -63,7 +63,7 @@ export const transferTicket = (ticketId, transferTicketDto) => {
 }
 
 export const getHighPriorityTickets = () => {
-    return httpClient.get('/api/Ticket/high-priority-tickets')
+    return httpClient.get(`/api/Ticket/high-priority-tickets`);
 }
 
 // Add more ticket-specific operations as needed

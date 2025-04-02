@@ -66,12 +66,17 @@ import { getCurrentUser } from '../../api/auth';
 import TicketNotes from '../../components/TicketNotes';
 import CancelReasonService from '../../api/CancelReasonService';
 import httpClient from '../../api/httpClient';
+import { TICKET_STATUS_TRANSLATIONS, getStatusTranslation, TICKET_STATUS_PROGRESS } from '../../utils/ticketConfig';
 
-const statusColors = {
-  'New': '#2196f3',
-  'In Progress': '#ff9800',
-  'Completed': '#4caf50',
-  'Solved': '#4caf50',
+const HEX_STATUS_COLORS = {
+  'Open': '#2196f3',
+  'InProgress': '#ff9800',
+  'UnderReview': '#9c27b0',
+  'ReadyForTesting': '#3f51b5',
+  'Testing': '#2196f3',
+  'Resolved': '#4caf50',
+  'Closed': '#4caf50',
+  'Reopened': '#ff9800',
   'Cancelled': '#f44336',
 };
 
@@ -126,6 +131,8 @@ function TicketDetailPage() {
     cancelReasonId: '',
     notes: ''
   });
+
+  const statusColors = HEX_STATUS_COLORS;
 
   useEffect(() => {
     fetchTicket();
@@ -189,14 +196,7 @@ function TicketDetailPage() {
   };
 
   const getStatusProgress = () => {
-    const statusMap = {
-      'New': 25,
-      'In Progress': 50,
-      'Completed': 100,
-      'Solved': 100,
-      'Cancelled': 100,
-    };
-    return statusMap[ticket?.status] || 0;
+    return TICKET_STATUS_PROGRESS[ticket?.status] || 0;
   };
 
   const getStatusColor = () => {
@@ -349,6 +349,17 @@ function TicketDetailPage() {
                   <AssignmentIcon fontSize="small" />
                   Çağrı #{ticket.registrationNumber}
                 </Typography>
+                <Chip
+                  label={getStatusTranslation(ticket.status)}
+                  color="primary"
+                  size="medium"
+                  sx={{
+                    mt: 1,
+                    fontWeight: 'bold',
+                    bgcolor: getStatusColor(),
+                    '& .MuiChip-label': { px: 2 }
+                  }}
+                />
               </Box>
               <Stack direction="row" spacing={2} sx={{ flexShrink: 0 }}>
                 {!ticket.userId && (
@@ -362,7 +373,7 @@ function TicketDetailPage() {
                     Çağrıyı Üstlen
                   </Button>
                 )}
-                {ticket?.status !== 'Completed' && ticket?.status !== 'Solved' && ticket?.status !== 'Cancelled' && isAssignedToCurrentUser && (
+                {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && ticket.status !== 'Cancelled' && isAssignedToCurrentUser && (
                   <>
                     <Button
                       variant="contained"
@@ -466,7 +477,7 @@ function TicketDetailPage() {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
                   <Chip
-                    label="Yeni"
+                    label="Açık"
                     size="small"
                     sx={{
                       bgcolor: getStatusProgress() >= 25 ? getStatusColor() : 'grey.300',
@@ -713,6 +724,9 @@ function TicketDetailPage() {
                   </TimelineSeparator>
                   <TimelineContent>
                     <Typography variant="subtitle2">Oluşturuldu</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {getStatusTranslation('Open')}
+                    </Typography>
                   </TimelineContent>
                 </TimelineItem>
                 {ticket.updatedDate && (
@@ -726,10 +740,13 @@ function TicketDetailPage() {
                     </TimelineSeparator>
                     <TimelineContent>
                       <Typography variant="subtitle2">Güncellendi</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {getStatusTranslation(ticket.status)}
+                      </Typography>
                     </TimelineContent>
                   </TimelineItem>
                 )}
-                {ticket.status === 'Completed' && (
+                {(ticket.status === 'Resolved' || ticket.status === 'Closed') && (
                   <TimelineItem>
                     <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
                       {ticket.completedDate ? new Date(ticket.completedDate).toLocaleString('tr-TR') : '-'}
@@ -739,6 +756,9 @@ function TicketDetailPage() {
                     </TimelineSeparator>
                     <TimelineContent>
                       <Typography variant="subtitle2">Tamamlandı</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {getStatusTranslation(ticket.status)}
+                      </Typography>
                     </TimelineContent>
                   </TimelineItem>
                 )}

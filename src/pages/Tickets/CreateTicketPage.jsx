@@ -44,7 +44,7 @@ function CreateTicketPage() {
         inventoryId: null,
         subject: '',
         description: '',
-        status: 'New',
+        status: 'Open',
         priority: 4,
         attachmentPath: ''
     });
@@ -112,10 +112,10 @@ function CreateTicketPage() {
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.problemTypeId) newErrors.problemTypeId = 'Problem type is required';
-        if (!formData.subject) newErrors.subject = 'Subject is required';
-        if (!formData.description) newErrors.description = 'Description is required';
-        if (!formData.priority) newErrors.priority = 'Priority is required';
+        if (!formData.problemTypeId) newErrors.problemTypeId = 'Problem tipi zorunludur';
+        if (!formData.subject) newErrors.subject = 'Konu zorunludur';
+        if (!formData.description) newErrors.description = 'Açıklama zorunludur';
+        if (!formData.priority) newErrors.priority = 'Öncelik zorunludur';
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -140,7 +140,7 @@ function CreateTicketPage() {
             
             // Only call addNotification if it exists
             if (addNotification) {
-                addNotification('Ticket created successfully', 'success');
+                addNotification('Çağrı başarıyla oluşturuldu', 'success');
             }
             
             navigate('/tickets');
@@ -153,7 +153,7 @@ function CreateTicketPage() {
                     headers: err.response.headers
                 });
             }
-            setSubmitError(err.response?.data?.message || err.message || 'Failed to create ticket. Please try again.');
+            setSubmitError(err.response?.data?.message || err.message || 'Çağrı oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
         }
     };
 
@@ -182,11 +182,11 @@ function CreateTicketPage() {
                     setSelectedFile(file);
                     setSubmitError('');
                 } else {
-                    setSubmitError('Failed to upload file. Please try again.');
+                    setSubmitError('Dosya yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
                 }
             } catch (err) {
                 console.error('Error uploading file:', err);
-                setSubmitError('Failed to upload file. Please try again.');
+                setSubmitError('Dosya yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
             }
         }
     };
@@ -199,12 +199,12 @@ function CreateTicketPage() {
         }));
     };
 
-    // Priority options with values matching backend enum
+    // Priority options with values matching backend enum and Turkish labels
     const priorityOptions = [
-        { value: 1, label: 'Critical', color: '#DC2626' },
-        { value: 2, label: 'High', color: '#EA580C' },
+        { value: 1, label: 'Kritik', color: '#DC2626' },
+        { value: 2, label: 'Yüksek', color: '#EA580C' },
         { value: 3, label: 'Normal', color: '#0D9488' },
-        { value: 4, label: 'Low', color: '#2563EB' }
+        { value: 4, label: 'Düşük', color: '#2563EB' }
     ];
 
     // Helper function to map priority to enum
@@ -253,7 +253,7 @@ function CreateTicketPage() {
                             color: 'transparent',
                         }}
                     >
-                        Create New Ticket
+                        Yeni Çağrı Oluştur
                     </Typography>
                 </Box>
 
@@ -290,7 +290,7 @@ function CreateTicketPage() {
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                                         <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
                                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            Basic Information
+                                            Temel Bilgiler
                                         </Typography>
                                     </Box>
                                     <Grid container spacing={2}>
@@ -306,7 +306,7 @@ function CreateTicketPage() {
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Problem Type"
+                                                        label="Problem Tipi"
                                                         error={!!errors.problemTypeId}
                                                         helperText={errors.problemTypeId}
                                                         required
@@ -329,7 +329,7 @@ function CreateTicketPage() {
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Related Inventory"
+                                                        label="İlgili Envanter"
                                                         sx={{
                                                             '& .MuiOutlinedInput-root': {
                                                                 borderRadius: 2,
@@ -344,7 +344,7 @@ function CreateTicketPage() {
                                                             <Box>
                                                                 <Typography>{`${inventory.brand} ${inventory.model}`}</Typography>
                                                                 <Typography variant="caption" color="text.secondary">
-                                                                    {`S/N: ${inventory.serialNumber} • Barcode: ${inventory.barcode}`}
+                                                                    {`Seri No: ${inventory.serialNumber} • Barkod: ${inventory.barcode}`}
                                                                 </Typography>
                                                             </Box>
                                                         </li>
@@ -357,7 +357,7 @@ function CreateTicketPage() {
                                             <TextField
                                                 select
                                                 fullWidth
-                                                label="Priority"
+                                                label="Öncelik"
                                                 name="priority"
                                                 value={formData.priority}
                                                 onChange={handleChange}
@@ -402,14 +402,14 @@ function CreateTicketPage() {
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                                         <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} />
                                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            Ticket Details
+                                            Çağrı Detayları
                                         </Typography>
                                     </Box>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                label="Subject"
+                                                label="Konu"
                                                 name="subject"
                                                 value={formData.subject}
                                                 onChange={handleChange}
@@ -426,7 +426,7 @@ function CreateTicketPage() {
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                label="Description"
+                                                label="Açıklama"
                                                 name="description"
                                                 value={formData.description}
                                                 onChange={handleChange}
@@ -463,7 +463,7 @@ function CreateTicketPage() {
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                                         <AttachmentIcon sx={{ mr: 1, color: 'primary.main' }} />
                                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            Attachment
+                                            Ek Dosya
                                         </Typography>
                                     </Box>
                                     <Box sx={{ 
@@ -485,7 +485,7 @@ function CreateTicketPage() {
                                                 }
                                             }}
                                         >
-                                            Upload File
+                                            Dosya Yükle
                                             <input
                                                 type="file"
                                                 hidden
@@ -520,7 +520,7 @@ function CreateTicketPage() {
                                     </Box>
                                     {selectedFile && (
                                         <Typography variant="caption" color="text.secondary">
-                                            File size: {(selectedFile.size / 1024).toFixed(2)} KB
+                                            Dosya boyutu: {(selectedFile.size / 1024).toFixed(2)} KB
                                         </Typography>
                                     )}
                                 </CardContent>
@@ -547,7 +547,7 @@ function CreateTicketPage() {
                                         }
                                     }}
                                 >
-                                    Create Ticket
+                                    Çağrı Oluştur
                                 </Button>
                                 <Button 
                                     variant="outlined" 
@@ -565,7 +565,7 @@ function CreateTicketPage() {
                                         }
                                     }}
                                 >
-                                    Cancel
+                                    İptal
                                 </Button>
                             </Box>
                         </Grid>

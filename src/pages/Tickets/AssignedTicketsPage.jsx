@@ -45,19 +45,30 @@ import {
 } from '@mui/icons-material';
 import { getMyTickets, updateTicketPriority } from '../../api/TicketService';
 import PriorityChip from '../../components/PriorityChip';
-import { TICKET_PRIORITIES } from '../../utils/ticketConfig';
+import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig';
 
+// Use MUI theme colors for status
 const statusColors = {
-  'New': 'info',
-  'In Progress': 'warning',
-  'Completed': 'success',
+  'Open': 'info',
+  'InProgress': 'warning',
+  'UnderReview': 'secondary',
+  'ReadyForTesting': 'primary',
+  'Testing': 'primary',
+  'Resolved': 'success',
+  'Closed': 'success',
+  'Reopened': 'warning',
   'Cancelled': 'error',
 };
 
 const statusIcons = {
-  'New': <NewIcon />,
-  'In Progress': <WarningIcon />,
-  'Completed': <CheckCircleIcon />,
+  'Open': <NewIcon />,
+  'InProgress': <WarningIcon />,
+  'UnderReview': <WarningIcon />,
+  'ReadyForTesting': <WarningIcon />,
+  'Testing': <WarningIcon />,
+  'Resolved': <CheckCircleIcon />,
+  'Closed': <CheckCircleIcon />,
+  'Reopened': <WarningIcon />,
   'Cancelled': <ErrorIcon />,
 };
 
@@ -182,21 +193,21 @@ const AssignedTicketsPage = () => {
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: `${statusColors[status]}.50`,
+                bgcolor: 'rgba(0,0,0,0.05)',
                 border: 1,
-                borderColor: `${statusColors[status]}.200`,
+                borderColor: statusColors[status],
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: `${statusColors[status]}.main` }}>
+                <Avatar sx={{ bgcolor: statusColors[status] }}>
                   {statusIcons[status]}
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: `${statusColors[status]}.main` }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: statusColors[status] }}>
                     {count}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {status}
+                    {getStatusTranslation(status)}
                   </Typography>
                 </Box>
               </Stack>
@@ -232,7 +243,7 @@ const AssignedTicketsPage = () => {
           {filteredTickets.map((ticket) => (
             <ListItem key={ticket.id} button onClick={() => navigate(`/tickets/${ticket.id}`)}>
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: `${statusColors[ticket.status]}.main` }}>
+                <Avatar sx={{ bgcolor: statusColors[ticket.status] }}>
                   {statusIcons[ticket.status]}
                 </Avatar>
               </ListItemAvatar>

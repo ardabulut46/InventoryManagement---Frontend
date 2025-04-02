@@ -45,17 +45,10 @@ import {
 } from '@mui/icons-material'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDepartmentTickets, deleteTicket, getMyTickets, updateTicketPriority, assignTicket } from '../../api/TicketService'
-import { TICKET_PRIORITIES } from '../../utils/ticketConfig'
+import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig'
 import PriorityChip from '../../components/PriorityChip'
 import { getCurrentUser } from '../../api/auth'
 import { API_URL } from '../../config'
-
-const statusColors = {
-    'New': 'info',
-    'In Progress': 'warning',
-    'Completed': 'success',
-    'Cancelled': 'error',
-}
 
 function TicketsPage() {
     const navigate = useNavigate();
@@ -298,8 +291,8 @@ function TicketsPage() {
                                     </TableCell>
                                     <TableCell sx={{ py: 2 }}>
                                         <Chip 
-                                            label={ticket.status}
-                                            color={statusColors[ticket.status] || 'default'}
+                                            label={getStatusTranslation(ticket.status)}
+                                            color={TICKET_STATUS_COLORS[ticket.status] || 'default'}
                                             size="small"
                                             sx={{ 
                                                 borderRadius: 1,

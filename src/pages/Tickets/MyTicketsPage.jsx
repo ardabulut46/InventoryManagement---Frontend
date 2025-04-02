@@ -49,28 +49,44 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { getMyTickets, updateTicketPriority, getHighPriorityTickets } from '../../api/TicketService';
 import PriorityChip from '../../components/PriorityChip';
-import { TICKET_PRIORITIES } from '../../utils/ticketConfig';
+import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
+// Use MUI theme color names for status colors
 const statusColors = {
-    'New': 'info',
-    'In Progress': 'warning',
-    'Completed': 'success',
+    'Open': 'info',
+    'InProgress': 'warning',
+    'UnderReview': 'secondary',
+    'ReadyForTesting': 'primary',
+    'Testing': 'primary',
+    'Resolved': 'success',
+    'Closed': 'success',
+    'Reopened': 'warning',
     'Cancelled': 'error',
 };
 
 const statusTranslations = {
-    'New': 'Yeni',
-    'In Progress': 'Devam Eden',
-    'Completed': 'Tamamlanan',
+    'Open': 'Yeni',
+    'InProgress': 'Devam Eden',
+    'UnderReview': 'İnceleme',
+    'ReadyForTesting': 'Test için Hazır',
+    'Testing': 'Test',
+    'Resolved': 'Tamamlanan',
+    'Closed': 'Kapalı',
+    'Reopened': 'Yeniden Açılan',
     'Cancelled': 'İptal Edilen'
 };
 
 const statusIcons = {
-    'New': <NewIcon />,
-    'In Progress': <WarningIcon />,
-    'Completed': <CheckCircleIcon />,
+    'Open': <NewIcon />,
+    'InProgress': <WarningIcon />,
+    'UnderReview': <WarningIcon />,
+    'ReadyForTesting': <WarningIcon />,
+    'Testing': <WarningIcon />,
+    'Resolved': <CheckCircleIcon />,
+    'Closed': <CheckCircleIcon />,
+    'Reopened': <WarningIcon />,
     'Cancelled': <ErrorIcon />,
 };
 
@@ -298,7 +314,7 @@ function MyTicketsPage() {
                             }} 
                         />
                         <CardContent 
-                            onClick={() => handleStatusCardClick('In Progress')} 
+                            onClick={() => handleStatusCardClick('InProgress')} 
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
@@ -314,7 +330,7 @@ function MyTicketsPage() {
                                 <WarningIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
                             </Box>
                             <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                                {tickets.filter(t => t.status === 'In Progress').length}
+                                {tickets.filter(t => t.status === 'InProgress').length}
                             </Typography>
                             <Box sx={{ 
                                 width: '40px', 
@@ -361,7 +377,7 @@ function MyTicketsPage() {
                             }} 
                         />
                         <CardContent 
-                            onClick={() => handleStatusCardClick('Completed')} 
+                            onClick={() => handleStatusCardClick('Resolved')} 
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
@@ -377,7 +393,7 @@ function MyTicketsPage() {
                                 <CheckCircleIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
                             </Box>
                             <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                                {tickets.filter(t => t.status === 'Completed').length}
+                                {tickets.filter(t => t.status === 'Resolved').length}
                             </Typography>
                             <Box sx={{ 
                                 width: '40px', 
@@ -543,7 +559,7 @@ function MyTicketsPage() {
             {!viewingHighPriorityOnly && (
                 <Grid container spacing={2} sx={{ mb: 4 }}>
                     {Object.entries(statusStats)
-                        .filter(([status]) => status !== 'In Progress' && status !== 'Cancelled')
+                        .filter(([status]) => status !== 'InProgress' && status !== 'Cancelled')
                         .map(([status, count]) => (
                         <Grid item xs={12} sm={6} md={3} key={status}>
                             <Paper
@@ -552,9 +568,9 @@ function MyTicketsPage() {
                                 sx={{
                                     p: 2,
                                     borderRadius: 2,
-                                    bgcolor: selectedStatus === status ? `${statusColors[status]}.50` : 'background.paper',
+                                    bgcolor: selectedStatus === status ? 'rgba(0,0,0,0.05)' : 'background.paper',
                                     border: 1,
-                                    borderColor: selectedStatus === status ? `${statusColors[status]}.main` : 'divider',
+                                    borderColor: selectedStatus === status ? statusColors[status] : 'divider',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {
@@ -566,8 +582,8 @@ function MyTicketsPage() {
                                 <Stack direction="row" spacing={2} alignItems="center">
                                     <Avatar 
                                         sx={{ 
-                                            bgcolor: selectedStatus === status ? `${statusColors[status]}.main` : 'grey.200',
-                                            boxShadow: selectedStatus === status ? `0 4px 12px ${theme.palette[statusColors[status]].main}40` : 'none'
+                                            bgcolor: statusColors[status],
+                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                                         }}
                                     >
                                         {statusIcons[status]}
@@ -575,7 +591,7 @@ function MyTicketsPage() {
                                     <Box>
                                         <Typography variant="h6" sx={{ 
                                             fontWeight: 'bold', 
-                                            color: selectedStatus === status ? `${statusColors[status]}.main` : 'text.primary'
+                                            color: selectedStatus === status ? statusColors[status] : 'text.primary'
                                         }}>
                                             {statusTranslations[status]}
                                         </Typography>
@@ -658,8 +674,8 @@ function MyTicketsPage() {
                                 <ListItemAvatar>
                                     <Avatar 
                                         sx={{ 
-                                            bgcolor: `${statusColors[ticket.status]}.main`,
-                                            boxShadow: `0 4px 12px ${theme.palette[statusColors[ticket.status]].main}40`
+                                            bgcolor: statusColors[ticket.status],
+                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                                         }}
                                     >
                                         {statusIcons[ticket.status]}

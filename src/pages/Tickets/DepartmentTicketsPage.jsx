@@ -44,30 +44,34 @@ import {
     Bolt as BoltIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getDepartmentTickets } from '../../api/TicketService';
-import { TICKET_PRIORITIES } from '../../utils/ticketConfig';
+import { getDepartmentTickets, getHighPriorityTickets } from '../../api/TicketService';
+import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig';
 import PriorityChip from '../../components/PriorityChip';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import httpClient from '../../api/httpClient';
 
 const statusColors = {
-    'New': 'info',
-    'In Progress': 'warning',
-    'Completed': 'success',
+    'Open': 'info',
+    'InProgress': 'warning',
+    'UnderReview': 'secondary',
+    'ReadyForTesting': 'primary',
+    'Testing': 'primary',
+    'Resolved': 'success',
+    'Closed': 'success',
+    'Reopened': 'warning',
     'Cancelled': 'error',
 };
 
-const statusTranslations = {
-    'New': 'Yeni',
-    'In Progress': 'Devam Eden',
-    'Completed': 'Tamamlanan',
-    'Cancelled': 'İptal Edilen'
-};
-
 const statusIcons = {
-    'New': <NewIcon />,
-    'In Progress': <WarningIcon />,
-    'Completed': <CheckCircleIcon />,
+    'Open': <NewIcon />,
+    'InProgress': <WarningIcon />,
+    'UnderReview': <WarningIcon />,
+    'ReadyForTesting': <WarningIcon />,
+    'Testing': <WarningIcon />,
+    'Resolved': <CheckCircleIcon />,
+    'Closed': <CheckCircleIcon />,
+    'Reopened': <WarningIcon />,
     'Cancelled': <ErrorIcon />,
 };
 
@@ -75,18 +79,31 @@ function DepartmentTicketsPage() {
     const navigate = useNavigate();
     const theme = useTheme();
     const [tickets, setTickets] = useState([]);
+    const [highPriorityTickets, setHighPriorityTickets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [problemTypesLoading, setProblemTypesLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
+    const [viewingHighPriorityOnly, setViewingHighPriorityOnly] = useState(false);
+    const [problemTypes, setProblemTypes] = useState({});
 
     useEffect(() => {
-        fetchTickets();
+        const loadData = async () => {
+            await Promise.all([
+                fetchTickets(),
+                fetchHighPriorityTickets(),
+                fetchProblemTypes()
+            ]);
+        };
+        
+        loadData();
     }, []);
 
     const fetchTickets = async () => {
         try {
             const response = await getDepartmentTickets();
+            console.log('Department tickets:', response.data);
             setTickets(response.data);
             setError('');
         } catch (err) {
@@ -97,17 +114,71 @@ function DepartmentTicketsPage() {
         }
     };
 
-    const handleStatusCardClick = (status) => {
-        setSelectedStatus(status);
+    const fetchHighPriorityTickets = async () => {
+        try {
+            const response = await getHighPriorityTickets();
+            console.log('High priority tickets:', response.data);
+            setHighPriorityTickets(response.data);
+        } catch (err) {
+            console.error('Error fetching high priority tickets:', err);
+        }
     };
 
-    const filteredTickets = tickets.filter(ticket => {
-        const matchesSearch = Object.values(ticket).some(value =>
-            value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        const matchesStatus = selectedStatus === 'all' || ticket.status === selectedStatus;
-        return matchesSearch && matchesStatus;
-    });
+    const fetchProblemTypes = async () => {
+        try {
+            setProblemTypesLoading(true);
+            const response = await httpClient.get('/api/ProblemType');
+            console.log('Problem types response:', response.data);
+            
+            const problemTypesMap = {};
+            response.data.forEach(type => {
+                problemTypesMap[type.id] = type.name;
+            });
+            
+            console.log('Problem types map:', problemTypesMap);
+            setProblemTypes(problemTypesMap);
+        } catch (err) {
+            console.error('Error fetching problem types:', err);
+        } finally {
+            setProblemTypesLoading(false);
+        }
+    };
+
+    // Add a new useEffect to handle data dependencies
+    useEffect(() => {
+        if (!problemTypesLoading && Object.keys(problemTypes).length > 0) {
+            console.log("Problem types loaded, updating tickets display");
+            // Force re-render by creating a new array
+            setTickets([...tickets]);
+            setHighPriorityTickets([...highPriorityTickets]);
+        }
+    }, [problemTypes, problemTypesLoading]);
+
+    const handleStatusCardClick = (status) => {
+        setSelectedStatus(status);
+        setViewingHighPriorityOnly(false);
+    };
+
+    const handleHighPriorityCardClick = () => {
+        setViewingHighPriorityOnly(true);
+        setSelectedStatus('all');
+    };
+
+    const handleResetHighPriorityView = () => {
+        setViewingHighPriorityOnly(false);
+    };
+
+    const filteredTickets = (() => {
+        const ticketsToFilter = viewingHighPriorityOnly ? highPriorityTickets : tickets;
+        
+        return ticketsToFilter.filter(ticket => {
+            const matchesSearch = Object.values(ticket).some(value =>
+                value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            const matchesStatus = selectedStatus === 'all' || ticket.status === selectedStatus;
+            return matchesSearch && matchesStatus;
+        });
+    })();
 
     const handleTicketClick = (ticketId) => {
         navigate(`/tickets/${ticketId}`);
@@ -118,14 +189,42 @@ function DepartmentTicketsPage() {
         navigate(`/tickets/edit/${ticketId}`);
     };
 
-    if (loading) {
+    // Helper function to get problem type name
+    const getProblemTypeName = (ticket) => {
+        console.log('Getting problem type for ticket:', ticket.id, 'problemTypeId:', ticket.problemTypeId, 'problemTypes:', problemTypes);
+
+        // Case 3: If we have a problemTypeId and we've loaded the problem types mapping
+        if (ticket.problemTypeId !== undefined && ticket.problemTypeId !== null && 
+            problemTypes && problemTypes[ticket.problemTypeId]) {
+            console.log('Case 3: Found problemTypeId lookup:', problemTypes[ticket.problemTypeId]);
+            return problemTypes[ticket.problemTypeId];
+        }
+        
+        // Case 1: If the full problemType object with name exists
+        if (ticket.problemType?.name) {
+            console.log('Case 1: Found problemType.name:', ticket.problemType.name);
+            return ticket.problemType.name;
+        }
+        
+        // Case 2: If there's a direct problemTypeName property
+        if (ticket.problemTypeName) {
+            console.log('Case 2: Found problemTypeName:', ticket.problemTypeName);
+            return ticket.problemTypeName;
+        }
+        
+        console.log('No problem type found, using default');
+        // Default fallback
+        return "Belirtilmemiş";
+    };
+
+    if (loading || problemTypesLoading) {
         return (
             <Container maxWidth="xl" sx={{ py: 4 }}>
                 <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
                     <Stack spacing={2}>
                         <LinearProgress />
                         <Typography align="center" color="text.secondary">
-                            Grup çağrıları yükleniyor...
+                            {loading ? 'Grup çağrıları yükleniyor...' : 'Problem tipleri yükleniyor...'}
                         </Typography>
                     </Stack>
                 </Paper>
@@ -247,7 +346,7 @@ function DepartmentTicketsPage() {
                                 }} 
                             />
                             <CardContent 
-                                onClick={() => handleStatusCardClick('In Progress')} 
+                                onClick={() => handleStatusCardClick('InProgress')} 
                                 sx={{ 
                                     position: 'relative', 
                                     zIndex: 1, 
@@ -263,7 +362,7 @@ function DepartmentTicketsPage() {
                                     <WarningIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
                                 </Box>
                                 <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                                    {tickets.filter(t => t.status === 'In Progress').length}
+                                    {tickets.filter(t => t.status === 'InProgress').length}
                                 </Typography>
                                 <Box sx={{ 
                                     width: '40px', 
@@ -310,7 +409,7 @@ function DepartmentTicketsPage() {
                                 }} 
                             />
                             <CardContent 
-                                onClick={() => handleStatusCardClick('Completed')} 
+                                onClick={() => handleStatusCardClick('Resolved')} 
                                 sx={{ 
                                     position: 'relative', 
                                     zIndex: 1, 
@@ -326,7 +425,7 @@ function DepartmentTicketsPage() {
                                     <CheckCircleIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
                                 </Box>
                                 <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                                    {tickets.filter(t => t.status === 'Completed').length}
+                                    {tickets.filter(t => t.status === 'Resolved' || t.status === 'Closed').length}
                                 </Typography>
                                 <Box sx={{ 
                                     width: '40px', 
@@ -373,11 +472,13 @@ function DepartmentTicketsPage() {
                                 }} 
                             />
                             <CardContent 
+                                onClick={handleHighPriorityCardClick}
                                 sx={{ 
                                     position: 'relative', 
                                     zIndex: 1, 
                                     p: 3,
                                     height: '100%',
+                                    cursor: 'pointer',
                                 }}
                             >
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -387,7 +488,7 @@ function DepartmentTicketsPage() {
                                     <BoltIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
                                 </Box>
                                 <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
-                                    {tickets.filter(t => t.priority === 1).length}
+                                    {highPriorityTickets.length}
                                 </Typography>
                                 <Box sx={{ 
                                     width: '40px', 
@@ -397,9 +498,12 @@ function DepartmentTicketsPage() {
                                     mb: 2,
                                     opacity: 0.7
                                 }} />
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
-                                    Hemen ilgilenilmeli
-                                </Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        Hemen ilgilenilmeli
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -468,6 +572,21 @@ function DepartmentTicketsPage() {
                     </Grid>
                 </Grid>
 
+                {/* View Toggle for High Priority */}
+                {viewingHighPriorityOnly && (
+                    <Box sx={{ mb: 3 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<ArrowBackIcon />}
+                            onClick={handleResetHighPriorityView}
+                            color="primary"
+                            sx={{ borderRadius: 2 }}
+                        >
+                            Tüm Çağrılara Dön
+                        </Button>
+                    </Box>
+                )}
+
                 {error && (
                     <Fade in={true}>
                         <Alert severity="error" sx={{ mb: 3 }}>
@@ -497,17 +616,19 @@ function DepartmentTicketsPage() {
                             }
                         }}
                     />
-                    <Button
-                        variant="outlined"
-                        onClick={() => setSelectedStatus('all')}
-                        sx={{ 
-                            borderRadius: 2,
-                            borderColor: selectedStatus === 'all' ? 'primary.main' : 'divider',
-                            color: selectedStatus === 'all' ? 'primary.main' : 'text.secondary',
-                        }}
-                    >
-                        Tümü
-                    </Button>
+                    {!viewingHighPriorityOnly && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => setSelectedStatus('all')}
+                            sx={{ 
+                                borderRadius: 2,
+                                borderColor: selectedStatus === 'all' ? 'primary.main' : 'divider',
+                                color: selectedStatus === 'all' ? 'primary.main' : 'text.secondary',
+                            }}
+                        >
+                            Tümü
+                        </Button>
+                    )}
                 </Box>
 
                 <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -549,14 +670,15 @@ function DepartmentTicketsPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={ticket.problemType}
+                                            label={getProblemTypeName(ticket)}
                                             variant="outlined"
                                             size="small"
+                                            sx={{ minWidth: '80px' }}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={ticket.status}
+                                            label={getStatusTranslation(ticket.status)}
                                             color={statusColors[ticket.status]}
                                             size="small"
                                         />
@@ -566,12 +688,12 @@ function DepartmentTicketsPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2">
-                                            {`${ticket.user?.name || ''} ${ticket.user?.surname || ''}`}
+                                            {`${ticket.createdBy?.name || ''} ${ticket.createdBy?.surname || ''}`}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2">
-                                            {`${ticket.assignedTo?.name || ''} ${ticket.assignedTo?.surname || ''}`}
+                                            {`${ticket.user?.name || ''} ${ticket.user?.surname || ''}`}
                                         </Typography>
                                     </TableCell>
                                     <TableCell align="right">
