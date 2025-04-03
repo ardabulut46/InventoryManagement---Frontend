@@ -22,12 +22,16 @@ import {
     Grid,
     Stack,
     useTheme,
+    Button,
 } from '@mui/material';
 import {
     Search as SearchIcon,
     Warning as WarningIcon,
     AccessTime as AccessTimeIcon,
     Info as InfoIcon,
+    Refresh as RefreshIcon,
+    AssignmentLate as AssignmentLateIcon,
+    Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getIdleBreachTickets } from '../../api/IdleDurationLimitService';
@@ -49,6 +53,7 @@ function IdleBreachTicketsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         fetchIdleBreachTickets();
@@ -56,17 +61,19 @@ function IdleBreachTicketsPage() {
 
     const fetchIdleBreachTickets = async () => {
         try {
+            setIsRefreshing(true);
             const response = await getIdleBreachTickets();
             console.log('API Response:', response);
             console.log('Response Data:', response.data);
-            setTickets(response.data);
+            setTickets(response.data || []);
             setError('');
         } catch (err) {
             console.error('Error details:', err.response || err);
-            setError('Süresi aşılan talepler yüklenirken bir hata oluştu.');
+            setError('Süresi aşılan talepler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin veya sistem yöneticinizle iletişime geçin.');
             console.error('Error fetching idle breach tickets:', err);
         } finally {
             setLoading(false);
+            setIsRefreshing(false);
         }
     };
 
@@ -83,6 +90,11 @@ function IdleBreachTicketsPage() {
         navigate(`/tickets/${ticketId}`);
     };
 
+    const handleRefresh = () => {
+        setLoading(true);
+        fetchIdleBreachTickets();
+    };
+
     if (loading) {
         return (
             <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -93,6 +105,47 @@ function IdleBreachTicketsPage() {
                             Süresi aşılan talepler yükleniyor...
                         </Typography>
                     </Stack>
+                </Paper>
+            </Container>
+        );
+    }
+
+    if (error) {
+        return (
+            <Container maxWidth="xl" sx={{ py: 4 }}>
+                <Paper 
+                    elevation={3} 
+                    sx={{ 
+                        p: 4, 
+                        borderRadius: 2,
+                        textAlign: 'center' 
+                    }}
+                >
+                    <WarningIcon 
+                        sx={{ 
+                            fontSize: 64, 
+                            color: theme.palette.warning.main,
+                            mb: 2
+                        }} 
+                    />
+                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        Bağlantı Hatası
+                    </Typography>
+                    <Typography 
+                        variant="body1" 
+                        color="text.secondary"
+                        sx={{ maxWidth: 600, mx: 'auto', mb: 3 }}
+                    >
+                        {error}
+                    </Typography>
+                    <Button 
+                        variant="contained" 
+                        startIcon={<RefreshIcon />}
+                        onClick={handleRefresh}
+                        sx={{ mt: 2 }}
+                    >
+                        Yeniden Dene
+                    </Button>
                 </Paper>
             </Container>
         );
@@ -111,17 +164,36 @@ function IdleBreachTicketsPage() {
             >
                 {/* Header Section */}
                 <Box sx={{ mb: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        <WarningIcon sx={{ color: theme.palette.warning.main, fontSize: 32 }} />
-                        <Typography 
-                            variant="h4" 
-                            sx={{ 
-                                fontWeight: 'bold',
-                                color: theme.palette.warning.main
-                            }}
+                    <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 2, 
+                        mb: 3 
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <WarningIcon sx={{ color: theme.palette.warning.main, fontSize: 32 }} />
+                            <Typography 
+                                variant="h4" 
+                                sx={{ 
+                                    fontWeight: 'bold',
+                                    color: theme.palette.warning.main
+                                }}
+                            >
+                                Süresi Aşılan Talepler
+                            </Typography>
+                        </Box>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<RefreshIcon />}
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            sx={{ height: 40 }}
                         >
-                            Süresi Aşılan Talepler
-                        </Typography>
+                            {isRefreshing ? 'Yenileniyor...' : 'Yenile'}
+                        </Button>
                     </Box>
                     
                     {/* Summary Cards */}
@@ -164,12 +236,6 @@ function IdleBreachTicketsPage() {
                         </Grid>
                     </Grid>
 
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 3 }}>
-                            {error}
-                        </Alert>
-                    )}
-
                     <TextField
                         fullWidth
                         variant="outlined"
@@ -195,123 +261,161 @@ function IdleBreachTicketsPage() {
                         }}
                     />
 
-                    <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow sx={{ bgcolor: 'background.default' }}>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Kayıt No</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Konu</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Departman</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Konum</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Öncelik</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Durum</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>Bekleme Süresi</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, py: 2 }}>İşlemler</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredTickets.map((ticket) => (
-                                    <TableRow 
-                                        key={ticket.id}
-                                        hover
-                                        sx={{ 
-                                            cursor: 'pointer',
-                                            '&:hover': {
-                                                bgcolor: 'action.hover',
-                                            }
-                                        }}
-                                    >
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                #{ticket.registrationNumber}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                {ticket.subject}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            {ticket.group?.name || '-'}
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                                <Typography variant="body2">{ticket.location}</Typography>
-                                                {ticket.room && (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Oda: {ticket.room}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <PriorityChip priority={ticket.priority} />
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <Chip
-                                                label={ticket.status}
-                                                color={statusColors[ticket.status]}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell onClick={() => handleTicketClick(ticket.id)}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <AccessTimeIcon 
-                                                    fontSize="small" 
-                                                    sx={{ 
-                                                        color: theme.palette.warning.main 
-                                                    }} 
-                                                />
-                                                <Typography 
-                                                    variant="body2" 
-                                                    sx={{ 
-                                                        color: theme.palette.warning.main,
-                                                        fontWeight: 500
-                                                    }}
-                                                >
-                                                    {formatDistanceToNow(new Date(ticket.createdDate), {
-                                                        addSuffix: true,
-                                                        locale: tr
-                                                    })}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Tooltip title="Detayları Görüntüle">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleTicketClick(ticket.id)}
-                                                    sx={{ 
-                                                        color: theme.palette.primary.main,
-                                                        '&:hover': {
-                                                            bgcolor: theme.palette.primary.lighter,
-                                                        }
-                                                    }}
-                                                >
-                                                    <InfoIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
+                    {tickets.length === 0 ? (
+                        <Box 
+                            sx={{ 
+                                py: 8, 
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                bgcolor: 'background.default',
+                                border: '1px dashed',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <AssignmentIcon 
+                                sx={{ 
+                                    fontSize: 70, 
+                                    color: theme.palette.success.light,
+                                    mb: 2 
+                                }} 
+                            />
+                            <Typography variant="h5" gutterBottom fontWeight="medium">
+                                Tüm talepler zamanında cevaplanıyor
+                            </Typography>
+                            <Typography 
+                                variant="body1" 
+                                color="text.secondary"
+                                sx={{ maxWidth: 600, mx: 'auto', mb: 3 }}
+                            >
+                                Şu anda süresi aşılan herhangi bir talep bulunmamaktadır. Tüm talepler belirlenen süre içinde cevaplanmaktadır.
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow sx={{ bgcolor: 'background.default' }}>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Kayıt No</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Konu</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Departman</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Konum</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Öncelik</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Durum</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>Bekleme Süresi</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, py: 2 }}>İşlemler</TableCell>
                                     </TableRow>
-                                ))}
-                                {filteredTickets.length === 0 && (
-                                    <TableRow>
-                                        <TableCell 
-                                            colSpan={8} 
-                                            align="center" 
+                                </TableHead>
+                                <TableBody>
+                                    {filteredTickets.map((ticket) => (
+                                        <TableRow 
+                                            key={ticket.id}
+                                            hover
                                             sx={{ 
-                                                py: 4,
-                                                color: 'text.secondary',
-                                                fontStyle: 'italic'
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover',
+                                                }
                                             }}
                                         >
-                                            Süresi aşılan talep bulunamadı.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    #{ticket.registrationNumber}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                                    {ticket.subject}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                {ticket.group?.name || '-'}
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <Typography variant="body2">{ticket.location}</Typography>
+                                                    {ticket.room && (
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Oda: {ticket.room}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <PriorityChip priority={ticket.priority} />
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <Chip
+                                                    label={ticket.status}
+                                                    color={statusColors[ticket.status]}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell onClick={() => handleTicketClick(ticket.id)}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <AccessTimeIcon 
+                                                        fontSize="small" 
+                                                        sx={{ 
+                                                            color: theme.palette.warning.main 
+                                                        }} 
+                                                    />
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        sx={{ 
+                                                            color: theme.palette.warning.main,
+                                                            fontWeight: 500
+                                                        }}
+                                                    >
+                                                        {formatDistanceToNow(new Date(ticket.createdDate), {
+                                                            addSuffix: true,
+                                                            locale: tr
+                                                        })}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Tooltip title="Detayları Görüntüle">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleTicketClick(ticket.id)}
+                                                        sx={{ 
+                                                            color: theme.palette.primary.main,
+                                                            '&:hover': {
+                                                                bgcolor: theme.palette.primary.lighter,
+                                                            }
+                                                        }}
+                                                    >
+                                                        <InfoIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {filteredTickets.length === 0 && (
+                                        <TableRow>
+                                            <TableCell 
+                                                colSpan={8} 
+                                                align="center" 
+                                                sx={{ 
+                                                    py: 4,
+                                                    color: 'text.secondary',
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                    <SearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                                                    <Typography variant="h6" gutterBottom>
+                                                        Arama sonucu bulunamadı
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        "{searchTerm}" aramanıza uygun talep bulunamadı.
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
                 </Box>
             </Paper>
         </Container>

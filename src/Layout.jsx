@@ -526,7 +526,7 @@ function Layout() {
                                 <ListItemIcon>
                                     <PersonIcon fontSize="small" />
                                 </ListItemIcon>
-                                <ListItemText>My Profile</ListItemText>
+                                <ListItemText>Profilim</ListItemText>
                             </MenuItem>
                             <Divider />
                             <MenuItem 
@@ -542,7 +542,7 @@ function Layout() {
                                 <ListItemIcon>
                                     <LogoutIcon fontSize="small" color="error" />
                                 </ListItemIcon>
-                                <ListItemText>Logout</ListItemText>
+                                <ListItemText>Çıkış Yap</ListItemText>
                             </MenuItem>
                         </Menu>
                     </Box>
@@ -633,7 +633,7 @@ function Layout() {
                                 <PersonIcon />
                             </ListItemIcon>
                             <ListItemText 
-                                primary="My Profile" 
+                                primary="Profil" 
                                 primaryTypographyProps={{
                                     sx: {
                                         fontWeight: location.pathname === '/profile' ? 600 : 400,
@@ -662,7 +662,7 @@ function Layout() {
                                     }
                                 }}
                             >
-                                Logout
+                                Çıkış Yap
                             </Button>
                         </Box>
                     </List>
@@ -702,10 +702,10 @@ function Layout() {
                     }
                 }}
             >
-                <DialogTitle>Confirm Logout</DialogTitle>
+                <DialogTitle>Çıkış Onayı</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to logout?
+                        Çıkış yapmak istediğinizden emin misiniz?
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -716,7 +716,7 @@ function Layout() {
                             borderRadius: 2,
                         }}
                     >
-                        Cancel
+                        İptal
                     </Button>
                     <Button 
                         onClick={handleLogoutConfirm} 
@@ -727,7 +727,7 @@ function Layout() {
                             borderRadius: 2,
                         }}
                     >
-                        Logout
+                        Çıkış Yap
                     </Button>
                 </DialogActions>
             </Dialog>
