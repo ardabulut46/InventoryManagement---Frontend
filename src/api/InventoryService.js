@@ -26,7 +26,16 @@ export const createInventory = (createInventoryDto) => {
 }
 
 export const updateInventory = (id, updateInventoryDto) => {
+    console.log('Sending inventory update:', JSON.stringify(updateInventoryDto, null, 2));
     return httpClient.put(`${endpoint}/${id}`, updateInventoryDto)
+        .then(response => {
+            console.log('Inventory update successful:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error('Inventory update failed:', error.response?.data || error.message);
+            throw error;
+        });
 }
 
 export const deleteInventory = (id) => {

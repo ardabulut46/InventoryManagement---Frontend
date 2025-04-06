@@ -40,30 +40,68 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const STATUS_OPTIONS = [
-    'Müsait',
-    'Kullanımda',
-    'Bakımda',
-    'Emekli',
-    'Kayıp',
-    'Kullanılabilir',
+    { value: 1, label: 'Müsait' },        // Available
+    { value: 2, label: 'Kullanımda' },    // InUse
+    { value: 3, label: 'Bakımda' },       // UnderMaintenance
+    { value: 4, label: 'Emekli' },        // Retired
+    { value: 5, label: 'Kayıp' }          // Lost
 ];
 
-// Map legacy status values to current options if needed
+const CURRENCY_OPTIONS = [
+    { value: 1, label: 'TL' },
+    { value: 2, label: 'USD' },
+    { value: 3, label: 'EUR' },
+];
+
+// Map legacy status values or enum values to the correct format
 const mapStatusValue = (status) => {
-    if (!status) return 'Müsait'; // Default value
+    if (status === null || status === undefined) return 1; // Default to Available (1)
     
-    // If the status is already in the options, return it
-    if (STATUS_OPTIONS.includes(status)) {
+    // If status is a number and within valid range (1-5), return it directly
+    if (typeof status === 'number' && status >= 1 && status <= 5) {
         return status;
     }
     
-    // Map legacy values to current options
-    const statusMap = {
-        // Add mappings if needed in the future
-        // 'OldStatus': 'NewStatus',
-    };
+    // If status is an object with a numeric value property
+    if (typeof status === 'object' && status !== null && 'value' in status) {
+        const numValue = Number(status.value);
+        if (!isNaN(numValue) && numValue >= 1 && numValue <= 5) {
+            return numValue;
+        }
+    }
     
-    return statusMap[status] || 'Müsait'; // Return mapped value or default
+    // If status is a string number, convert to number
+    if (typeof status === 'string' && !isNaN(Number(status))) {
+        const numericStatus = Number(status);
+        if (numericStatus >= 1 && numericStatus <= 5) {
+            return numericStatus;
+        }
+    }
+    
+    // Handle enum string names (case insensitive)
+    if (typeof status === 'string') {
+        const statusLower = status.toLowerCase();
+        
+        // Map string values to enum values
+        const statusStringMap = {
+            'müsait': 1,
+            'kullanımda': 2,
+            'bakımda': 3,
+            'emekli': 4,
+            'kayıp': 5,
+            'kullanılabilir': 1, // Legacy mapping
+            'available': 1,
+            'inuse': 2,
+            'undermaintenance': 3,
+            'retired': 4,
+            'lost': 5
+        };
+        
+        return statusStringMap[statusLower] || 1; // Default to Available (1) if no match
+    }
+    
+    console.warn('Unknown status format:', status);
+    return 1; // Default to Available (1) for any unknown format
 };
 
 function EditInventoryPage() {
@@ -83,9 +121,10 @@ function EditInventoryPage() {
         floor: '',
         block: '',
         department: '',
+        purchasePrice: 0,
+        purchaseCurrency: 1,
         warrantyStartDate: '',
         warrantyEndDate: '',
-        supplier: '',
         assignedUserId: null,
         supportCompanyId: null,
         invoiceAttachmentPath: '',
@@ -134,13 +173,29 @@ function EditInventoryPage() {
                 // Now load the inventory data
                 const inventoryResponse = await getInventoryById(id);
                 const inventory = inventoryResponse.data;
+
+                // Log complete inventory data from API
+                console.log('Received inventory data from API:', inventory);
+                console.log('PurchaseCurrency type:', typeof inventory.purchaseCurrency, 'value:', inventory.purchaseCurrency);
+                console.log('Status type:', typeof inventory.status, 'value:', inventory.status);
                 
-                // Set form data
+                // Log the status value we're receiving
+                console.log('Received inventory status:', inventory.status);
+                
+                // Set form data, ensuring status is a number
+                const statusValue = typeof inventory.status === 'string' 
+                    ? mapStatusValue(inventory.status) 
+                    : (typeof inventory.status === 'number' ? inventory.status : 1);
+                    
+                console.log('Mapped status value:', statusValue);
+                
                 setFormData({
                     ...inventory,
                     warrantyStartDate: inventory.warrantyStartDate ? new Date(inventory.warrantyStartDate).toISOString().split('T')[0] : '',
                     warrantyEndDate: inventory.warrantyEndDate ? new Date(inventory.warrantyEndDate).toISOString().split('T')[0] : '',
-                    status: mapStatusValue(inventory.status),
+                    status: statusValue,
+                    purchasePrice: inventory.purchasePrice || 0,
+                    purchaseCurrency: inventory.purchaseCurrency || 1
                 });
                 
                 // Set assigned user
@@ -308,11 +363,13 @@ function EditInventoryPage() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         
-        // If the field is status, map the value to ensure it's valid
+        // If the field is status, ensure we're storing the numeric value
         if (name === 'status') {
+            const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+            console.log(`Status changed to: ${value} (${typeof value}), converted to: ${numericValue} (${typeof numericValue})`);
             setFormData(prev => ({
                 ...prev,
-                [name]: mapStatusValue(value)
+                [name]: numericValue
             }));
         } else {
             setFormData(prev => ({
@@ -357,19 +414,32 @@ function EditInventoryPage() {
                 invoicePath = uploadResponse.data.filePath;
             }
 
+            // Log complete form data for debugging
+            console.log('Current form data before submission:', formData);
+
             const dto = {
-                ...formData,
+                barcode: formData.barcode,
+                serialNumber: formData.serialNumber,
+                familyId: selectedFamily?.id,
+                typeId: selectedType?.id,
+                brandId: selectedBrand?.id,
+                modelId: selectedModel?.id,
+                location: formData.location || '',
+                purchasePrice: formData.purchasePrice || 0,
+                purchaseCurrency: formData.purchaseCurrency || 1, // Default to 1 (TRY) if not set
+                status: parseInt(formData.status, 10),
+                room: formData.room || '',
+                floor: formData.floor || '',
+                block: formData.block || '',
+                department: formData.department || '',
                 warrantyStartDate: formData.warrantyStartDate ? new Date(formData.warrantyStartDate).toISOString() : null,
                 warrantyEndDate: formData.warrantyEndDate ? new Date(formData.warrantyEndDate).toISOString() : null,
                 assignedUserId: selectedUser?.id || null,
                 supportCompanyId: selectedCompany?.id || null,
-                familyId: selectedFamily?.id || null,
-                typeId: selectedType?.id || null,
-                brandId: selectedBrand?.id || null,
-                modelId: selectedModel?.id || null,
                 invoiceAttachmentPath: invoicePath
             };
 
+            console.log('Sending update DTO:', dto);
             await updateInventory(id, dto);
             if (selectedUser?.id !== currentUser?.id) {
                 setAssignDialogOpen(true);
@@ -480,8 +550,8 @@ function EditInventoryPage() {
                                     onChange={handleChange}
                                 >
                                     {STATUS_OPTIONS.map(option => (
-                                        <MenuItem key={option} value={option}>
-                                            {option}
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
                                         </MenuItem>
                                     ))}
                                 </TextField>
@@ -652,15 +722,48 @@ function EditInventoryPage() {
                                     InputLabelProps={{ shrink: true }}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                        </Grid>
+                    </Grid>
+
+                    {/* Purchase Information */}
+                    <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom>Satın Alma Bilgileri</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
-                                    label="Tedarikçi"
-                                    name="supplier"
-                                    value={formData.supplier}
+                                    label="Satın Alma Fiyatı"
+                                    name="purchasePrice"
+                                    type="number"
+                                    value={formData.purchasePrice || ''}
                                     onChange={handleChange}
+                                    InputLabelProps={{ shrink: true }}
                                 />
                             </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Para Birimi"
+                                    name="purchaseCurrency"
+                                    value={formData.purchaseCurrency || 1}
+                                    onChange={handleChange}
+                                    InputLabelProps={{ shrink: true }}
+                                >
+                                    {CURRENCY_OPTIONS.map(option => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    {/* Invoice */}
+                    <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom>Fatura Bilgileri</Typography>
+                        <Grid container spacing={2}>
                             <Grid item xs={12}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     {formData.invoiceAttachmentPath && (

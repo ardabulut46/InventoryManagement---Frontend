@@ -37,11 +37,11 @@ import {
 } from '@mui/icons-material'
 
 const STATUS_OPTIONS = [
-    'Kullanılabilir',
-    'Kullanımda',
-    'Bakımda',
-    'Emekli',
-    'Kayıp',
+    { value: 1, label: 'Müsait' },        // Available
+    { value: 2, label: 'Kullanımda' },    // InUse
+    { value: 3, label: 'Bakımda' },       // UnderMaintenance
+    { value: 4, label: 'Emekli' },        // Retired
+    { value: 5, label: 'Kayıp' }          // Lost
 ]
 
 const CURRENCY_OPTIONS = [
@@ -61,13 +61,12 @@ function CreateInventoryPage() {
         typeId: null,
         brandId: null,
         modelId: null,
-        status: 'Kullanılabilir',
+        status: 1, // Default to Available (1)
         purchaseDate: '',
         purchasePrice: '',
         purchaseCurrency: 1,
         warrantyStartDate: '',
         warrantyEndDate: '',
-        supplier: '',
         assignedUserId: null,
         supportCompanyId: null,
     })
@@ -351,8 +350,8 @@ function CreateInventoryPage() {
                                     onChange={handleChange}
                                 >
                                     {STATUS_OPTIONS.map(option => (
-                                        <MenuItem key={option} value={option}>
-                                            {option}
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
                                         </MenuItem>
                                     ))}
                                 </TextField>
@@ -534,15 +533,6 @@ function CreateInventoryPage() {
                                     error={!!errors.warrantyEndDate}
                                     helperText={errors.warrantyEndDate}
                                     InputLabelProps={{ shrink: true }}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={4}>
-                                <TextField
-                                    fullWidth
-                                    label="Tedarikçi"
-                                    name="supplier"
-                                    value={formData.supplier}
-                                    onChange={handleChange}
                                 />
                             </Grid>
                         </Grid>

@@ -52,6 +52,7 @@ import {
     Info as InfoIcon,
     Timeline as TimelineIcon,
     Receipt as ReceiptIcon,
+    Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { getInventories, deleteInventory, getAssignmentHistory, downloadInvoice, downloadExcelTemplate, importExcel } from '../../api/InventoryService';
@@ -104,7 +105,6 @@ const COLUMNS = [
     { id: 'createdUser', label: 'Oluşturan Kullanıcı' },
     { id: 'warrantyStartDate', label: 'Garanti Başlangıç Tarihi' },
     { id: 'warrantyEndDate', label: 'Garanti Bitiş Tarihi' },
-    { id: 'supplier', label: 'Tedarikçi' },
     { id: 'purchasePrice', label: 'Satın Alma Fiyatı' },
     { id: 'purchaseCurrency', label: 'Para Birimi' },
     { id: 'createdDate', label: 'Oluşturma Tarihi' },
@@ -118,6 +118,11 @@ const statusColors = {
     'Bakımda': 'warning',
     'Emekli': 'error',
     'Kayıp': 'error',
+    1: 'success',
+    2: 'primary',
+    3: 'warning',
+    4: 'error',
+    5: 'error',
 };
 
 const CURRENCY_MAP = {
@@ -135,17 +140,43 @@ const statusTranslations = {
     'Lost': 'Kayıp'
 };
 
+// Enhanced status mapping system
+const STATUS_MAP = {
+    // API enum status values to display values (Turkish)
+    1: 'Müsait',    // Available
+    2: 'Kullanımda', // InUse
+    3: 'Bakımda',    // UnderMaintenance
+    4: 'Emekli',     // Retired
+    5: 'Kayıp',      // Lost
+    
+    // Legacy string values (if any still exist in the system)
+    'Available': 'Müsait',
+    'In Use': 'Kullanımda',
+    'Under Maintenance': 'Bakımda',
+    'Retired': 'Emekli',
+    'Lost': 'Kayıp',
+};
+
 // Enhanced color palette for better visualization
 const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0', '#00bcd4', '#3f51b5', '#e91e63'];
 
-function InventoryStats({ inventories, warrantyData }) {
+// Create a reverse mapping for status values (English to Turkish)
+const reverseStatusMap = {
+    'InUse': 'Kullanımda',
+    'UnderMaintenance': 'Bakımda',
+    'Available': 'Müsait',
+    'Retired': 'Emekli',
+    'Lost': 'Kayıp'
+};
+
+function InventoryStats({ inventories, warrantyData, onCardClick }) {
     const theme = useTheme();
     const navigate = useNavigate();
 
-    // Calculate status distribution
+    // Calculate status distribution with the correct mapping
     const statusDistribution = inventories.reduce((acc, inv) => {
         const status = inv.status;
-        const translatedStatus = statusTranslations[status] || status;
+        const translatedStatus = STATUS_MAP[status] || status;
         acc[translatedStatus] = (acc[translatedStatus] || 0) + 1;
         return acc;
     }, {});
@@ -279,12 +310,16 @@ function InventoryStats({ inventories, warrantyData }) {
             {/* Summary Cards */}
             <Grid container spacing={2} sx={{ mb: 4 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        height: '100%', 
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                        transition: 'transform 0.2s',
-                        '&:hover': { transform: 'translateY(-4px)' }
-                    }}>
+                    <Card 
+                        sx={{ 
+                            height: '100%', 
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)' },
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => onCardClick('all')}
+                    >
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="subtitle1" color="text.secondary">Toplam Envanter</Typography>
@@ -299,12 +334,16 @@ function InventoryStats({ inventories, warrantyData }) {
                 </Grid>
                 
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        height: '100%', 
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                        transition: 'transform 0.2s',
-                        '&:hover': { transform: 'translateY(-4px)' }
-                    }}>
+                    <Card 
+                        sx={{ 
+                            height: '100%', 
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)' },
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => onCardClick('InUse')}
+                    >
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="subtitle1" color="text.secondary">Kullanımda</Typography>
@@ -321,12 +360,42 @@ function InventoryStats({ inventories, warrantyData }) {
                 </Grid>
                 
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        height: '100%', 
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                        transition: 'transform 0.2s',
-                        '&:hover': { transform: 'translateY(-4px)' }
-                    }}>
+                    <Card 
+                        sx={{ 
+                            height: '100%', 
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)' },
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => onCardClick('Available')}
+                    >
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">Müsait</Typography>
+                                <InventoryIcon color="info" />
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                                {statusDistribution['Müsait'] || 0}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Müsait durumdaki envanter sayısı
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card 
+                        sx={{ 
+                            height: '100%', 
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)' },
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => onCardClick('UnderMaintenance')}
+                    >
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="subtitle1" color="text.secondary">Bakımda</Typography>
@@ -582,48 +651,60 @@ function InventoryStats({ inventories, warrantyData }) {
                                         {
                                             name: 'Kullanımda',
                                             'Garantili': inventories.filter(inv => 
-                                                inv.status === 'InUse' && 
+                                                inv.status === 2 && // InUse = 2
                                                 inv.warrantyEndDate && 
                                                 new Date(inv.warrantyEndDate) > new Date()
                                             ).length,
                                             'Garantisiz': inventories.filter(inv => 
-                                                inv.status === 'InUse' && 
+                                                inv.status === 2 && // InUse = 2
                                                 (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
                                             ).length,
                                         },
                                         {
-                                            name: 'Depoda',
+                                            name: 'Müsait',
                                             'Garantili': inventories.filter(inv => 
-                                                inv.status === 'InStorage' && 
+                                                inv.status === 1 && // Available = 1
                                                 inv.warrantyEndDate && 
                                                 new Date(inv.warrantyEndDate) > new Date()
                                             ).length,
                                             'Garantisiz': inventories.filter(inv => 
-                                                inv.status === 'InStorage' && 
+                                                inv.status === 1 && // Available = 1
                                                 (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
                                             ).length,
                                         },
                                         {
                                             name: 'Bakımda',
                                             'Garantili': inventories.filter(inv => 
-                                                inv.status === 'InMaintenance' && 
+                                                inv.status === 3 && // UnderMaintenance = 3
                                                 inv.warrantyEndDate && 
                                                 new Date(inv.warrantyEndDate) > new Date()
                                             ).length,
                                             'Garantisiz': inventories.filter(inv => 
-                                                inv.status === 'InMaintenance' && 
+                                                inv.status === 3 && // UnderMaintenance = 3
                                                 (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
                                             ).length,
                                         },
                                         {
-                                            name: 'Arızalı',
+                                            name: 'Emekli',
                                             'Garantili': inventories.filter(inv => 
-                                                inv.status === 'Broken' && 
+                                                inv.status === 4 && // Retired = 4
                                                 inv.warrantyEndDate && 
                                                 new Date(inv.warrantyEndDate) > new Date()
                                             ).length,
                                             'Garantisiz': inventories.filter(inv => 
-                                                inv.status === 'Broken' && 
+                                                inv.status === 4 && // Retired = 4
+                                                (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
+                                            ).length,
+                                        },
+                                        {
+                                            name: 'Kayıp',
+                                            'Garantili': inventories.filter(inv => 
+                                                inv.status === 5 && // Lost = 5
+                                                inv.warrantyEndDate && 
+                                                new Date(inv.warrantyEndDate) > new Date()
+                                            ).length,
+                                            'Garantisiz': inventories.filter(inv => 
+                                                inv.status === 5 && // Lost = 5
                                                 (!inv.warrantyEndDate || new Date(inv.warrantyEndDate) <= new Date())
                                             ).length,
                                         },
@@ -726,6 +807,7 @@ function InventoriesPage() {
     const [showColumnsDialog, setShowColumnsDialog] = useState(false);
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
+    const tableContainerRef = useRef(null);
     const [warrantyExpiringInventories, setWarrantyExpiringInventories] = useState([]);
     const [warrantyExpiredInventories, setWarrantyExpiredInventories] = useState([]);
     const [warrantyDialogOpen, setWarrantyDialogOpen] = useState(false);
@@ -735,6 +817,7 @@ function InventoriesPage() {
     const [expiringInMonthInventories, setExpiringInMonthInventories] = useState([]);
     const [expiringInFifteenDaysInventories, setExpiringInFifteenDaysInventories] = useState([]);
     const [mostRepairedInventories, setMostRepairedInventories] = useState([]);
+    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {
         fetchInventories();
@@ -744,6 +827,13 @@ function InventoriesPage() {
     const fetchInventories = async () => {
         try {
             const response = await getInventories();
+            
+            // Log a sample inventory to debug status values
+            if (response.data.length > 0) {
+                console.log('Sample inventory:', response.data[0]);
+                console.log('Status value:', response.data[0].status);
+            }
+            
             setInventories(response.data);
             setError('');
         } catch (err) {
@@ -814,11 +904,48 @@ function InventoriesPage() {
         }
     };
 
-    const filteredInventories = inventories.filter(inventory =>
-        Object.values(inventory).some(value =>
-            value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+    const filteredInventories = inventories.filter(inventory => {
+        // Apply status filter first
+        if (statusFilter !== 'all') {
+            // Handle numeric status values (1-5) directly or named status filters
+            if (statusFilter === 'Available' || statusFilter === 'Müsait') {
+                return inventory.status === 1;
+            } else if (statusFilter === 'InUse' || statusFilter === 'Kullanımda') {
+                return inventory.status === 2;
+            } else if (statusFilter === 'UnderMaintenance' || statusFilter === 'Bakımda') {
+                return inventory.status === 3;
+            } else if (statusFilter === 'Retired' || statusFilter === 'Emekli') {
+                return inventory.status === 4;
+            } else if (statusFilter === 'Lost' || statusFilter === 'Kayıp') {
+                return inventory.status === 5;
+            } else if (!isNaN(parseInt(statusFilter))) {
+                // If statusFilter is a numeric string, compare directly
+                return inventory.status === parseInt(statusFilter);
+            }
+            return false;
+        }
+        
+        // Then apply search term filter
+        if (!searchTerm.trim()) return true;
+        
+        const searchTermLower = searchTerm.toLowerCase();
+        
+        // Check for specific properties explicitly
+        return (
+            (inventory.barcode?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.serialNumber?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.familyName?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.typeName?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.brandName?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.modelName?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.location?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.room?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.floor?.toLowerCase().includes(searchTermLower)) ||
+            (inventory.department?.toLowerCase().includes(searchTermLower)) ||
+            // Include the mapped status in the search
+            (STATUS_MAP[inventory.status]?.toLowerCase().includes(searchTermLower))
+        );
+    });
 
     const handleFilterClick = (event) => {
         setFilterAnchorEl(event.currentTarget);
@@ -949,6 +1076,30 @@ function InventoriesPage() {
         );
     };
 
+    const handleCardClick = (status) => {
+        setStatusFilter(status);
+        // Smoothly scroll to the table container
+        setTimeout(() => {
+            tableContainerRef.current?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start'
+            });
+        }, 100);
+    };
+
+    // Updated status display for the filtered info message
+    const getDisplayStatus = (statusKey) => {
+        if (statusKey === 'all') return 'Tümü';
+        
+        // First try direct mapping (for filter keys like 'InUse' or numeric values)
+        if (STATUS_MAP[statusKey]) {
+            return STATUS_MAP[statusKey];
+        }
+        
+        // If no mapping exists, return the key as is
+        return statusKey;
+    };
+
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Paper 
@@ -1064,7 +1215,7 @@ function InventoriesPage() {
                 )}
 
                 <InventoryStats 
-                    inventories={filteredInventories} 
+                    inventories={inventories} 
                     warrantyData={{
                         active: activeWarrantyInventories,
                         expired: warrantyExpiredInventories,
@@ -1072,7 +1223,26 @@ function InventoriesPage() {
                         expiringInFifteenDays: expiringInFifteenDaysInventories,
                         mostRepaired: mostRepairedInventories
                     }}
+                    onCardClick={handleCardClick}
                 />
+
+                {statusFilter !== 'all' && (
+                    <Alert 
+                        severity="info" 
+                        sx={{ mb: 3, borderRadius: 2 }}
+                        action={
+                            <Button 
+                                color="inherit" 
+                                size="small"
+                                onClick={() => setStatusFilter('all')}
+                            >
+                                Tümünü Göster
+                            </Button>
+                        }
+                    >
+                        {getDisplayStatus(statusFilter)} olan envanterler gösteriliyor
+                    </Alert>
+                )}
 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
                     <TextField
@@ -1135,6 +1305,7 @@ function InventoriesPage() {
                 </Box>
 
                 <TableContainer 
+                    ref={tableContainerRef}
                     sx={{ 
                         borderRadius: 2, 
                         overflow: 'auto',
@@ -1237,22 +1408,23 @@ function InventoriesPage() {
                                         }
                                         
                                         if (column.id === 'status') {
+                                            const statusDisplay = STATUS_MAP[inventory.status] || inventory.status;
+                                            const statusColor = 
+                                                inventory.status === 1 || statusDisplay === 'Müsait' ? 'success' :
+                                                inventory.status === 2 || statusDisplay === 'Kullanımda' ? 'primary' :
+                                                inventory.status === 3 || statusDisplay === 'Bakımda' ? 'warning' :
+                                                inventory.status === 4 || statusDisplay === 'Emekli' ? 'error' :
+                                                inventory.status === 5 || statusDisplay === 'Kayıp' ? 'error' :
+                                                'default';
+                                            
                                             return (
                                                 <TableCell key={column.id} sx={{ py: 2 }}>
                                                     <Chip 
-                                                        label={inventory.status} 
+                                                        label={statusDisplay} 
                                                         size="small"
+                                                        color={statusColor}
                                                         sx={{ 
-                                                            bgcolor: 
-                                                                inventory.status === 'Aktif' ? 'success.50' :
-                                                                inventory.status === 'Bakımda' ? 'warning.50' :
-                                                                inventory.status === 'Arızalı' ? 'error.50' :
-                                                                'grey.50',
-                                                            color: 
-                                                                inventory.status === 'Aktif' ? 'success.main' :
-                                                                inventory.status === 'Bakımda' ? 'warning.main' :
-                                                                inventory.status === 'Arızalı' ? 'error.main' :
-                                                                'text.secondary',
+                                                            fontWeight: 'medium',
                                                         }}
                                                     />
                                                 </TableCell>

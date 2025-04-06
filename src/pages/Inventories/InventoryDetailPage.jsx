@@ -423,10 +423,6 @@ const InventoryDetailPage = () => {
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Tedarikçi</Typography>
-                  <Typography>{inventory.supplier || '-'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Destek Şirketi</Typography>
                   <Typography>{inventory.supportCompany?.name || '-'}</Typography>
                 </Grid>
