@@ -110,7 +110,9 @@ const AssignedInventoriesPage = () => {
     };
 
     const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
+        if (!status || typeof status !== 'string') return 'info';
+        
+        switch (status.toLowerCase()) {
             case 'kullanılabilir':
                 return 'success';
             case 'arızalı':
