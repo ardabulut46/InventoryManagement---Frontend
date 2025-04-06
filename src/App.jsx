@@ -29,7 +29,6 @@ import TicketSolutionsPage from './pages/Tickets/TicketSolutionsPage'
 import UploadInvoicePage from './pages/Inventories/UploadInvoicePage'
 import AdminPage from './pages/Admin/AdminPage'
 import MyCreatedTicketsPage from './pages/Tickets/MyCreatedTicketsPage'
-import IdleBreachTicketsPage from './pages/Tickets/IdleBreachTicketsPage'
 import DepartmentTicketsPage from './pages/Tickets/DepartmentTicketsPage'
 import InventoryDetailPage from './pages/Inventories/InventoryDetailPage'
 import AssignedTicketsPage from './pages/Tickets/AssignedTicketsPage'
@@ -131,7 +130,7 @@ function App() {
                             <Route path="/tickets/:id/solutions/edit/:solutionId" element={<EditTicketSolutionPage />} />
                             <Route path="/tickets/my-created-tickets" element={<MyCreatedTicketsPage />} />
                             <Route path="/tickets/my-tickets" element={<MyTicketsPage />} />
-                            <Route path="/tickets/idle-breach" element={<IdleBreachTicketsPage />} />
+                            <Route path="/tickets/idle-breach" element={<Navigate to="/tickets/my-created-tickets" replace />} />
                             <Route path="/tickets/department" element={<DepartmentTicketsPage />} />
                             <Route path="/tickets/assigned" element={<AssignedTicketsPage />} />
 

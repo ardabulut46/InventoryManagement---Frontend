@@ -283,7 +283,6 @@ function Layout() {
                 { text: 'Üzerimdeki Çağrılar', path: '/tickets/my-tickets' },
                 { text: 'Grubumun Çağrıları', path: '/tickets/department' },
                 { text: 'Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
-                { text: 'Süresi Aşılan Talepler', path: '/tickets/idle-breach' },
             ]
         },
         { 
