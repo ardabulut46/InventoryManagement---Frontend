@@ -165,6 +165,12 @@ function MyTicketsPage() {
         setViewingHighPriorityOnly(false);
     };
 
+    const handleAllTicketsCardClick = () => {
+        setViewingHighPriorityOnly(false);
+        setSelectedStatus('all');
+        setSearchTerm('');
+    };
+
     const getStatusStats = () => {
         return tickets.reduce((acc, ticket) => {
             acc[ticket.status] = (acc[ticket.status] || 0) + 1;
@@ -247,8 +253,10 @@ function MyTicketsPage() {
                             '&:hover': {
                                 transform: 'translateY(-5px)',
                                 boxShadow: '0 12px 28px rgba(25, 118, 210, 0.25)',
-                            }
+                            },
+                            cursor: 'pointer'
                         }}
+                        onClick={handleAllTicketsCardClick}
                     >
                         <Box 
                             sx={{ 
@@ -280,9 +288,12 @@ function MyTicketsPage() {
                                 mb: 2,
                                 opacity: 0.7
                             }} />
-                            <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
-                                Atanan tüm çağrıların sayısı
-                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                    Atanan tüm çağrıların sayısı
+                                </Typography>
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>

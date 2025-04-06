@@ -168,6 +168,12 @@ function DepartmentTicketsPage() {
         setViewingHighPriorityOnly(false);
     };
 
+    const handleAllTicketsCardClick = () => {
+        setViewingHighPriorityOnly(false);
+        setSelectedStatus('all');
+        setSearchTerm('');
+    };
+
     const filteredTickets = (() => {
         const ticketsToFilter = viewingHighPriorityOnly ? highPriorityTickets : tickets;
         
@@ -272,8 +278,10 @@ function DepartmentTicketsPage() {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: '0 12px 28px rgba(25, 118, 210, 0.25)',
-                                }
+                                },
+                                cursor: 'pointer'
                             }}
+                            onClick={handleAllTicketsCardClick}
                         >
                             <Box 
                                 sx={{ 
@@ -312,9 +320,12 @@ function DepartmentTicketsPage() {
                                     mb: 2,
                                     opacity: 0.7
                                 }} />
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
-                                    Gruptaki tüm çağrılar
-                                </Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        Gruptaki tüm çağrılar
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
