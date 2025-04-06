@@ -115,7 +115,9 @@ const GroupInventoriesPage = () => {
     };
 
     const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
+        if (!status || typeof status !== 'string') return 'info';
+        
+        switch (status.toLowerCase()) {
             case 'kullanılabilir':
             case 'müsait':
                 return 'success';
