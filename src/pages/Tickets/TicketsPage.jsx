@@ -93,7 +93,7 @@ function TicketsPage() {
     };
 
     const handleTicketClick = (ticket) => {
-        navigate(`/tickets/${ticket.id}`);
+        navigate(`/tickets/${ticket.id}`, { state: { source: 'tickets' } });
     };
 
     const handleAssignTicket = async (ticketId) => {
@@ -310,7 +310,7 @@ function TicketsPage() {
                                             <IconButton
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    window.location.href = `/tickets/edit/${ticket.id}`;
+                                                    navigate(`/tickets/edit/${ticket.id}`, { state: { source: 'tickets' } });
                                                 }}
                                                 color="primary"
                                                 size="small"

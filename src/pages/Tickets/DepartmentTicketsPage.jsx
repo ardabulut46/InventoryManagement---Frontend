@@ -286,12 +286,12 @@ function DepartmentTicketsPage() {
     })();
 
     const handleTicketClick = (ticketId) => {
-        navigate(`/tickets/${ticketId}`);
+        navigate(`/tickets/${ticketId}`, { state: { source: 'departmentTickets' } });
     };
 
     const handleEditClick = (e, ticketId) => {
         e.stopPropagation();
-        navigate(`/tickets/edit/${ticketId}`);
+        navigate(`/tickets/edit/${ticketId}`, { state: { source: 'departmentTickets' } });
     };
 
     // Helper function to get problem type name

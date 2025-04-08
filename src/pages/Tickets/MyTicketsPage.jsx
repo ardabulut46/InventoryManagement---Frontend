@@ -14,8 +14,6 @@ import {
     Button,
     Avatar,
     IconButton,
-    Menu,
-    MenuItem,
     Tooltip,
     LinearProgress,
     Divider,
@@ -34,13 +32,11 @@ import {
     AccessTime as AccessTimeIcon,
     LocationOn as LocationIcon,
     Person as PersonIcon,
-    PriorityHigh as PriorityIcon,
     CheckCircle as CheckCircleIcon,
     Warning as WarningIcon,
     Error as ErrorIcon,
     NewReleases as NewIcon,
     ArrowBack as ArrowBackIcon,
-    KeyboardArrowDown as ArrowDownIcon,
     Assignment as AssignmentIcon,
     Business as BusinessIcon,
     Description as DescriptionIcon,
@@ -48,9 +44,13 @@ import {
     Bolt as BoltIcon,
     Info as InfoIcon,
     Edit as EditIcon,
+    WarningAmber as WarningAmberIcon,
+    HourglassEmpty as HourglassEmptyIcon,
+    Alarm as AlarmIcon,
+    TimerOff as TimerOffIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getMyTickets, updateTicketPriority, getHighPriorityTickets } from '../../api/TicketService';
+import { getMyTickets, getHighPriorityTickets } from '../../api/TicketService';
 import PriorityChip from '../../components/PriorityChip';
 import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig';
 import { formatDistanceToNow } from 'date-fns';
@@ -93,6 +93,77 @@ const statusIcons = {
     'Cancelled': <ErrorIcon />,
 };
 
+// Helper function to extract time display into Turkish format
+const extractTimeDisplay = (timeDisplay) => {
+  if (!timeDisplay) return '';
+  
+  // Clean the string by removing any trailing numbers at the end
+  timeDisplay = timeDisplay.replace(/\s+\d+$/, '');
+  
+  // Handle edge cases that might cause rendering issues
+  if (timeDisplay === '0' || timeDisplay === 0 || !timeDisplay.trim()) {
+    return '';
+  }
+  
+  // Handle "1 minute" pattern
+  if (timeDisplay.includes('minute')) {
+    const match = timeDisplay.match(/(\d+)\s+minute/);
+    if (match && match[1]) {
+      return `${match[1]} dakika`;
+    }
+  }
+  
+  // Handle "1 hour" pattern
+  if (timeDisplay.includes('hour')) {
+    const match = timeDisplay.match(/(\d+)\s+hour/);
+    if (match && match[1]) {
+      return `${match[1]} saat`;
+    }
+  }
+  
+  // Handle "1 day" pattern
+  if (timeDisplay.includes('day')) {
+    const match = timeDisplay.match(/(\d+)\s+day/);
+    if (match && match[1]) {
+      return `${match[1]} gün`;
+    }
+  }
+  
+  // Handle "1 week" pattern
+  if (timeDisplay.includes('week')) {
+    const match = timeDisplay.match(/(\d+)\s+week/);
+    if (match && match[1]) {
+      return `${match[1]} hafta`;
+    }
+  }
+  
+  // Handle combined "1 hour 30 minutes" patterns
+  if (timeDisplay.includes('hour') && timeDisplay.includes('minute')) {
+    const hourMatch = timeDisplay.match(/(\d+)\s+hour/);
+    const minuteMatch = timeDisplay.match(/(\d+)\s+minute/);
+    
+    let result = '';
+    if (hourMatch && hourMatch[1]) {
+      result += `${hourMatch[1]} saat`;
+    }
+    
+    if (minuteMatch && minuteMatch[1]) {
+      if (result) result += ' ';
+      result += `${minuteMatch[1]} dakika`;
+    }
+    
+    return result;
+  }
+  
+  return timeDisplay;
+};
+
+// Helper function to get the solution time display in Turkish
+const getTimeToSolveDisplay = (ticket) => {
+  if (!ticket || !ticket.timeToSolveDisplay) return '';
+  return extractTimeDisplay(ticket.timeToSolveDisplay);
+};
+
 function MyTicketsPage() {
     const theme = useTheme();
     const navigate = useNavigate();
@@ -101,10 +172,9 @@ function MyTicketsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [selectedTicket, setSelectedTicket] = useState(null);
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [viewingHighPriorityOnly, setViewingHighPriorityOnly] = useState(false);
+    const [viewingOverdueOnly, setViewingOverdueOnly] = useState(false);
 
     useEffect(() => {
         fetchMyTickets();
@@ -134,42 +204,29 @@ function MyTicketsPage() {
         }
     };
 
-    const handlePriorityClick = (event, ticket) => {
-        event.stopPropagation();
-        setAnchorEl(event.currentTarget);
-        setSelectedTicket(ticket);
-    };
-
-    const handlePriorityClose = () => {
-        setAnchorEl(null);
-        setSelectedTicket(null);
-    };
-
-    const handlePriorityChange = async (priority) => {
-        try {
-            await updateTicketPriority(selectedTicket.id, priority);
-            await Promise.all([
-                fetchMyTickets(),
-                fetchHighPriorityTickets()
-            ]);
-        } catch (err) {
-            console.error('Error updating priority:', err);
-            setError('Öncelik güncellenirken bir hata oluştu.');
-        }
-        handlePriorityClose();
-    };
-
     const handleHighPriorityCardClick = () => {
         setViewingHighPriorityOnly(true);
         setSelectedStatus('all');
+        setViewingOverdueOnly(false);
     };
 
     const handleResetHighPriorityView = () => {
         setViewingHighPriorityOnly(false);
     };
+    
+    const handleOverdueCardClick = () => {
+        setViewingOverdueOnly(true);
+        setViewingHighPriorityOnly(false);
+        setSelectedStatus('all');
+    };
+    
+    const handleResetOverdueView = () => {
+        setViewingOverdueOnly(false);
+    };
 
     const handleAllTicketsCardClick = () => {
         setViewingHighPriorityOnly(false);
+        setViewingOverdueOnly(false);
         setSelectedStatus('all');
         setSearchTerm('');
     };
@@ -187,7 +244,15 @@ function MyTicketsPage() {
     };
 
     const filteredTickets = (() => {
-        const ticketsToFilter = viewingHighPriorityOnly ? highPriorityTickets : tickets;
+        let ticketsToFilter;
+        
+        if (viewingHighPriorityOnly) {
+            ticketsToFilter = highPriorityTickets;
+        } else if (viewingOverdueOnly) {
+            ticketsToFilter = tickets.filter(t => t.status === 'InProgress' && t.isSolutionOverdue);
+        } else {
+            ticketsToFilter = tickets;
+        }
         
         return ticketsToFilter.filter(ticket => {
             const matchesSearch = Object.values(ticket).some(value =>
@@ -201,12 +266,59 @@ function MyTicketsPage() {
     const statusStats = getStatusStats();
 
     const handleTicketClick = (ticketId) => {
-        navigate(`/tickets/${ticketId}`);
+        navigate(`/tickets/${ticketId}`, { state: { source: 'myTickets' } });
     };
 
     const handleEditClick = (e, ticketId) => {
         e.stopPropagation();
-        navigate(`/tickets/edit/${ticketId}`);
+        navigate(`/tickets/edit/${ticketId}`, { state: { source: 'myTickets' } });
+    };
+
+    // Helper function to render solution time chip
+    const renderSolutionTimeChip = (ticket) => {
+        if (ticket.status === 'InProgress' && ticket.timeToSolve) {
+            const translatedTime = getTimeToSolveDisplay(ticket);
+            
+            // If solution time is overdue
+            if (ticket.isSolutionOverdue) {
+                return (
+                    <Chip
+                        icon={<TimerOffIcon fontSize="small" />}
+                        label={`${translatedTime} (Aşıldı)`}
+                        color="error"
+                        size="small"
+                        sx={{ 
+                            animation: 'pulse 1.5s infinite',
+                            '@keyframes pulse': {
+                                '0%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.4)' },
+                                '70%': { boxShadow: '0 0 0 6px rgba(244, 67, 54, 0)' },
+                                '100%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)' },
+                            },
+                        }}
+                    />
+                );
+            } 
+            // Check if we're nearing the solution time (50% of time has passed)
+            else {
+                return (
+                    <Chip
+                        icon={<AlarmIcon fontSize="small" />}
+                        label={translatedTime}
+                        color="warning"
+                        size="small"
+                        variant="outlined"
+                    />
+                );
+            }
+        } else if (ticket.status !== 'InProgress') {
+            return null; // Don't show timer for non-in-progress tickets
+        } else {
+            return (
+                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                    Belirtilmemiş
+                </Typography>
+            );
+        }
     };
 
     if (loading) {
@@ -561,6 +673,69 @@ function MyTicketsPage() {
                         </CardContent>
                     </Card>
                 </Grid>
+                <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                    <Card 
+                        sx={{ 
+                            height: '100%', 
+                            borderRadius: 4,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            boxShadow: '0 8px 24px rgba(233, 30, 99, 0.15)',
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: '0 12px 28px rgba(233, 30, 99, 0.25)',
+                            }
+                        }}
+                    >
+                        <Box 
+                            sx={{ 
+                                position: 'absolute', 
+                                top: 0, 
+                                left: 0, 
+                                width: '100%', 
+                                height: '100%', 
+                                background: 'linear-gradient(135deg, #EC407A 0%, #E91E63 100%)',
+                                opacity: 0.9,
+                                zIndex: 0,
+                            }} 
+                        />
+                        <CardContent 
+                            onClick={handleOverdueCardClick}
+                            sx={{ 
+                                position: 'relative', 
+                                zIndex: 1, 
+                                p: 3,
+                                height: '100%',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                    Çözüm Süresi Aşılan
+                                </Typography>
+                                <TimerOffIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                            </Box>
+                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                                {tickets.filter(t => t.status === 'InProgress' && t.isSolutionOverdue).length}
+                            </Typography>
+                            <Box sx={{ 
+                                width: '40px', 
+                                height: '4px', 
+                                bgcolor: '#fff', 
+                                borderRadius: '2px',
+                                mb: 2,
+                                opacity: 0.7
+                            }} />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                    Acilen tamamlanmalı
+                                </Typography>
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
             </Grid>
 
             {/* View Toggle */}
@@ -571,6 +746,21 @@ function MyTicketsPage() {
                         startIcon={<ArrowBackIcon />}
                         onClick={handleResetHighPriorityView}
                         color="primary"
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Tüm Çağrılara Dön
+                    </Button>
+                </Box>
+            )}
+            
+            {/* View Toggle for Overdue Solution Time */}
+            {viewingOverdueOnly && (
+                <Box sx={{ mb: 3 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={handleResetOverdueView}
+                        color="secondary"
                         sx={{ borderRadius: 2 }}
                     >
                         Tüm Çağrılara Dön
@@ -678,6 +868,30 @@ function MyTicketsPage() {
                     {error}
                 </Alert>
             )}
+            
+            {viewingOverdueOnly && (
+                <Alert 
+                    severity="error" 
+                    icon={<TimerOffIcon />}
+                    sx={{ 
+                        mb: 3,
+                        backgroundColor: 'rgba(233, 30, 99, 0.12)',
+                        '.MuiAlert-icon': {
+                            color: '#E91E63',
+                        },
+                        '.MuiAlert-message': {
+                            color: '#E91E63',
+                        }
+                    }}
+                >
+                    <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
+                        Çözüm Süresi Aşılmış Çağrılar ({filteredTickets.length})
+                    </Typography>
+                    <Typography variant="body2">
+                        Bu çağrıların çözüm süresi aşılmıştır. Acilen tamamlanmalı veya süre uzatımı talep edilmelidir. Çözüm süresi aşılan çağrılar hizmet kalitesi standartlarınızı etkileyebilir.
+                    </Typography>
+                </Alert>
+            )}
 
             {/* Tickets Table */}
             <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -690,6 +904,7 @@ function MyTicketsPage() {
                             <TableCell sx={{ fontWeight: 600 }}>Lokasyon</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Departman</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Öncelik</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Çözüm Süresi</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Oluşturulma</TableCell>
                             <TableCell sx={{ fontWeight: 600 }} align="right">İşlemler</TableCell>
                         </TableRow>
@@ -706,6 +921,14 @@ function MyTicketsPage() {
                                     '&:hover': {
                                         bgcolor: 'action.hover',
                                     },
+                                    ...(ticket.status === 'InProgress' && ticket.isSolutionOverdue && {
+                                        borderLeft: '4px solid',
+                                        borderColor: 'error.main',
+                                        bgcolor: 'error.lighter',
+                                        '&:hover': {
+                                            bgcolor: 'error.light',
+                                        },
+                                    })
                                 }}
                             >
                                 <TableCell>
@@ -748,17 +971,19 @@ function MyTicketsPage() {
                                 </TableCell>
                                 <TableCell>
                                     <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Box 
-                                            onClick={(e) => handlePriorityClick(e, ticket)} 
-                                            sx={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            <PriorityChip priority={ticket.priority} />
-                                            <ArrowDownIcon fontSize="small" color="action" />
-                                        </Box>
+                                        <PriorityChip priority={ticket.priority} />
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ 
+                                        height: 32, 
+                                        display: 'flex', 
+                                        alignItems: 'center',
+                                        // Prevent any unwanted text from showing
+                                        '& > *': { whiteSpace: 'nowrap' },
+                                        overflow: 'hidden'
+                                    }}>
+                                        {renderSolutionTimeChip(ticket)}
                                     </Box>
                                 </TableCell>
                                 <TableCell>
@@ -811,7 +1036,7 @@ function MyTicketsPage() {
                         {filteredTickets.length === 0 && (
                             <TableRow>
                                 <TableCell
-                                    colSpan={8}
+                                    colSpan={9}
                                     align="center"
                                     sx={{
                                         py: 4,
@@ -831,46 +1056,6 @@ function MyTicketsPage() {
                     </TableBody>
                 </Table>
             </TableContainer>
-
-            {/* Priority Menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handlePriorityClose}
-                elevation={3}
-                anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                }}
-                transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                }}
-                PaperProps={{
-                    sx: {
-                        mt: 1,
-                        borderRadius: 2,
-                    }
-                }}
-            >
-                {Object.entries(TICKET_PRIORITIES).map(([value, { label, color }]) => (
-                    <MenuItem
-                        key={value}
-                        onClick={() => handlePriorityChange(Number(value))}
-                        sx={{
-                            color: color,
-                            fontWeight: 'medium',
-                            minWidth: '120px',
-                            '&:hover': {
-                                bgcolor: `${color}15`,
-                            }
-                        }}
-                    >
-                        <PriorityIcon sx={{ mr: 1, color: 'inherit' }} />
-                        {label}
-                    </MenuItem>
-                ))}
-            </Menu>
         </Container>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -174,6 +174,7 @@ function TicketDetailPage() {
   const theme = useTheme();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -195,6 +196,41 @@ function TicketDetailPage() {
   });
 
   const statusColors = HEX_STATUS_COLORS;
+
+  // Determine the source of navigation (where user came from)
+  const source = location.state?.source || 'default';
+
+  // Function to handle back button click based on source
+  const handleBackButtonClick = () => {
+    switch(source) {
+      case 'myTickets':
+        navigate('/tickets/my-tickets');
+        break;
+      case 'departmentTickets':
+        navigate('/tickets/department');
+        break;
+      case 'myCreatedTickets':
+        navigate('/tickets/my-created-tickets');
+        break;
+      default:
+        navigate('/tickets');
+        break;
+    }
+  };
+
+  // Function to get back button text based on source
+  const getBackButtonText = () => {
+    switch(source) {
+      case 'myTickets':
+        return 'Üzerimdeki Çağrılara Dön';
+      case 'departmentTickets':
+        return 'Grubumun Çağrılarına Dön';
+      case 'myCreatedTickets':
+        return 'Oluşturduğum Çağrılara Dön';
+      default:
+        return 'Çağrılara Dön';
+    }
+  };
 
   useEffect(() => {
     fetchTicket();
@@ -390,10 +426,10 @@ function TicketDetailPage() {
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/tickets')}
+          onClick={handleBackButtonClick}
           sx={{ mb: 2 }}
         >
-          Çağrılara Dön
+          {getBackButtonText()}
         </Button>
       </Box>
 

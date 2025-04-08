@@ -128,7 +128,7 @@ function MyCreatedTicketsPage() {
     );
 
     const handleTicketClick = (ticketId) => {
-        navigate(`/tickets/${ticketId}`);
+        navigate(`/tickets/${ticketId}`, { state: { source: 'myCreatedTickets' } });
     };
 
     const handleEditClick = (e, ticketId) => {
