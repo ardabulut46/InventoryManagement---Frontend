@@ -59,6 +59,8 @@ import {
   Description as DescriptionIcon,
   SwapHoriz as SwapHorizIcon,
   Cancel as CancelIcon,
+  Alarm as AlarmIcon,
+  WarningAmber as WarningAmberIcon,
 } from '@mui/icons-material';
 import { getTicketById, assignTicket, transferTicket } from '../../api/TicketService';
 import { API_URL } from '../../config';
@@ -107,6 +109,66 @@ function TabPanel({ children, value, index }) {
     </Box>
   );
 }
+
+// Helper function to convert English time expressions to Turkish
+const translateTimeDisplay = (timeDisplayEnglish) => {
+  if (!timeDisplayEnglish) return '';
+  
+  let translatedText = timeDisplayEnglish;
+  
+  // Handle compound time expressions (e.g., "1 hour 30 minutes")
+  if (timeDisplayEnglish.includes('hour') && timeDisplayEnglish.includes('minute')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 hour', '1 saat')
+      .replace(/(\d+) hours/, '$1 saat')
+      .replace('1 minute', '1 dakika')
+      .replace(/(\d+) minutes/, '$1 dakika');
+    return translatedText;
+  }
+  
+  // Handle minutes
+  if (timeDisplayEnglish.includes('minute')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 minute', '1 dakika')
+      .replace(/(\d+) minutes/, '$1 dakika');
+    return translatedText;
+  }
+  
+  // Handle hours
+  if (timeDisplayEnglish.includes('hour')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 hour', '1 saat')
+      .replace(/(\d+) hours/, '$1 saat');
+    return translatedText;
+  }
+  
+  // Handle days
+  if (timeDisplayEnglish.includes('day')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 day', '1 gün')
+      .replace(/(\d+) days/, '$1 gün');
+    return translatedText;
+  }
+  
+  // Handle weeks
+  if (timeDisplayEnglish.includes('week')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 week', '1 hafta')
+      .replace(/(\d+) weeks/, '$1 hafta');
+    return translatedText;
+  }
+  
+  // Handle months
+  if (timeDisplayEnglish.includes('month')) {
+    translatedText = timeDisplayEnglish
+      .replace('1 month', '1 ay')
+      .replace(/(\d+) months/, '$1 ay');
+    return translatedText;
+  }
+  
+  // Return original if no match
+  return translatedText;
+};
 
 function TicketDetailPage() {
   const theme = useTheme();
@@ -365,12 +427,27 @@ function TicketDetailPage() {
                 {!ticket.userId && (
                   <Button
                     variant="contained"
-                    color="primary"
-                    startIcon={<PersonIcon />}
+                    color={ticket.isAssignmentOverdue ? "error" : "primary"}
+                    startIcon={ticket.isAssignmentOverdue ? <WarningAmberIcon /> : <PersonIcon />}
                     onClick={handleAssignConfirmOpen}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
+                    sx={{ 
+                      borderRadius: 2, 
+                      textTransform: 'none',
+                      animation: ticket.isAssignmentOverdue ? 'pulse 1.5s infinite' : 'none',
+                      '@keyframes pulse': {
+                        '0%': {
+                          boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.7)',
+                        },
+                        '70%': {
+                          boxShadow: '0 0 0 10px rgba(244, 67, 54, 0)',
+                        },
+                        '100%': {
+                          boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)',
+                        },
+                      },
+                    }}
                   >
-                    Çağrıyı Üstlen
+                    {ticket.isAssignmentOverdue ? 'Acilen Üstlen!' : 'Çağrıyı Üstlen'}
                   </Button>
                 )}
                 {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && ticket.status !== 'Cancelled' && isAssignedToCurrentUser && (
@@ -550,6 +627,72 @@ function TicketDetailPage() {
               </Grid>
             </Grid>
 
+            {/* Assignment Time Alert - Only show for unassigned tickets */}
+            {!ticket.userId && ticket.timeToAssign && (
+              <Paper 
+                elevation={3} 
+                sx={{ 
+                  p: 3, 
+                  mb: 3, 
+                  borderRadius: 2,
+                  background: ticket.isAssignmentOverdue 
+                    ? `linear-gradient(45deg, ${theme.palette.error.light}20 0%, ${theme.palette.error.light}30 100%)`
+                    : `linear-gradient(45deg, ${theme.palette.info.light}20 0%, ${theme.palette.info.light}30 100%)`,
+                  border: '1px solid',
+                  borderColor: ticket.isAssignmentOverdue ? theme.palette.error.main : theme.palette.info.main,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {ticket.isAssignmentOverdue ? (
+                    <WarningAmberIcon color="error" fontSize="large" />
+                  ) : (
+                    <AlarmIcon color="info" fontSize="large" />
+                  )}
+                  <Box>
+                    <Typography 
+                      variant="subtitle1" 
+                      sx={{ 
+                        fontWeight: 'bold',
+                        color: ticket.isAssignmentOverdue ? theme.palette.error.main : theme.palette.info.main,
+                      }}
+                    >
+                      {ticket.isAssignmentOverdue 
+                        ? 'Atama Süresi Doldu!'
+                        : 'Atama İçin Kalan Süre'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Bu çağrı <strong>{translateTimeDisplay(ticket.timeToAssignDisplay)}</strong> içerisinde atanmalıdır.
+                      {ticket.isAssignmentOverdue && ' Bu süre dolmuştur.'}
+                    </Typography>
+                  </Box>
+                  {!ticket.isAssignmentOverdue && (
+                    <Chip
+                      label={translateTimeDisplay(ticket.timeToAssignDisplay)}
+                      color="info"
+                      sx={{ 
+                        ml: 'auto',
+                        fontWeight: 'bold',
+                      }}
+                    />
+                  )}
+                  {ticket.isAssignmentOverdue && (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      startIcon={<PersonIcon />}
+                      onClick={handleAssignConfirmOpen}
+                      sx={{ ml: 'auto', borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Hemen Üstlen
+                    </Button>
+                  )}
+                </Box>
+              </Paper>
+            )}
+
             {/* Tabs Navigation */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} aria-label="çağrı detayları sekmeleri">
@@ -713,6 +856,55 @@ function TicketDetailPage() {
                 Zaman Çizelgesi
               </Typography>
               <Divider sx={{ my: 2 }} />
+              
+              {/* Assignment Time Information */}
+              {ticket.timeToAssign && !ticket.userId && (
+                <Box sx={{ mb: 3 }}>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 2, 
+                      bgcolor: ticket.isAssignmentOverdue ? 'error.light' : 'info.light',
+                      color: ticket.isAssignmentOverdue ? 'error.contrastText' : 'info.contrastText',
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 2
+                    }}
+                  >
+                    {ticket.isAssignmentOverdue ? <WarningAmberIcon /> : <AlarmIcon />}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                      {ticket.isAssignmentOverdue ? 'Atama Süresi Doldu!' : 'Atama Süresi:'}
+                    </Typography>
+                  </Paper>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Çağrı Açılma:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {new Date(ticket.createdDate).toLocaleString('tr-TR')}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Atama Süresi:
+                    </Typography>
+                    <Chip 
+                      label={translateTimeDisplay(ticket.timeToAssignDisplay)} 
+                      size="small" 
+                      color={ticket.isAssignmentOverdue ? "error" : "info"}
+                      sx={{ fontWeight: 'bold' }} 
+                    />
+                  </Box>
+                  {ticket.isAssignmentOverdue && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      Bu çağrı en kısa sürede atanmalıdır!
+                    </Alert>
+                  )}
+                </Box>
+              )}
+
               <Timeline sx={{ m: 0, p: 0 }}>
                 <TimelineItem>
                   <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.5 }}>
@@ -847,9 +1039,32 @@ function TicketDetailPage() {
           <Typography variant="body1" sx={{ mb: 2 }}>
             Bu çağrıyı üstlenmek istediğinizden emin misiniz?
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Çağrıyı üstlendiğinizde, çağrı sizin sorumluluğunuza atanacak ve durumu "İşlemde" olarak güncellenecektir.
           </Typography>
+          
+          {ticket.timeToAssign && (
+            <Alert 
+              severity={ticket.isAssignmentOverdue ? "error" : "info"}
+              icon={ticket.isAssignmentOverdue ? <WarningAmberIcon /> : <AlarmIcon />}
+              sx={{ 
+                mb: 2,
+                '& .MuiAlert-message': { width: '100%' }
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                {ticket.isAssignmentOverdue ? "Atama Süresi Aşılmış!" : "Atama Süresi Bilgisi"}
+              </Typography>
+              <Typography variant="body2">
+                Bu çağrı için belirlenen atama süresi: <strong>{translateTimeDisplay(ticket.timeToAssignDisplay)}</strong>
+                {ticket.isAssignmentOverdue && (
+                  <Typography component="span" sx={{ display: 'block', color: 'error.main', mt: 1, fontWeight: 'bold' }}>
+                    Bu süre aşılmıştır. Lütfen en kısa sürede çağrıyı üstleniniz!
+                  </Typography>
+                )}
+              </Typography>
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2, pt: 1 }}>
           <Button 
@@ -862,10 +1077,10 @@ function TicketDetailPage() {
           <Button 
             onClick={handleAssignTicket}
             variant="contained"
-            color="primary"
-            startIcon={<AssignmentIcon />}
+            color={ticket.isAssignmentOverdue ? "error" : "primary"}
+            startIcon={ticket.isAssignmentOverdue ? <WarningAmberIcon /> : <AssignmentIcon />}
           >
-            Evet, Üstlen
+            {ticket.isAssignmentOverdue ? "Acilen Üstlen" : "Evet, Üstlen"}
           </Button>
         </DialogActions>
       </Dialog>

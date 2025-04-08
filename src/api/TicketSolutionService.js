@@ -19,7 +19,11 @@ export const getSolutionsByAssignedUser = () => {
 }
 
 export const createTicketSolution = (createSolutionDto) => {
-    return httpClient.post(endpoint, createSolutionDto)
+    return httpClient.post(endpoint, createSolutionDto, {
+        headers: {
+            'Accept': 'application/json, text/plain, */*'
+        }
+    })
 }
 
 export const updateTicketSolution = (id, updateSolutionDto) => {

@@ -68,13 +68,8 @@ httpClient.interceptors.response.use(
             return Promise.reject(new Error('Your session has expired. Please log in again.'));
         }
 
-        // Return a user-friendly error message
-        const errorMessage = error.response?.data?.message 
-            || error.response?.data?.error 
-            || error.message 
-            || 'An unexpected error occurred';
-
-        return Promise.reject(new Error(errorMessage));
+        // Preserve the original error structure to handle different response formats
+        return Promise.reject(error);
     }
 );
 

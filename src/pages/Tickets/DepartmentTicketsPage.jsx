@@ -42,6 +42,8 @@ import {
     AccessTime as AccessTimeIcon,
     ArrowBack as ArrowBackIcon,
     Bolt as BoltIcon,
+    Alarm as AlarmIcon,
+    WarningAmber as WarningAmberIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getDepartmentTickets, getHighPriorityTickets } from '../../api/TicketService';
@@ -75,6 +77,82 @@ const statusIcons = {
     'Cancelled': <ErrorIcon />,
 };
 
+// Helper function to extract just the time part from the timeToAssignDisplay
+const extractTimeDisplay = (timeDisplay) => {
+  if (!timeDisplay) return '';
+  
+  // Clean the string by removing any trailing numbers at the end
+  timeDisplay = timeDisplay.replace(/\s+\d+$/, '');
+  
+  // Handle edge cases that might cause rendering issues
+  if (timeDisplay === '0' || timeDisplay === 0 || !timeDisplay.trim()) {
+    return '';
+  }
+  
+  // Handle "1 minute" pattern
+  if (timeDisplay.includes('minute')) {
+    const match = timeDisplay.match(/(\d+)\s+minute/);
+    if (match && match[1]) {
+      return `${match[1]} dakika`;
+    }
+  }
+  
+  // Handle "1 hour" pattern
+  if (timeDisplay.includes('hour')) {
+    const match = timeDisplay.match(/(\d+)\s+hour/);
+    if (match && match[1]) {
+      return `${match[1]} saat`;
+    }
+  }
+  
+  // Handle "1 day" pattern
+  if (timeDisplay.includes('day')) {
+    const match = timeDisplay.match(/(\d+)\s+day/);
+    if (match && match[1]) {
+      return `${match[1]} gün`;
+    }
+  }
+  
+  // Handle "1 week" pattern
+  if (timeDisplay.includes('week')) {
+    const match = timeDisplay.match(/(\d+)\s+week/);
+    if (match && match[1]) {
+      return `${match[1]} hafta`;
+    }
+  }
+  
+  // Handle combined "1 hour 30 minutes" patterns
+  if (timeDisplay.includes('hour') && timeDisplay.includes('minute')) {
+    const hourMatch = timeDisplay.match(/(\d+)\s+hour/);
+    const minuteMatch = timeDisplay.match(/(\d+)\s+minute/);
+    
+    let result = '';
+    if (hourMatch && hourMatch[1]) {
+      result += `${hourMatch[1]} saat`;
+    }
+    
+    if (minuteMatch && minuteMatch[1]) {
+      if (result) result += ' ';
+      result += `${minuteMatch[1]} dakika`;
+    }
+    
+    return result;
+  }
+  
+  return timeDisplay;
+};
+
+// Helper function to safely get the timeToAssignDisplay and convert it to Turkish
+const getTimeToAssignDisplay = (ticket) => {
+  if (!ticket || !ticket.timeToAssignDisplay) return '';
+  return extractTimeDisplay(ticket.timeToAssignDisplay);
+};
+
+// Helper function to convert English time expressions to Turkish (kept for backward compatibility)
+const translateTimeDisplay = (timeDisplayEnglish) => {
+  return extractTimeDisplay(timeDisplayEnglish);
+};
+
 function DepartmentTicketsPage() {
     const navigate = useNavigate();
     const theme = useTheme();
@@ -87,6 +165,7 @@ function DepartmentTicketsPage() {
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [viewingHighPriorityOnly, setViewingHighPriorityOnly] = useState(false);
     const [problemTypes, setProblemTypes] = useState({});
+    const [viewingOverdueOnly, setViewingOverdueOnly] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -162,20 +241,40 @@ function DepartmentTicketsPage() {
     const handleHighPriorityCardClick = () => {
         setViewingHighPriorityOnly(true);
         setSelectedStatus('all');
+        setViewingOverdueOnly(false);
+    };
+
+    const handleOverdueCardClick = () => {
+        setViewingOverdueOnly(true);
+        setViewingHighPriorityOnly(false);
+        setSelectedStatus('all');
     };
 
     const handleResetHighPriorityView = () => {
         setViewingHighPriorityOnly(false);
     };
 
+    const handleResetOverdueView = () => {
+        setViewingOverdueOnly(false);
+    };
+
     const handleAllTicketsCardClick = () => {
         setViewingHighPriorityOnly(false);
+        setViewingOverdueOnly(false);
         setSelectedStatus('all');
         setSearchTerm('');
     };
 
     const filteredTickets = (() => {
-        const ticketsToFilter = viewingHighPriorityOnly ? highPriorityTickets : tickets;
+        let ticketsToFilter;
+        
+        if (viewingHighPriorityOnly) {
+            ticketsToFilter = highPriorityTickets;
+        } else if (viewingOverdueOnly) {
+            ticketsToFilter = tickets.filter(t => !t.userId && t.timeToAssign && t.isAssignmentOverdue);
+        } else {
+            ticketsToFilter = tickets;
+        }
         
         return ticketsToFilter.filter(ticket => {
             const matchesSearch = Object.values(ticket).some(value =>
@@ -221,6 +320,54 @@ function DepartmentTicketsPage() {
         console.log('No problem type found, using default');
         // Default fallback
         return "Belirtilmemiş";
+    };
+
+    // Helper function to render assignment time chip without the "0" issue
+    const renderAssignmentTimeChip = (ticket) => {
+        if (!ticket.userId && ticket.timeToAssign) {
+            const translatedTime = getTimeToAssignDisplay(ticket);
+            
+            if (ticket.isAssignmentOverdue) {
+                return (
+                    <Chip
+                        icon={<WarningAmberIcon fontSize="small" />}
+                        label={translatedTime}
+                        color="error"
+                        size="small"
+                        sx={{ 
+                            animation: 'pulse 1.5s infinite',
+                            '@keyframes pulse': {
+                                '0%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.4)' },
+                                '70%': { boxShadow: '0 0 0 6px rgba(244, 67, 54, 0)' },
+                                '100%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)' },
+                            },
+                        }}
+                    />
+                );
+            } else {
+                return (
+                    <Chip
+                        icon={<AlarmIcon fontSize="small" />}
+                        label={translatedTime}
+                        color="info"
+                        size="small"
+                        variant="outlined"
+                    />
+                );
+            }
+        } else if (ticket.userId) {
+            return (
+                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                    Atanmış
+                </Typography>
+            );
+        } else {
+            return (
+                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                    Belirtilmemiş
+                </Typography>
+            );
+        }
     };
 
     if (loading || problemTypesLoading) {
@@ -525,6 +672,69 @@ function DepartmentTicketsPage() {
                                 borderRadius: 4,
                                 position: 'relative',
                                 overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(233, 30, 99, 0.15)',
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateY(-5px)',
+                                    boxShadow: '0 12px 28px rgba(233, 30, 99, 0.25)',
+                                }
+                            }}
+                        >
+                            <Box 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    top: 0, 
+                                    left: 0, 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    background: 'linear-gradient(135deg, #EC407A 0%, #E91E63 100%)',
+                                    opacity: 0.9,
+                                    zIndex: 0,
+                                }} 
+                            />
+                            <CardContent 
+                                onClick={handleOverdueCardClick}
+                                sx={{ 
+                                    position: 'relative', 
+                                    zIndex: 1, 
+                                    p: 3,
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                                        Atama Süresi Geçen
+                                    </Typography>
+                                    <WarningAmberIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                </Box>
+                                <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                                    {tickets.filter(t => !t.userId && t.timeToAssign && t.isAssignmentOverdue).length}
+                                </Typography>
+                                <Box sx={{ 
+                                    width: '40px', 
+                                    height: '4px', 
+                                    bgcolor: '#fff', 
+                                    borderRadius: '2px',
+                                    mb: 2,
+                                    opacity: 0.7
+                                }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                        Acilen atanmalı
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} lg={2.4}>
+                        <Card 
+                            sx={{ 
+                                height: '100%', 
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
                                 boxShadow: '0 8px 24px rgba(158, 158, 158, 0.15)',
                                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                                 '&:hover': {
@@ -598,6 +808,21 @@ function DepartmentTicketsPage() {
                     </Box>
                 )}
 
+                {/* View Toggle for Overdue Assignments */}
+                {viewingOverdueOnly && (
+                    <Box sx={{ mb: 3 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<ArrowBackIcon />}
+                            onClick={handleResetOverdueView}
+                            color="secondary"
+                            sx={{ borderRadius: 2 }}
+                        >
+                            Tüm Çağrılara Dön
+                        </Button>
+                    </Box>
+                )}
+
                 {error && (
                     <Fade in={true}>
                         <Alert severity="error" sx={{ mb: 3 }}>
@@ -627,7 +852,7 @@ function DepartmentTicketsPage() {
                             }
                         }}
                     />
-                    {!viewingHighPriorityOnly && (
+                    {!viewingHighPriorityOnly && !viewingOverdueOnly && (
                         <Button
                             variant="outlined"
                             onClick={() => setSelectedStatus('all')}
@@ -642,6 +867,30 @@ function DepartmentTicketsPage() {
                     )}
                 </Box>
 
+                {viewingOverdueOnly && (
+                    <Alert 
+                        severity="warning" 
+                        icon={<WarningAmberIcon />}
+                        sx={{ 
+                            mb: 3,
+                            backgroundColor: 'rgba(233, 30, 99, 0.12)',
+                            '.MuiAlert-icon': {
+                                color: '#E91E63',
+                            },
+                            '.MuiAlert-message': {
+                                color: '#E91E63',
+                            }
+                        }}
+                    >
+                        <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
+                            Atama Süresi Aşılmış Çağrılar ({filteredTickets.length})
+                        </Typography>
+                        <Typography variant="body2">
+                            Bu çağrılar acilen atanmalıdır. Atama süresi aşılmış çağrılar hizmet kalitesi standartlarınızı etkileyebilir.
+                        </Typography>
+                    </Alert>
+                )}
+
                 <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
                     <Table>
                         <TableHead>
@@ -650,6 +899,7 @@ function DepartmentTicketsPage() {
                                 <TableCell sx={{ fontWeight: 600 }}>Konu</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Problem Tipi</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Durum</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Kalan Süre</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Öncelik</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Oluşturan</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Atanan</TableCell>
@@ -664,81 +914,120 @@ function DepartmentTicketsPage() {
                                     onClick={() => handleTicketClick(ticket.id)}
                                     sx={{
                                         cursor: 'pointer',
+                                        height: '60px',
                                         '&:hover': {
                                             bgcolor: 'action.hover',
-                                        }
+                                        },
+                                        ...((!ticket.userId && ticket.timeToAssign && ticket.isAssignmentOverdue) && {
+                                            borderLeft: '4px solid',
+                                            borderColor: 'error.main',
+                                            bgcolor: 'error.lighter',
+                                            '&:hover': {
+                                                bgcolor: 'error.light',
+                                            },
+                                        })
                                     }}
                                 >
                                     <TableCell>
-                                        <Typography variant="body2" color="text.secondary">
-                                            #{ticket.registrationNumber}
-                                        </Typography>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                #{ticket.registrationNumber}
+                                            </Typography>
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                            {ticket.subject}
-                                        </Typography>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                                {ticket.subject}
+                                            </Typography>
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip
-                                            label={getProblemTypeName(ticket)}
-                                            variant="outlined"
-                                            size="small"
-                                            sx={{ minWidth: '80px' }}
-                                        />
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Chip
+                                                label={getProblemTypeName(ticket)}
+                                                variant="outlined"
+                                                size="small"
+                                                sx={{ minWidth: '80px' }}
+                                            />
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip
-                                            label={getStatusTranslation(ticket.status)}
-                                            color={statusColors[ticket.status]}
-                                            size="small"
-                                        />
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Chip
+                                                label={getStatusTranslation(ticket.status)}
+                                                color={statusColors[ticket.status]}
+                                                size="small"
+                                            />
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <PriorityChip priority={ticket.priority} />
+                                        <Box 
+                                            sx={{ 
+                                                height: 32, 
+                                                display: 'flex', 
+                                                alignItems: 'center',
+                                                // Prevent any unwanted text from showing
+                                                '& > *': { whiteSpace: 'nowrap' },
+                                                overflow: 'hidden'
+                                            }}
+                                        >
+                                            {renderAssignmentTimeChip(ticket)}
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body2">
-                                            {`${ticket.createdBy?.name || ''} ${ticket.createdBy?.surname || ''}`}
-                                        </Typography>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <PriorityChip priority={ticket.priority} />
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body2">
-                                            {`${ticket.user?.name || ''} ${ticket.user?.surname || ''}`}
-                                        </Typography>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2">
+                                                {`${ticket.createdBy?.name || ''} ${ticket.createdBy?.surname || ''}`}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2">
+                                                {`${ticket.user?.name || ''} ${ticket.user?.surname || ''}`}
+                                            </Typography>
+                                        </Box>
                                     </TableCell>
                                     <TableCell align="right">
-                                        <Tooltip title="Detayları Görüntüle">
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleTicketClick(ticket.id);
-                                                }}
-                                                sx={{
-                                                    color: theme.palette.primary.main,
-                                                    '&:hover': {
-                                                        bgcolor: theme.palette.primary.lighter,
-                                                    }
-                                                }}
-                                            >
-                                                <InfoIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Düzenle">
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => handleEditClick(e, ticket.id)}
-                                                sx={{
-                                                    color: theme.palette.primary.main,
-                                                    '&:hover': {
-                                                        bgcolor: theme.palette.primary.lighter,
-                                                    }
-                                                }}
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                            <Tooltip title="Detayları Görüntüle">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleTicketClick(ticket.id);
+                                                    }}
+                                                    sx={{
+                                                        color: theme.palette.primary.main,
+                                                        '&:hover': {
+                                                            bgcolor: theme.palette.primary.lighter,
+                                                        }
+                                                    }}
+                                                >
+                                                    <InfoIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Düzenle">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => handleEditClick(e, ticket.id)}
+                                                    sx={{
+                                                        color: theme.palette.primary.main,
+                                                        '&:hover': {
+                                                            bgcolor: theme.palette.primary.lighter,
+                                                        }
+                                                    }}
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))}

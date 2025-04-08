@@ -13,20 +13,21 @@ import {
     Chip,
     Button,
     Avatar,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    ListItemSecondaryAction,
     IconButton,
     Menu,
     MenuItem,
     Tooltip,
     LinearProgress,
     Divider,
-    Badge,
     useTheme,
     Alert,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Fade,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -45,6 +46,8 @@ import {
     Description as DescriptionIcon,
     ArrowForward as ArrowForwardIcon,
     Bolt as BoltIcon,
+    Info as InfoIcon,
+    Edit as EditIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getMyTickets, updateTicketPriority, getHighPriorityTickets } from '../../api/TicketService';
@@ -196,6 +199,15 @@ function MyTicketsPage() {
     })();
 
     const statusStats = getStatusStats();
+
+    const handleTicketClick = (ticketId) => {
+        navigate(`/tickets/${ticketId}`);
+    };
+
+    const handleEditClick = (e, ticketId) => {
+        e.stopPropagation();
+        navigate(`/tickets/edit/${ticketId}`);
+    };
 
     if (loading) {
         return (
@@ -667,128 +679,158 @@ function MyTicketsPage() {
                 </Alert>
             )}
 
-            {/* Tickets List */}
-            {filteredTickets.length > 0 ? (
-                <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 2 }}>
-                    {filteredTickets.map((ticket) => (
-                        <React.Fragment key={ticket.id}>
-                            <ListItem 
-                                button 
-                                onClick={() => navigate(`/tickets/${ticket.id}`)}
+            {/* Tickets Table */}
+            <TableContainer sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                <Table>
+                    <TableHead>
+                        <TableRow sx={{ bgcolor: 'background.default' }}>
+                            <TableCell sx={{ fontWeight: 600 }}>Kayıt No</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Konu</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Durum</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Lokasyon</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Departman</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Öncelik</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Oluşturulma</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }} align="right">İşlemler</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {filteredTickets.map((ticket) => (
+                            <TableRow
+                                key={ticket.id}
+                                hover
+                                onClick={() => handleTicketClick(ticket.id)}
                                 sx={{
-                                    p: 2,
+                                    cursor: 'pointer',
+                                    height: '60px',
                                     '&:hover': {
                                         bgcolor: 'action.hover',
-                                    }
+                                    },
                                 }}
                             >
-                                <ListItemAvatar>
-                                    <Avatar 
-                                        sx={{ 
-                                            bgcolor: statusColors[ticket.status],
-                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                                        }}
-                                    >
-                                        {statusIcons[ticket.status]}
-                                    </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={
-                                        <Typography 
-                                            component="div" 
-                                            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            #{ticket.registrationNumber}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                            {ticket.subject}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Chip
+                                            label={getStatusTranslation(ticket.status)}
+                                            color={statusColors[ticket.status]}
+                                            size="small"
+                                        />
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2">
+                                            {ticket.location}
+                                            {ticket.room && ` (Oda: ${ticket.room})`}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2">
+                                            {ticket.department?.name || 'Belirtilmemiş'}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Box 
+                                            onClick={(e) => handlePriorityClick(e, ticket)} 
+                                            sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center',
+                                                cursor: 'pointer'
+                                            }}
                                         >
-                                            <Typography 
-                                                variant="subtitle1" 
-                                                component="span" 
-                                                sx={{ fontWeight: 500 }}
-                                            >
-                                                {ticket.subject}
-                                            </Typography>
-                                            <Typography 
-                                                variant="caption" 
-                                                component="span" 
-                                                color="text.secondary"
-                                            >
-                                                #{ticket.registrationNumber}
-                                            </Typography>
-                                        </Typography>
-                                    }
-                                    secondary={
-                                        <Typography component="div">
-                                            <Stack spacing={1}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <LocationIcon fontSize="small" color="action" />
-                                                        <Typography variant="body2" component="span">
-                                                            {ticket.location}
-                                                            {ticket.room && ` (Oda: ${ticket.room})`}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <BusinessIcon fontSize="small" color="action" />
-                                                        <Typography variant="body2" component="span">
-                                                            {ticket.department?.name || 'Departman Belirtilmemiş'}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <PersonIcon fontSize="small" color="action" />
-                                                        <Typography variant="body2" component="span">
-                                                            {ticket.user?.name} {ticket.user?.surname}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <AccessTimeIcon fontSize="small" color="action" />
-                                                        <Typography variant="body2" component="span">
-                                                            {formatDistanceToNow(new Date(ticket.createdDate), { 
-                                                                addSuffix: true,
-                                                                locale: tr 
-                                                            })}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                            </Stack>
-                                        </Typography>
-                                    }
-                                />
-                                <ListItemSecondaryAction>
-                                    <IconButton 
-                                        edge="end" 
-                                        onClick={(e) => handlePriorityClick(e, ticket)}
-                                        sx={{ mr: 1 }}
-                                    >
-                                        <Stack direction="row" spacing={0.5} alignItems="center">
                                             <PriorityChip priority={ticket.priority} />
-                                            <ArrowDownIcon fontSize="small" />
-                                        </Stack>
-                                    </IconButton>
-                                </ListItemSecondaryAction>
-                            </ListItem>
-                            <Divider component="li" />
-                        </React.Fragment>
-                    ))}
-                </List>
-            ) : (
-                <Paper 
-                    sx={{ 
-                        p: 4, 
-                        textAlign: 'center', 
-                        borderRadius: 2,
-                        bgcolor: 'background.default' 
-                    }}
-                >
-                    <AssignmentIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography color="textSecondary">
-                        {searchTerm 
-                            ? 'Arama kriterlerine uygun çağrı bulunamadı.' 
-                            : viewingHighPriorityOnly
-                                ? 'Kritik öncelikli çağrı bulunmamaktadır.'
-                                : 'Üzerinize atanmış çağrı bulunmamaktadır.'}
-                    </Typography>
-                </Paper>
-            )}
+                                            <ArrowDownIcon fontSize="small" color="action" />
+                                        </Box>
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {formatDistanceToNow(new Date(ticket.createdDate), { 
+                                                addSuffix: true,
+                                                locale: tr 
+                                            })}
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                        <Tooltip title="Detayları Görüntüle">
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleTicketClick(ticket.id);
+                                                }}
+                                                sx={{
+                                                    color: theme.palette.primary.main,
+                                                    '&:hover': {
+                                                        bgcolor: theme.palette.primary.lighter,
+                                                    }
+                                                }}
+                                            >
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Düzenle">
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => handleEditClick(e, ticket.id)}
+                                                sx={{
+                                                    color: theme.palette.primary.main,
+                                                    '&:hover': {
+                                                        bgcolor: theme.palette.primary.lighter,
+                                                    }
+                                                }}
+                                            >
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {filteredTickets.length === 0 && (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={8}
+                                    align="center"
+                                    sx={{
+                                        py: 4,
+                                        color: 'text.secondary',
+                                        fontStyle: 'italic'
+                                    }}
+                                >
+                                    <Typography variant="h6" color="text.secondary">
+                                        {searchTerm ? 'Arama kriterlerine uygun çağrı bulunamadı.' : 'Henüz çağrı bulunmuyor.'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Yeni bir çağrı oluşturmak için "Yeni Çağrı" butonunu kullanabilirsiniz
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
 
             {/* Priority Menu */}
             <Menu

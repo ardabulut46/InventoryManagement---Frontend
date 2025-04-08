@@ -299,7 +299,7 @@ function CreateTicketPage() {
                                                 options={problemTypes}
                                                 getOptionLabel={(problemType) => {
                                                     if (!problemType) return '';
-                                                    return `${problemType.name} (${problemType.department?.name || 'No Department'})`;
+                                                    return `${problemType.name} (${problemType.groupName || 'No Group'})`;
                                                 }}
                                                 value={selectedProblemType}
                                                 onChange={handleProblemTypeChange}
@@ -323,7 +323,7 @@ function CreateTicketPage() {
                                         <Grid item xs={12} sm={6}>
                                             <Autocomplete
                                                 options={inventories}
-                                                getOptionLabel={(inventory) => inventory ? `${inventory.brand} ${inventory.model}` : ''}
+                                                getOptionLabel={(inventory) => inventory ? `${inventory.brandName} ${inventory.modelName}` : ''}
                                                 value={selectedInventory}
                                                 onChange={handleInventoryChange}
                                                 renderInput={(params) => (
@@ -342,7 +342,7 @@ function CreateTicketPage() {
                                                     return (
                                                         <li key={inventory.id} {...otherProps}>
                                                             <Box>
-                                                                <Typography>{`${inventory.brand} ${inventory.model}`}</Typography>
+                                                                <Typography>{`${inventory.brandName} ${inventory.modelName}`}</Typography>
                                                                 <Typography variant="caption" color="text.secondary">
                                                                     {`Seri No: ${inventory.serialNumber} • Barkod: ${inventory.barcode}`}
                                                                 </Typography>

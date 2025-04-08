@@ -177,8 +177,41 @@ const CreateTicketSolutionPage = () => {
             }, 2000);
         } catch (error) {
             setCurrentStep(1);
-            const errorMessage = error.response?.data || error.message || 'Çağrı kapatılırken bir hata oluştu.';
+            let errorMessage;
+            
+            console.log('Error response:', error.response); // Debug log
+            
+            // Handle different error response formats
+            if (error.response) {
+                // Direct string response from backend
+                if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                } 
+                // Error object with message property
+                else if (error.response.data?.message) {
+                    errorMessage = error.response.data.message;
+                } 
+                // Custom error object from our API
+                else if (typeof error.response.data === 'object' && Object.keys(error.response.data).length > 0) {
+                    errorMessage = Object.values(error.response.data).join(', ');
+                } 
+                // Fallback for other error formats
+                else {
+                    errorMessage = 'Çağrı kapatılırken bir hata oluştu. Lütfen tekrar deneyin.';
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            } else {
+                errorMessage = 'Çağrı kapatılırken bir hata oluştu. Lütfen tekrar deneyin.';
+            }
+            
+            console.log('Parsed error message:', errorMessage); // Debug log
+            
             setError(errorMessage);
+            message.error({
+                content: errorMessage,
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+            });
         } finally {
             setLoading(false);
         }
@@ -265,14 +298,29 @@ const CreateTicketSolutionPage = () => {
 
                     {error && (
                         <Alert
-                            message="Hata"
-                            description={error}
+                            message={
+                                <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                    <CloseCircleOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+                                    İşlem Başarısız
+                                </span>
+                            }
+                            description={
+                                <div style={{ padding: '8px 0' }}>
+                                    <Text style={{ fontSize: '14px' }}>{error}</Text>
+                                    <div style={{ marginTop: '12px' }}>
+                                        <Text type="secondary">
+                                            Lütfen hata mesajını dikkate alarak tekrar deneyiniz veya yöneticinize başvurunuz.
+                                        </Text>
+                                    </div>
+                                </div>
+                            }
                             type="error"
-                            showIcon
-                            icon={<CloseCircleOutlined />}
+                            showIcon={false}
                             style={{ 
-                                marginBottom: 16,
-                                borderRadius: 8
+                                marginBottom: 24,
+                                borderRadius: 8,
+                                border: '1px solid #ffccc7',
+                                background: '#fff2f0'
                             }}
                         />
                     )}
