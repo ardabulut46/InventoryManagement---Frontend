@@ -418,6 +418,7 @@ function TicketDetailPage() {
   }
 
   const isAssignedToCurrentUser = ticket.userId === currentUser?.id;
+  const isCreatedByCurrentUser = ticket.createdById === currentUser?.id;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -460,7 +461,7 @@ function TicketDetailPage() {
                 />
               </Box>
               <Stack direction="row" spacing={2} sx={{ flexShrink: 0 }}>
-                {!ticket.userId && (
+                {!ticket.userId && !isCreatedByCurrentUser && (
                   <Button
                     variant="contained"
                     color={ticket.isAssignmentOverdue ? "error" : "primary"}
@@ -485,6 +486,14 @@ function TicketDetailPage() {
                   >
                     {ticket.isAssignmentOverdue ? 'Acilen Üstlen!' : 'Çağrıyı Üstlen'}
                   </Button>
+                )}
+                {isCreatedByCurrentUser && !ticket.userId && (
+                  <Chip
+                    label="Kendine ait çağrıyı üstlenemezsiniz"
+                    color="warning"
+                    variant="outlined"
+                    sx={{ borderRadius: 2, p: 1 }}
+                  />
                 )}
                 {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && ticket.status !== 'Cancelled' && isAssignedToCurrentUser && (
                   <>
@@ -713,7 +722,7 @@ function TicketDetailPage() {
                       }}
                     />
                   )}
-                  {ticket.isAssignmentOverdue && (
+                  {ticket.isAssignmentOverdue && !isCreatedByCurrentUser && (
                     <Button
                       variant="contained"
                       color="error"
@@ -724,6 +733,15 @@ function TicketDetailPage() {
                     >
                       Hemen Üstlen
                     </Button>
+                  )}
+                  {ticket.isAssignmentOverdue && isCreatedByCurrentUser && (
+                    <Chip
+                      label="Kendine ait çağrıyı üstlenemezsiniz"
+                      color="warning"
+                      variant="outlined"
+                      size="small"
+                      sx={{ ml: 'auto', borderRadius: 2 }}
+                    />
                   )}
                 </Box>
               </Paper>

@@ -280,8 +280,8 @@ function Layout() {
             path: '/tickets',
             subItems: [
                 { text: 'Tüm Çağrılar', path: '/tickets' },
-                { text: 'Üzerimdeki Çağrılar', path: '/tickets/my-tickets' },
                 { text: 'Grubumun Çağrıları', path: '/tickets/department' },
+                { text: 'Üzerimdeki Çağrılar', path: '/tickets/my-tickets' },
                 { text: 'Açtığım Çağrılar', path: '/tickets/my-created-tickets' },
             ]
         },
