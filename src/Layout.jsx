@@ -217,6 +217,7 @@ function Layout() {
             text: 'Envanterler', 
             icon: <InventoryIcon />, 
             path: '/inventories',
+            requiredPermissions: ['Inventory:View'],
             subItems: [
                 { text: 'Tüm Envanterler', path: '/inventories' },
                 { text: 'Üzerimdeki Envanterler', path: '/inventories/assigned' },
@@ -228,6 +229,7 @@ function Layout() {
             text: 'Çağrılar', 
             icon: <TicketIcon />, 
             path: '/tickets',
+            requiredPermissions: ['Tickets:View'],
             subItems: [
                 { text: 'Tüm Çağrılar', path: '/tickets' },
                 { text: 'Grubumun Çağrıları', path: '/tickets/department' },
@@ -261,68 +263,37 @@ function Layout() {
     ];
 
     const renderMenuItem = (item, level = 0) => {
-        // Special case for Admin Panel - check for AdminPanel:View permission
-        if (item.text === 'Admin Paneli' || (item.requiredPermissions && item.requiredPermissions.includes('AdminPanel:View'))) {
+        // Robust permission check for all items with requiredPermissions
+        if (item.requiredPermissions && Array.isArray(item.requiredPermissions)) {
+            let userPermissions = [];
             try {
                 const token = localStorage.getItem('token');
                 if (token) {
                     const decodedToken = jwtDecode(token);
-                    // If user doesn't have AdminPanel:View permission and is not an admin, don't show the item
-                    if (!isAdmin && (!decodedToken.Permission || !decodedToken.Permission.includes('AdminPanel:View'))) {
-                        return null;
-                    }
-                } else {
-                    return null;
+                    userPermissions = Array.isArray(decodedToken.Permission) ? decodedToken.Permission : [];
                 }
             } catch (error) {
-                console.error('Error checking AdminPanel:View permission:', error);
-                return null;
+                userPermissions = [];
             }
+            const hasAnyRequiredPermission = item.requiredPermissions.some(permission =>
+                userPermissions.includes(permission)
+            );
+            if (!hasAnyRequiredPermission) return null;
         }
-        
-        // Check if the item should be shown based on permissions
-        if (item.adminOnly || item.requiredPermissions) {
-            // If we already know the user is an admin and there are no specific required permissions for this item
-            if (isAdmin && !item.requiredPermissions) {
-                // Continue rendering
-            } 
-            // Otherwise, check for specific permissions
-            else {
-                try {
-                    const token = localStorage.getItem('token');
-                    if (token) {
-                        const decodedToken = jwtDecode(token);
-                        
-                        // If the item requires specific permissions
-                        if (item.requiredPermissions && Array.isArray(item.requiredPermissions)) {
-                            // Check if user has ANY of the required permissions (not ALL)
-                            const hasAnyRequiredPermission = item.requiredPermissions.some(permission => 
-                                decodedToken.Permission && decodedToken.Permission.includes(permission)
-                            );
-                            
-                            // For non-admin users, also check if they have admin-level permissions
-                            const hasAdminLevelPermissions = !item.adminOnly || (
-                                decodedToken.Permission && decodedToken.Permission.some(p => 
-                                    p.includes(':Create') || p.includes(':Edit') || p.includes(':Delete')
-                                )
-                            );
-                            
-                            // Allow access if user has any required permission AND (is not an admin-only item OR has admin-level permissions)
-                            if (!(hasAnyRequiredPermission && hasAdminLevelPermissions)) {
-                                return null;
-                            }
-                        } 
-                        // If no specific permissions are defined but the item is adminOnly, don't show it to non-admins
-                        else if (item.adminOnly && !isAdmin) {
-                            return null;
-                        }
-                    } else {
-                        return null;
-                    }
-                } catch (error) {
-                    console.error('Error checking permissions:', error);
-                    return null;
+        // Special case for Admin Panel - check for AdminPanel:View permission and adminOnly
+        if (item.adminOnly) {
+            let isAdminPanelUser = false;
+            try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    const decodedToken = jwtDecode(token);
+                    isAdminPanelUser = decodedToken.Permission && decodedToken.Permission.includes('AdminPanel:View');
                 }
+            } catch (error) {
+                isAdminPanelUser = false;
+            }
+            if (!isAdmin && !isAdminPanelUser) {
+                return null;
             }
         }
         
