@@ -44,7 +44,7 @@ import {
     AdminPanelSettings as AdminPanelIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { logout } from './api/auth';
+import { logout, getCurrentUser } from './api/auth';
 import { jwtDecode } from "jwt-decode";
 import { useTheme as useColorMode } from './contexts/ThemeContext';
 import NotificationBell from './components/NotificationBell';
@@ -70,7 +70,8 @@ function Layout() {
 
     useEffect(() => {
         checkAdminRole();
-        getUserFromToken();
+        const currentUser = getCurrentUser();
+        setUser(currentUser);
     }, []);
 
     const checkAdminRole = () => {
@@ -180,57 +181,6 @@ function Layout() {
         } catch (error) {
             console.error('Error decoding token:', error);
             setIsAdmin(false);
-        }
-    };
-
-    const getUserFromToken = () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (token) {
-                const decodedToken = jwtDecode(token);
-                
-                // Extract user information from different possible token structures
-                const userData = {
-                    name: '',
-                    surname: ''
-                };
-                
-                // Check for given_name and family_name
-                if (decodedToken.given_name) {
-                    userData.name = decodedToken.given_name;
-                }
-                if (decodedToken.family_name) {
-                    userData.surname = decodedToken.family_name;
-                }
-                
-                // Check for name and surname directly
-                if (decodedToken.name && !userData.name) {
-                    userData.name = decodedToken.name;
-                }
-                if (decodedToken.surname && !userData.surname) {
-                    userData.surname = decodedToken.surname;
-                }
-                
-                // Check for Microsoft identity claims
-                if (decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] && !userData.name) {
-                    userData.name = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'];
-                }
-                if (decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'] && !userData.surname) {
-                    userData.surname = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'];
-                }
-                
-                // If we have a full name but no first/last name, try to split it
-                if (decodedToken.name && decodedToken.name.includes(' ') && (!userData.name || !userData.surname)) {
-                    const nameParts = decodedToken.name.split(' ');
-                    if (!userData.name) userData.name = nameParts[0];
-                    if (!userData.surname) userData.surname = nameParts.slice(1).join(' ');
-                }
-                
-                setUser(userData);
-            }
-        } catch (error) {
-            console.error('Error decoding token:', error);
-            setUser(null);
         }
     };
 

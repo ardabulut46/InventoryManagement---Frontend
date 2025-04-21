@@ -26,6 +26,13 @@ import {
     TableHead,
     TableRow,
     Fade,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Checkbox,
+    FormGroup,
+    FormControlLabel,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -175,6 +182,36 @@ function MyTicketsPage() {
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [viewingHighPriorityOnly, setViewingHighPriorityOnly] = useState(false);
     const [viewingOverdueOnly, setViewingOverdueOnly] = useState(false);
+    // Column config (Turkish)
+    const COLUMN_CONFIG = [
+        { key: 'registrationNumber', label: 'Kayıt No' },
+        { key: 'subject', label: 'Konu' },
+        { key: 'status', label: 'Durum' },
+        { key: 'location', label: 'Lokasyon' },
+        { key: 'department', label: 'Departman' },
+        { key: 'priority', label: 'Öncelik' },
+        { key: 'solutionTime', label: 'Çözüm Süresi' },
+        { key: 'createdDate', label: 'Oluşturulma' },
+        { key: 'actions', label: 'İşlemler' },
+    ];
+    // State for column selection dialog
+    const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+    const [selectedColumns, setSelectedColumns] = useState(() => {
+        const saved = localStorage.getItem('myTicketsColumns');
+        if (saved) return JSON.parse(saved);
+        return COLUMN_CONFIG.map(col => col.key);
+    });
+    const handleColumnChange = (key) => {
+        setSelectedColumns(prev => {
+            const next = prev.includes(key)
+                ? prev.filter(k => k !== key)
+                : [...prev, key];
+            localStorage.setItem('myTicketsColumns', JSON.stringify(next));
+            return next;
+        });
+    };
+    const handleOpenColumnDialog = () => setColumnDialogOpen(true);
+    const handleCloseColumnDialog = () => setColumnDialogOpen(false);
 
     useEffect(() => {
         fetchMyTickets();
@@ -241,6 +278,7 @@ function MyTicketsPage() {
     const handleStatusCardClick = (status) => {
         setSelectedStatus(status);
         setViewingHighPriorityOnly(false);
+        setViewingOverdueOnly(false);
     };
 
     const filteredTickets = (() => {
@@ -361,24 +399,53 @@ function MyTicketsPage() {
                 >
                     {viewingHighPriorityOnly ? 'Kritik Öncelikli Çağrılar' : 'Üzerimdeki Çağrılar'}
                 </Typography>
+                <Button
+                    variant="outlined"
+                    onClick={handleOpenColumnDialog}
+                    sx={{ ml: 2 }}
+                >
+                    Kolonları Seç
+                </Button>
+                <Dialog open={columnDialogOpen} onClose={handleCloseColumnDialog}>
+                    <DialogTitle>Görüntülenecek Kolonları Seçin</DialogTitle>
+                    <DialogContent>
+                        <FormGroup>
+                            {COLUMN_CONFIG.map(col => (
+                                <FormControlLabel
+                                    key={col.key}
+                                    control={
+                                        <Checkbox
+                                            checked={selectedColumns.includes(col.key)}
+                                            onChange={() => handleColumnChange(col.key)}
+                                        />
+                                    }
+                                    label={col.label}
+                                />
+                            ))}
+                        </FormGroup>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseColumnDialog}>Kapat</Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
 
             {/* Stats Section */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(25, 118, 210, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(25, 118, 210, 0.25)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(25, 118, 210, 0.15)',
                             },
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                         }}
                         onClick={handleAllTicketsCardClick}
                     >
@@ -394,29 +461,22 @@ function MyTicketsPage() {
                                 zIndex: 0,
                             }} 
                         />
-                        <CardContent sx={{ position: 'relative', zIndex: 1, p: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                        <CardContent sx={{ position: 'relative', zIndex: 1, p: 1.5 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     Toplam Çağrı
                                 </Typography>
-                                <AssignmentIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <AssignmentIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {tickets.length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     Atanan tüm çağrıların sayısı
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -424,16 +484,17 @@ function MyTicketsPage() {
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(255, 152, 0, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(255, 152, 0, 0.25)',
-                            }
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(255, 152, 0, 0.15)',
+                            },
+                            cursor: 'pointer',
                         }}
                     >
                         <Box 
@@ -453,33 +514,26 @@ function MyTicketsPage() {
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
-                                p: 3, 
+                                p: 1.5, 
                                 cursor: 'pointer',
                                 height: '100%',
                             }}
                         >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     Devam Eden
                                 </Typography>
-                                <WarningIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <WarningIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {tickets.filter(t => t.status === 'InProgress').length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     Çalışma devam ediyor
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -487,16 +541,17 @@ function MyTicketsPage() {
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(76, 175, 80, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(76, 175, 80, 0.25)',
-                            }
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(76, 175, 80, 0.15)',
+                            },
+                            cursor: 'pointer',
                         }}
                     >
                         <Box 
@@ -516,33 +571,26 @@ function MyTicketsPage() {
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
-                                p: 3, 
+                                p: 1.5, 
                                 cursor: 'pointer',
                                 height: '100%',
                             }}
                         >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     Tamamlanan
                                 </Typography>
-                                <CheckCircleIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <CheckCircleIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {tickets.filter(t => t.status === 'Resolved').length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     Tamamlanmış çağrılar
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -550,16 +598,17 @@ function MyTicketsPage() {
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(244, 67, 54, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(244, 67, 54, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(244, 67, 54, 0.25)',
-                            }
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(244, 67, 54, 0.15)',
+                            },
+                            cursor: 'pointer',
                         }}
                     >
                         <Box 
@@ -579,33 +628,26 @@ function MyTicketsPage() {
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
-                                p: 3, 
+                                p: 1.5, 
                                 cursor: 'pointer',
                                 height: '100%',
                             }}
                         >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     Kritik Öncelikli
                                 </Typography>
-                                <BoltIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <BoltIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {highPriorityTickets.length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     Hemen ilgilenilmeli
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -613,16 +655,17 @@ function MyTicketsPage() {
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(158, 158, 158, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(158, 158, 158, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(158, 158, 158, 0.25)',
-                            }
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(158, 158, 158, 0.15)',
+                            },
+                            cursor: 'pointer',
                         }}
                     >
                         <Box 
@@ -642,33 +685,26 @@ function MyTicketsPage() {
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
-                                p: 3, 
+                                p: 1.5, 
                                 cursor: 'pointer',
                                 height: '100%',
                             }}
                         >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     İptal Edilen
                                 </Typography>
-                                <ErrorIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <ErrorIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {tickets.filter(t => t.status === 'Cancelled').length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     İptal edilmiş çağrılar
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -676,16 +712,17 @@ function MyTicketsPage() {
                 <Grid item xs={12} sm={6} md={3} lg={2.4}>
                     <Card 
                         sx={{ 
-                            height: '100%', 
-                            borderRadius: 4,
+                            height: 120,
+                            borderRadius: 3,
                             position: 'relative',
                             overflow: 'hidden',
-                            boxShadow: '0 8px 24px rgba(233, 30, 99, 0.15)',
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(233, 30, 99, 0.10)',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 12px 28px rgba(233, 30, 99, 0.25)',
-                            }
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 20px rgba(233, 30, 99, 0.15)',
+                            },
+                            cursor: 'pointer',
                         }}
                     >
                         <Box 
@@ -705,33 +742,26 @@ function MyTicketsPage() {
                             sx={{ 
                                 position: 'relative', 
                                 zIndex: 1, 
-                                p: 3,
+                                p: 1.5,
                                 height: '100%',
                                 cursor: 'pointer',
                             }}
                         >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>
                                     Çözüm Süresi Aşılan
                                 </Typography>
-                                <TimerOffIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 30 }} />
+                                <TimerOffIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 22 }} />
                             </Box>
-                            <Typography variant="h3" sx={{ color: '#fff', fontWeight: 700, mb: 1 }}>
+                            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: 28 }}>
                                 {tickets.filter(t => t.status === 'InProgress' && t.isSolutionOverdue).length}
                             </Typography>
-                            <Box sx={{ 
-                                width: '40px', 
-                                height: '4px', 
-                                bgcolor: '#fff', 
-                                borderRadius: '2px',
-                                mb: 2,
-                                opacity: 0.7
-                            }} />
+                            <Box sx={{ width: '28px', height: '3px', bgcolor: '#fff', borderRadius: '2px', mb: 1, opacity: 0.7 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ color: '#fff', opacity: 0.9 }}>
+                                <Typography variant="caption" sx={{ color: '#fff', opacity: 0.9 }}>
                                     Acilen tamamlanmalı
                                 </Typography>
-                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 16 }} />
+                                <ArrowForwardIcon sx={{ color: '#fff', opacity: 0.8, fontSize: 13 }} />
                             </Box>
                         </CardContent>
                     </Card>
@@ -772,7 +802,7 @@ function MyTicketsPage() {
             {!viewingHighPriorityOnly && (
                 <Grid container spacing={2} sx={{ mb: 4 }}>
                     {Object.entries(statusStats)
-                        .filter(([status]) => status !== 'InProgress' && status !== 'Cancelled')
+                        .filter(([status]) => status !== 'InProgress' && status !== 'Cancelled' && status !== 'Resolved')
                         .map(([status, count]) => (
                         <Grid item xs={12} sm={6} md={3} key={status}>
                             <Paper
@@ -898,15 +928,13 @@ function MyTicketsPage() {
                 <Table>
                     <TableHead>
                         <TableRow sx={{ bgcolor: 'background.default' }}>
-                            <TableCell sx={{ fontWeight: 600 }}>Kayıt No</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Konu</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Durum</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Lokasyon</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Departman</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Öncelik</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Çözüm Süresi</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>Oluşturulma</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }} align="right">İşlemler</TableCell>
+                            {COLUMN_CONFIG.map(col =>
+                                selectedColumns.includes(col.key) && (
+                                    <TableCell key={col.key} sx={{ fontWeight: 600 }} align={col.key === 'actions' ? 'right' : 'left'}>
+                                        {col.label}
+                                    </TableCell>
+                                )
+                            )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -922,121 +950,139 @@ function MyTicketsPage() {
                                         bgcolor: 'action.hover',
                                     },
                                     ...(ticket.status === 'InProgress' && ticket.isSolutionOverdue && {
-                                        borderLeft: '4px solid',
-                                        borderColor: 'error.main',
-                                        bgcolor: 'error.lighter',
+                                        backgroundColor: '#FFEBEE',
+                                        border: '1.5px solid',
+                                        borderColor: theme => theme.palette.error.main,
+                                        boxShadow: '0 2px 8px 0 rgba(244,67,54,0.10)',
                                         '&:hover': {
-                                            bgcolor: 'error.light',
+                                            backgroundColor: '#FFCDD2',
                                         },
                                     })
                                 }}
                             >
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            #{ticket.registrationNumber}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                            {ticket.subject}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Chip
-                                            label={getStatusTranslation(ticket.status)}
-                                            color={statusColors[ticket.status]}
-                                            size="small"
-                                        />
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body2">
-                                            {ticket.location}
-                                            {ticket.room && ` (Oda: ${ticket.room})`}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body2">
-                                            {ticket.department?.name || 'Belirtilmemiş'}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <PriorityChip priority={ticket.priority} />
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ 
-                                        height: 32, 
-                                        display: 'flex', 
-                                        alignItems: 'center',
-                                        // Prevent any unwanted text from showing
-                                        '& > *': { whiteSpace: 'nowrap' },
-                                        overflow: 'hidden'
-                                    }}>
-                                        {renderSolutionTimeChip(ticket)}
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {formatDistanceToNow(new Date(ticket.createdDate), { 
-                                                addSuffix: true,
-                                                locale: tr 
-                                            })}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Box sx={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                        <Tooltip title="Detayları Görüntüle">
-                                            <IconButton
+                                {selectedColumns.includes('registrationNumber') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                #{ticket.registrationNumber}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('subject') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                                {ticket.subject}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('status') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Chip
+                                                label={getStatusTranslation(ticket.status)}
+                                                color={statusColors[ticket.status]}
                                                 size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleTicketClick(ticket.id);
-                                                }}
-                                                sx={{
-                                                    color: theme.palette.primary.main,
-                                                    '&:hover': {
-                                                        bgcolor: theme.palette.primary.lighter,
-                                                    }
-                                                }}
-                                            >
-                                                <InfoIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Düzenle">
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => handleEditClick(e, ticket.id)}
-                                                sx={{
-                                                    color: theme.palette.primary.main,
-                                                    '&:hover': {
-                                                        bgcolor: theme.palette.primary.lighter,
-                                                    }
-                                                }}
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
-                                </TableCell>
+                                            />
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('location') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2">
+                                                {ticket.location}
+                                                {ticket.room && ` (Oda: ${ticket.room})`}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('department') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2">
+                                                {ticket.department?.name || 'Belirtilmemiş'}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('priority') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <PriorityChip priority={ticket.priority} />
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('solutionTime') && (
+                                    <TableCell>
+                                        <Box sx={{ 
+                                            height: 32, 
+                                            display: 'flex', 
+                                            alignItems: 'center',
+                                            '& > *': { whiteSpace: 'nowrap' },
+                                            overflow: 'hidden'
+                                        }}>
+                                            {renderSolutionTimeChip(ticket)}
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('createdDate') && (
+                                    <TableCell>
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {formatDistanceToNow(new Date(ticket.createdDate), { 
+                                                    addSuffix: true,
+                                                    locale: tr 
+                                                })}
+                                            </Typography>
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {selectedColumns.includes('actions') && (
+                                    <TableCell align="right">
+                                        <Box sx={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                            <Tooltip title="Detayları Görüntüle">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleTicketClick(ticket.id);
+                                                    }}
+                                                    sx={{
+                                                        color: theme.palette.primary.main,
+                                                        '&:hover': {
+                                                            bgcolor: theme.palette.primary.lighter,
+                                                        }
+                                                    }}
+                                                >
+                                                    <InfoIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Düzenle">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => handleEditClick(e, ticket.id)}
+                                                    sx={{
+                                                        color: theme.palette.primary.main,
+                                                        '&:hover': {
+                                                            bgcolor: theme.palette.primary.lighter,
+                                                        }
+                                                    }}
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                         {filteredTickets.length === 0 && (
                             <TableRow>
                                 <TableCell
-                                    colSpan={9}
+                                    colSpan={selectedColumns.length}
                                     align="center"
                                     sx={{
                                         py: 4,

@@ -893,10 +893,12 @@ function TicketDetailPage() {
                   </Typography>
                   <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
-                      {ticket.createdBy ? ticket.createdBy.name[0] : '?'}
+                      {ticket.createdBy?.name ? ticket.createdBy.name[0] : (ticket.createdBy?.groupName ? ticket.createdBy.groupName[0] : '?')}
                     </Avatar>
                     <Typography sx={{ fontWeight: 500 }}>
-                      {ticket.createdBy ? `${ticket.createdBy.name} ${ticket.createdBy.surname}` : 'Mevcut Değil'}
+                      {ticket.createdBy?.name
+                        ? `${ticket.createdBy.name} ${ticket.createdBy.surname}`
+                        : ticket.createdBy?.groupName || 'Grup Bilgisi Yok'}
                     </Typography>
                   </Paper>
                 </Box>

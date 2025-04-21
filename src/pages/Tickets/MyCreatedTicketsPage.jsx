@@ -687,12 +687,13 @@ function MyCreatedTicketsPage() {
                                                     bgcolor: 'action.hover',
                                             },
                                             ...(ticket.isSolutionOverdue && {
-                                                borderLeft: '4px solid',
-                                                borderColor: 'error.main',
-                                                bgcolor: 'error.lighter',
+                                                backgroundColor: '#FFEBEE',
+                                                border: '1.5px solid',
+                                                borderColor: theme => theme.palette.error.main,
+                                                boxShadow: '0 2px 8px 0 rgba(244,67,54,0.10)',
                                                 '&:hover': {
-                                                    bgcolor: 'error.light',
-                                                    opacity: 0.9
+                                                    backgroundColor: '#FFCDD2',
+                                                    opacity: 0.95
                                                 },
                                             })
                                             }}

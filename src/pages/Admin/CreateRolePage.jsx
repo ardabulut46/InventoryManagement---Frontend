@@ -59,7 +59,8 @@ const availablePermissions = {
         'Tickets:Create',
         'Tickets:Edit',
         'Tickets:Delete',
-        'Tickets:Assign'
+        'Tickets:Assign',
+        'Tickets:ViewWhoCreated'
     ],
     'Roles': [
         'Roles:View',
@@ -75,6 +76,7 @@ const getPermissionDisplayName = (permission) => {
     
     let actionText = action;
     // Translate action to Turkish
+    if (permission === 'Tickets:ViewWhoCreated') return 'Çağrıyı Oluşturanı Görebilme';
     if (action === 'View') actionText = 'Görüntüleme';
     else if (action === 'Create') actionText = 'Oluşturma';
     else if (action === 'Edit') actionText = 'Düzenleme';

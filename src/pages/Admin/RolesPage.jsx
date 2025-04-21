@@ -412,7 +412,8 @@ const RolesPage = () => {
                                                                     let actionText = action;
                                                                     
                                                                     // Translate action to Turkish
-                                                                    if (action === 'View') actionText = 'Görüntüleme';
+                                                                    if (permissionName === 'Tickets:ViewWhoCreated') actionText = 'Çağrıyı Oluşturanı Görebilme';
+                                                                    else if (action === 'View') actionText = 'Görüntüleme';
                                                                     else if (action === 'Create') actionText = 'Oluşturma';
                                                                     else if (action === 'Edit') actionText = 'Düzenleme';
                                                                     else if (action === 'Delete') actionText = 'Silme';

@@ -27,7 +27,10 @@ import {
     DialogActions,
     Container,
     Fade,
-    Tooltip
+    Tooltip,
+    Checkbox,
+    FormGroup,
+    FormControlLabel,
 } from '@mui/material'
 import {
     Add as AddIcon,
@@ -57,6 +60,12 @@ function TicketsPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [error, setError] = useState('')
     const [showAssignedTickets, setShowAssignedTickets] = useState(false)
+    const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+    const [selectedColumns, setSelectedColumns] = useState(() => {
+        const saved = localStorage.getItem('ticketsColumns');
+        if (saved) return JSON.parse(saved);
+        return ['registrationNumber', 'subject', 'department', 'location', 'status', 'createdDate', 'actions'];
+    });
 
     useEffect(() => {
         fetchTickets()
@@ -108,11 +117,35 @@ function TicketsPage() {
         }
     };
 
+    const handleColumnChange = (key) => {
+        setSelectedColumns(prev => {
+            const next = prev.includes(key)
+                ? prev.filter(k => k !== key)
+                : [...prev, key];
+            localStorage.setItem('ticketsColumns', JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const handleOpenColumnDialog = () => setColumnDialogOpen(true);
+    const handleCloseColumnDialog = () => setColumnDialogOpen(false);
+
     const filteredTickets = tickets.filter(ticket =>
         Object.values(ticket).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     )
+
+    // Column config (Turkish)
+    const COLUMN_CONFIG = [
+        { key: 'registrationNumber', label: 'Kayıt No' },
+        { key: 'subject', label: 'Konu' },
+        { key: 'department', label: 'Departman' },
+        { key: 'location', label: 'Konum' },
+        { key: 'status', label: 'Durum' },
+        { key: 'createdDate', label: 'Oluşturma Tarihi' },
+        { key: 'actions', label: 'İşlemler' },
+    ];
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -160,6 +193,34 @@ function TicketsPage() {
                         >
                             Yeni Çağrı Oluştur
                         </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={handleOpenColumnDialog}
+                        >
+                            Kolonları Seç
+                        </Button>
+                        <Dialog open={columnDialogOpen} onClose={handleCloseColumnDialog}>
+                            <DialogTitle>Görüntülenecek Kolonları Seçin</DialogTitle>
+                            <DialogContent>
+                                <FormGroup>
+                                    {COLUMN_CONFIG.map(col => (
+                                        <FormControlLabel
+                                            key={col.key}
+                                            control={
+                                                <Checkbox
+                                                    checked={selectedColumns.includes(col.key)}
+                                                    onChange={() => handleColumnChange(col.key)}
+                                                />
+                                            }
+                                            label={col.label}
+                                        />
+                                    ))}
+                                </FormGroup>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={handleCloseColumnDialog}>Kapat</Button>
+                            </DialogActions>
+                        </Dialog>
                     </Box>
                 </Box>
 
@@ -223,13 +284,13 @@ function TicketsPage() {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ bgcolor: 'background.default' }}>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Kayıt No</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Konu</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Departman</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Konum</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Durum</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>Oluşturma Tarihi</TableCell>
-                                <TableCell sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }}>İşlemler</TableCell>
+                                {COLUMN_CONFIG.map(col =>
+                                    selectedColumns.includes(col.key) && (
+                                        <TableCell key={col.key} sx={{ fontWeight: 600, py: 2, color: 'text.secondary' }} align={col.key === 'actions' ? 'right' : 'left'}>
+                                            {col.label}
+                                        </TableCell>
+                                    )
+                                )}
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -244,109 +305,123 @@ function TicketsPage() {
                                         }
                                     }}
                                 >
-                                    <TableCell sx={{ py: 2, color: 'text.primary' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            {ticket.registrationNumber}
-                                            {ticket.attachmentPath && (
-                                                <Tooltip title="Ek var">
-                                                    <AttachmentIcon 
-                                                        fontSize="small" 
-                                                        sx={{ 
-                                                            color: 'text.secondary',
-                                                            opacity: 0.7
-                                                        }} 
-                                                    />
-                                                </Tooltip>
+                                    {selectedColumns.includes('registrationNumber') && (
+                                        <TableCell sx={{ py: 2, color: 'text.primary' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                {ticket.registrationNumber}
+                                                {ticket.attachmentPath && (
+                                                    <Tooltip title="Ek var">
+                                                        <AttachmentIcon 
+                                                            fontSize="small" 
+                                                            sx={{ 
+                                                                color: 'text.secondary',
+                                                                opacity: 0.7
+                                                            }} 
+                                                        />
+                                                    </Tooltip>
+                                                )}
+                                            </Box>
+                                        </TableCell>
+                                    )}
+                                    {selectedColumns.includes('subject') && (
+                                        <TableCell sx={{ py: 2, color: 'text.primary' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography>{ticket.subject}</Typography>
+                                                {ticket.attachmentPath && (
+                                                    <Tooltip title="Ek var">
+                                                        <AttachmentIcon 
+                                                            fontSize="small" 
+                                                            sx={{ 
+                                                                color: 'text.secondary',
+                                                                opacity: 0.7
+                                                            }} 
+                                                        />
+                                                    </Tooltip>
+                                                )}
+                                            </Box>
+                                        </TableCell>
+                                    )}
+                                    {selectedColumns.includes('department') && (
+                                        <TableCell sx={{ py: 2, color: 'text.primary' }}>{ticket.department?.name}</TableCell>
+                                    )}
+                                    {selectedColumns.includes('location') && (
+                                        <TableCell sx={{ py: 2, color: 'text.primary' }}>
+                                            {ticket.location}
+                                            {ticket.room && (
+                                                <Typography 
+                                                    component="span" 
+                                                    color="text.secondary"
+                                                    sx={{ ml: 0.5 }}
+                                                >
+                                                    (Oda: {ticket.room})
+                                                </Typography>
                                             )}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell sx={{ py: 2, color: 'text.primary' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Typography>{ticket.subject}</Typography>
-                                            {ticket.attachmentPath && (
-                                                <Tooltip title="Ek var">
-                                                    <AttachmentIcon 
-                                                        fontSize="small" 
-                                                        sx={{ 
-                                                            color: 'text.secondary',
-                                                            opacity: 0.7
-                                                        }} 
-                                                    />
-                                                </Tooltip>
-                                            )}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell sx={{ py: 2, color: 'text.primary' }}>{ticket.department?.name}</TableCell>
-                                    <TableCell sx={{ py: 2, color: 'text.primary' }}>
-                                        {ticket.location}
-                                        {ticket.room && (
-                                            <Typography 
-                                                component="span" 
-                                                color="text.secondary"
-                                                sx={{ ml: 0.5 }}
-                                            >
-                                                (Oda: {ticket.room})
-                                            </Typography>
-                                        )}
-                                    </TableCell>
-                                    <TableCell sx={{ py: 2 }}>
-                                        <Chip 
-                                            label={getStatusTranslation(ticket.status)}
-                                            color={TICKET_STATUS_COLORS[ticket.status] || 'default'}
-                                            size="small"
-                                            sx={{ 
-                                                borderRadius: 1,
-                                                '& .MuiChip-label': {
-                                                    px: 2
-                                                }
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell sx={{ py: 2, color: 'text.primary' }}>
-                                        {new Date(ticket.createdDate).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell sx={{ py: 2 }}>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <IconButton
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/tickets/edit/${ticket.id}`, { state: { source: 'tickets' } });
-                                                }}
-                                                color="primary"
+                                        </TableCell>
+                                    )}
+                                    {selectedColumns.includes('status') && (
+                                        <TableCell sx={{ py: 2 }}>
+                                            <Chip 
+                                                label={getStatusTranslation(ticket.status)}
+                                                color={TICKET_STATUS_COLORS[ticket.status] || 'default'}
                                                 size="small"
                                                 sx={{ 
-                                                    bgcolor: 'primary.50',
-                                                    '&:hover': {
-                                                        bgcolor: 'primary.100',
+                                                    borderRadius: 1,
+                                                    '& .MuiChip-label': {
+                                                        px: 2
                                                     }
                                                 }}
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                            <IconButton
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(ticket.id);
-                                                }}
-                                                color="error"
-                                                size="small"
-                                                sx={{ 
-                                                    bgcolor: 'error.50',
-                                                    '&:hover': {
-                                                        bgcolor: 'error.100',
-                                                    }
-                                                }}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    </TableCell>
+                                            />
+                                        </TableCell>
+                                    )}
+                                    {selectedColumns.includes('createdDate') && (
+                                        <TableCell sx={{ py: 2, color: 'text.primary' }}>
+                                            {new Date(ticket.createdDate).toLocaleDateString()}
+                                        </TableCell>
+                                    )}
+                                    {selectedColumns.includes('actions') && (
+                                        <TableCell sx={{ py: 2 }} align="right">
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <IconButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/tickets/edit/${ticket.id}`, { state: { source: 'tickets' } });
+                                                    }}
+                                                    color="primary"
+                                                    size="small"
+                                                    sx={{ 
+                                                        bgcolor: 'primary.50',
+                                                        '&:hover': {
+                                                            bgcolor: 'primary.100',
+                                                        }
+                                                    }}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                                <IconButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(ticket.id);
+                                                    }}
+                                                    color="error"
+                                                    size="small"
+                                                    sx={{ 
+                                                        bgcolor: 'error.50',
+                                                        '&:hover': {
+                                                            bgcolor: 'error.100',
+                                                        }
+                                                    }}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                             {filteredTickets.length === 0 && (
                                 <TableRow>
                                     <TableCell 
-                                        colSpan={7} 
+                                        colSpan={selectedColumns.length} 
                                         align="center"
                                         sx={{ 
                                             py: 4,
