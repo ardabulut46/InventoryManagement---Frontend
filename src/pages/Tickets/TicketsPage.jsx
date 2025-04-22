@@ -31,6 +31,7 @@ import {
     Checkbox,
     FormGroup,
     FormControlLabel,
+    CircularProgress,
 } from '@mui/material'
 import {
     Add as AddIcon,
@@ -45,9 +46,11 @@ import {
     CheckCircle as CheckCircleIcon,
     AttachFile as AttachmentIcon,
     Download as DownloadIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material'
 import { Link, useNavigate } from 'react-router-dom'
-import { getDepartmentTickets, deleteTicket, getMyTickets, updateTicketPriority, assignTicket } from '../../api/TicketService'
+import { getDepartmentTickets, deleteTicket, getMyTickets, updateTicketPriority, assignTicket, getMostOpenedByGroup, getMostOpenedToGroup } from '../../api/TicketService'
 import { TICKET_PRIORITIES, TICKET_STATUS_COLORS, getStatusTranslation } from '../../utils/ticketConfig'
 import PriorityChip from '../../components/PriorityChip'
 import { getCurrentUser } from '../../api/auth'
@@ -57,6 +60,9 @@ function TicketsPage() {
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([])
     const [assignedTickets, setAssignedTickets] = useState([])
+    const [mostOpenedByGroup, setMostOpenedByGroup] = useState([])
+    const [mostOpenedToGroup, setMostOpenedToGroup] = useState([])
+    const [loadingStats, setLoadingStats] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [error, setError] = useState('')
     const [showAssignedTickets, setShowAssignedTickets] = useState(false)
@@ -69,6 +75,7 @@ function TicketsPage() {
 
     useEffect(() => {
         fetchTickets()
+        fetchStatistics()
     }, [])
 
     const fetchTickets = async () => {
@@ -83,6 +90,21 @@ function TicketsPage() {
         } catch (err) {
             setError('Failed to fetch tickets.')
             console.error('Error fetching tickets', err)
+        }
+    }
+
+    const fetchStatistics = async () => {
+        try {
+            const [byGroupResponse, toGroupResponse] = await Promise.all([
+                getMostOpenedByGroup(),
+                getMostOpenedToGroup()
+            ]);
+            setMostOpenedByGroup(byGroupResponse.data)
+            setMostOpenedToGroup(toGroupResponse.data)
+            setLoadingStats(false)
+        } catch (err) {
+            console.error('Error fetching statistics:', err)
+            setLoadingStats(false)
         }
     }
 
@@ -149,6 +171,140 @@ function TicketsPage() {
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
+            {/* Statistics Section */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={6}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'background.paper',
+                            boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
+                            height: '100%'
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TrendingUpIcon /> En Çok Çağrı Oluşturan Gruplar
+                        </Typography>
+                        {loadingStats ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            mostOpenedByGroup.map((group, index) => (
+                                <Box
+                                    key={group.groupId}
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        mb: 2,
+                                        p: 2,
+                                        bgcolor: 'grey.50',
+                                        borderRadius: 2,
+                                        '&:hover': {
+                                            bgcolor: 'grey.100',
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                width: 30,
+                                                height: 30,
+                                                borderRadius: '50%',
+                                                bgcolor: 'primary.main',
+                                                color: 'white',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '0.875rem',
+                                            }}
+                                        >
+                                            {index + 1}
+                                        </Typography>
+                                        <Typography>{group.groupName}</Typography>
+                                    </Box>
+                                    <Chip
+                                        label={`${group.ticketCount} çağrı`}
+                                        color="primary"
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                </Box>
+                            ))
+                        )}
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'background.paper',
+                            boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
+                            height: '100%'
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 2, color: 'secondary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TrendingDownIcon /> En Çok Çağrı Atanan Gruplar
+                        </Typography>
+                        {loadingStats ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            mostOpenedToGroup.map((group, index) => (
+                                <Box
+                                    key={group.groupId}
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        mb: 2,
+                                        p: 2,
+                                        bgcolor: 'grey.50',
+                                        borderRadius: 2,
+                                        '&:hover': {
+                                            bgcolor: 'grey.100',
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                width: 30,
+                                                height: 30,
+                                                borderRadius: '50%',
+                                                bgcolor: 'secondary.main',
+                                                color: 'white',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '0.875rem',
+                                            }}
+                                        >
+                                            {index + 1}
+                                        </Typography>
+                                        <Typography>{group.groupName}</Typography>
+                                    </Box>
+                                    <Chip
+                                        label={`${group.ticketCount} çağrı`}
+                                        color="secondary"
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                </Box>
+                            ))
+                        )}
+                    </Paper>
+                </Grid>
+            </Grid>
+
             <Paper 
                 elevation={0} 
                 sx={{ 

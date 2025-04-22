@@ -21,7 +21,13 @@ import {
     CardContent,
     Grid,
     Divider,
-    useTheme
+    useTheme,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    FormControlLabel,
+    Checkbox
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -33,10 +39,51 @@ import {
     Business as BusinessIcon,
     Person as PersonIcon,
     AttachFile as AttachmentIcon,
+    Close as CloseIcon,
+    Group as GroupIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getAssignedInventories } from '../../api/InventoryService';
 import { format } from 'date-fns';
+
+const STATUS_MAP = {
+    1: 'Müsait',    // Available
+    2: 'Kullanımda', // InUse
+    3: 'Bakımda',    // UnderMaintenance
+    4: 'Emekli',     // Retired
+    5: 'Kayıp',      // Lost
+    // Legacy string values (if any still exist in the system)
+    'Available': 'Müsait',
+    'In Use': 'Kullanımda',
+    'Under Maintenance': 'Bakımda',
+    'Retired': 'Emekli',
+    'Lost': 'Kayıp',
+};
+
+const STATUS_LIST = [
+    { value: 'all', label: 'Tümü', color: 'default' },
+    { value: 1, label: 'Müsait', color: 'success' },
+    { value: 2, label: 'Kullanımda', color: 'primary' },
+    { value: 3, label: 'Bakımda', color: 'warning' },
+    { value: 4, label: 'Emekli', color: 'default' },
+    { value: 5, label: 'Kayıp', color: 'error' },
+];
+const STATUS_COLORS = {
+    1: '#4caf50',
+    2: '#1976d2',
+    3: '#ff9800',
+    4: '#757575',
+    5: '#f44336',
+};
+const COLUMNS = [
+    { id: 'barcode', label: 'Barkod / Seri No', always: true },
+    { id: 'family', label: 'Aile / Tip' },
+    { id: 'brand', label: 'Marka / Model' },
+    { id: 'location', label: 'Konum' },
+    { id: 'status', label: 'Durum' },
+    { id: 'warrantyEndDate', label: 'Garanti Bitiş' },
+    { id: 'actions', label: 'İşlemler', always: true },
+];
 
 const AssignedInventoriesPage = () => {
     const [inventories, setInventories] = useState([]);
@@ -46,6 +93,11 @@ const AssignedInventoriesPage = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const theme = useTheme();
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [visibleColumns, setVisibleColumns] = useState(
+        COLUMNS.filter(col => col.always || ['barcode', 'brand', 'status'].includes(col.id)).map(col => col.id)
+    );
+    const [showColumnsDialog, setShowColumnsDialog] = useState(false);
 
     useEffect(() => {
         fetchAssignedInventories();
@@ -55,7 +107,7 @@ const AssignedInventoriesPage = () => {
         if (inventories.length > 0) {
             filterInventories();
         }
-    }, [searchTerm, inventories]);
+    }, [searchTerm, inventories, statusFilter]);
 
     const fetchAssignedInventories = async () => {
         setLoading(true);
@@ -73,22 +125,23 @@ const AssignedInventoriesPage = () => {
     };
 
     const filterInventories = () => {
-        if (!searchTerm.trim()) {
-            setFilteredInventories(inventories);
-            return;
+        let filtered = inventories;
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(inv => String(inv.status) === String(statusFilter));
         }
-
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        const filtered = inventories.filter(inventory => 
-            (inventory.barcode && inventory.barcode.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.serialNumber && inventory.serialNumber.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.familyName && inventory.familyName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.typeName && inventory.typeName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.brandName && inventory.brandName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.modelName && inventory.modelName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.location && inventory.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
-            (inventory.status && inventory.status.toLowerCase().includes(lowerCaseSearchTerm))
-        );
+        if (searchTerm.trim()) {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter(inventory => 
+                (inventory.barcode && inventory.barcode.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.serialNumber && inventory.serialNumber.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.familyName && inventory.familyName.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.typeName && inventory.typeName.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.brandName && inventory.brandName.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.modelName && inventory.modelName.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.location && inventory.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                (inventory.status && (STATUS_MAP[inventory.status] || inventory.status).toLowerCase().includes(lowerCaseSearchTerm))
+            );
+        }
         setFilteredInventories(filtered);
     };
 
@@ -110,10 +163,11 @@ const AssignedInventoriesPage = () => {
     };
 
     const getStatusColor = (status) => {
-        if (!status || typeof status !== 'string') return 'info';
-        
-        switch (status.toLowerCase()) {
+        const statusStr = STATUS_MAP[status] || status;
+        if (!statusStr || typeof statusStr !== 'string') return 'info';
+        switch (statusStr.toLowerCase()) {
             case 'kullanılabilir':
+            case 'müsait':
                 return 'success';
             case 'arızalı':
                 return 'error';
@@ -121,11 +175,30 @@ const AssignedInventoriesPage = () => {
                 return 'warning';
             case 'kayıp':
                 return 'error';
+            case 'emekli':
             case 'hurdaya ayrılmış':
                 return 'default';
+            case 'kullanımda':
+                return 'primary';
             default:
                 return 'info';
         }
+    };
+
+    // Status distribution for summary
+    const statusDistribution = inventories.reduce((acc, inv) => {
+        const key = inv.status;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, {});
+
+    const handleColumnToggle = (columnId) => {
+        if (COLUMNS.find(col => col.id === columnId)?.always) return;
+        setVisibleColumns(prev =>
+            prev.includes(columnId)
+                ? prev.filter(id => id !== columnId)
+                : [...prev, columnId]
+        );
     };
 
     const renderInventoryCard = (inventory) => (
@@ -171,7 +244,7 @@ const AssignedInventoriesPage = () => {
                     <Grid item xs={12} sm={6}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                             <Chip 
-                                label={inventory.status} 
+                                label={STATUS_MAP[inventory.status] || inventory.status} 
                                 color={getStatusColor(inventory.status)}
                                 size="small"
                             />
@@ -221,16 +294,42 @@ const AssignedInventoriesPage = () => {
 
     return (
         <Box>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    Üzerimdeki Envanterler
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Size atanmış tüm envanterlerin listesi
-                </Typography>
+            {/* Modern Header with Group Icon */}
+            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <GroupIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+                <Box>
+                    <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: 1 }}>
+                        Üzerimdeki Envanterler
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Size atanmış tüm envanterlerin listesi
+                    </Typography>
+                </Box>
             </Box>
 
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+            {/* Summary Bar with Status Chips */}
+            <Paper elevation={0} sx={{ mb: 3, p: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 2 }}>
+                    Toplam <span style={{ color: theme.palette.primary.main }}>{inventories.length}</span> envanter
+                </Typography>
+                {STATUS_LIST.filter(s => s.value !== 'all').map(s => (
+                    <Chip
+                        key={s.value}
+                        label={`${s.label}: ${statusDistribution[s.value] || 0}`}
+                        color={s.color}
+                        sx={{ fontWeight: 500, bgcolor: STATUS_COLORS[s.value], color: '#fff', mr: 1 }}
+                        variant={statusFilter === String(s.value) ? 'filled' : 'outlined'}
+                        onClick={() => setStatusFilter(String(s.value))}
+                        clickable
+                    />
+                ))}
+                <Button size="small" onClick={() => { setStatusFilter('all'); setSearchTerm(''); }} sx={{ ml: 'auto' }}>
+                    Filtreleri Temizle
+                </Button>
+            </Paper>
+
+            {/* Sticky Search Bar with Status Filter Chips */}
+            <Box sx={{ mb: 3, position: 'sticky', top: 0, zIndex: 10, bgcolor: theme.palette.background.paper, pb: 1 }}>
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -245,8 +344,21 @@ const AssignedInventoriesPage = () => {
                         ),
                         sx: { borderRadius: 2 }
                     }}
-                    sx={{ maxWidth: 600 }}
+                    sx={{ maxWidth: 600, bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : '#fff', boxShadow: 1 }}
                 />
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {STATUS_LIST.map(s => (
+                        <Chip
+                            key={s.value}
+                            label={s.label}
+                            color={s.color}
+                            variant={statusFilter === String(s.value) ? 'filled' : 'outlined'}
+                            onClick={() => setStatusFilter(String(s.value))}
+                            clickable
+                            sx={{ fontWeight: 500, bgcolor: statusFilter === String(s.value) ? STATUS_COLORS[s.value] : undefined, color: statusFilter === String(s.value) ? '#fff' : undefined }}
+                        />
+                    ))}
+                </Box>
             </Box>
 
             {loading ? (
@@ -266,84 +378,157 @@ const AssignedInventoriesPage = () => {
                     <Typography variant="subtitle1" sx={{ mb: 2 }}>
                         Toplam {filteredInventories.length} envanter bulundu
                     </Typography>
-                    
                     {/* Mobile view - Cards */}
                     <Box sx={{ display: { xs: 'block', md: 'none' } }}>
                         {filteredInventories.map(inventory => renderInventoryCard(inventory))}
                     </Box>
-                    
                     {/* Desktop view - Table */}
+                    <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-end', mb: 2 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<InfoIcon />}
+                            onClick={() => setShowColumnsDialog(true)}
+                            sx={{ borderRadius: 2, textTransform: 'none', px: 3, py: 1, borderWidth: 1.5, whiteSpace: 'nowrap' }}
+                        >
+                            Sütunlar
+                        </Button>
+                    </Box>
+                    {/* Columns Dialog */}
+                    <Dialog
+                        open={showColumnsDialog}
+                        onClose={() => setShowColumnsDialog(false)}
+                        PaperProps={{ sx: { borderRadius: 2, maxWidth: 400, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' } }}
+                    >
+                        <DialogTitle>
+                            <Box display="flex" alignItems="center" justifyContent="space-between">
+                                <Typography variant="h6">Gösterilecek Sütunlar</Typography>
+                                <IconButton onClick={() => setShowColumnsDialog(false)} size="small">
+                                    <CloseIcon />
+                                </IconButton>
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {COLUMNS.map((column) => (
+                                    <FormControlLabel
+                                        key={column.id}
+                                        control={
+                                            <Checkbox
+                                                checked={visibleColumns.includes(column.id)}
+                                                onChange={() => handleColumnToggle(column.id)}
+                                                disabled={column.always}
+                                            />
+                                        }
+                                        label={column.label}
+                                    />
+                                ))}
+                            </Box>
+                        </DialogContent>
+                        <DialogActions sx={{ p: 2.5 }}>
+                            <Button 
+                                onClick={() => setShowColumnsDialog(false)}
+                                variant="contained"
+                                sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+                            >
+                                Kapat
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                     <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                         <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: theme.palette.mode === 'dark' ? '0 4px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)' }}>
                             <Table>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Barkod / Seri No</TableCell>
-                                        <TableCell>Aile / Tip</TableCell>
-                                        <TableCell>Marka / Model</TableCell>
-                                        <TableCell>Konum</TableCell>
-                                        <TableCell>Durum</TableCell>
-                                        <TableCell>Garanti Bitiş</TableCell>
-                                        <TableCell align="right">İşlemler</TableCell>
+                                        {COLUMNS.filter(col => visibleColumns.includes(col.id)).map(column => (
+                                            <TableCell key={column.id}>{column.label}</TableCell>
+                                        ))}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {filteredInventories.map((inventory) => (
                                         <TableRow key={inventory.id} hover>
-                                            <TableCell>
-                                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                                    {inventory.barcode || 'N/A'}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {inventory.serialNumber || 'N/A'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2">
-                                                    {inventory.familyName || 'N/A'}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {inventory.typeName || 'N/A'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2">
-                                                    {inventory.brandName || 'N/A'}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {inventory.modelName || 'N/A'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Tooltip title={`Oda: ${inventory.room || 'N/A'}, Kat: ${inventory.floor || 'N/A'}, Departman: ${inventory.department || 'N/A'}`}>
-                                                    <Typography variant="body2">
-                                                        {inventory.location || 'N/A'}
-                                                    </Typography>
-                                                </Tooltip>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip 
-                                                    label={inventory.status} 
-                                                    color={getStatusColor(inventory.status)}
-                                                    size="small"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                {formatDate(inventory.warrantyEndDate)}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    onClick={() => handleViewDetails(inventory.id)}
-                                                    sx={{ 
-                                                        borderRadius: 2,
-                                                        textTransform: 'none'
-                                                    }}
-                                                >
-                                                    Detaylar
-                                                </Button>
-                                            </TableCell>
+                                            {COLUMNS.filter(col => visibleColumns.includes(col.id)).map(column => {
+                                                if (column.id === 'barcode') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                                {inventory.barcode || 'N/A'}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {inventory.serialNumber || 'N/A'}
+                                                            </Typography>
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'family') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            <Typography variant="body2">
+                                                                {inventory.familyName || 'N/A'}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {inventory.typeName || 'N/A'}
+                                                            </Typography>
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'brand') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            <Typography variant="body2">
+                                                                {inventory.brandName || 'N/A'}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {inventory.modelName || 'N/A'}
+                                                            </Typography>
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'location') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            <Tooltip title={`Oda: ${inventory.room || 'N/A'}, Kat: ${inventory.floor || 'N/A'}, Departman: ${inventory.department || 'N/A'}`}>
+                                                                <Typography variant="body2">
+                                                                    {inventory.location || 'N/A'}
+                                                                </Typography>
+                                                            </Tooltip>
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'status') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            <Chip 
+                                                                label={STATUS_MAP[inventory.status] || inventory.status} 
+                                                                color={getStatusColor(inventory.status)}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'warrantyEndDate') {
+                                                    return (
+                                                        <TableCell key={column.id}>
+                                                            {formatDate(inventory.warrantyEndDate)}
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                if (column.id === 'actions') {
+                                                    return (
+                                                        <TableCell key={column.id} align="right">
+                                                            <Button
+                                                                variant="outlined"
+                                                                size="small"
+                                                                onClick={() => handleViewDetails(inventory.id)}
+                                                                sx={{ borderRadius: 2, textTransform: 'none' }}
+                                                            >
+                                                                Detaylar
+                                                            </Button>
+                                                        </TableCell>
+                                                    );
+                                                }
+                                                return <TableCell key={column.id}>-</TableCell>;
+                                            })}
                                         </TableRow>
                                     ))}
                                 </TableBody>

@@ -1,4 +1,5 @@
 import httpClient from './httpClient'
+import axios from 'axios'
 
 const endpoint = '/api/Ticket'
 
@@ -65,5 +66,13 @@ export const transferTicket = (ticketId, transferTicketDto) => {
 export const getHighPriorityTickets = () => {
     return httpClient.get(`/api/Ticket/high-priority-tickets`);
 }
+
+export const getMostOpenedByGroup = () => {
+    return httpClient.get(`${endpoint}/most-opened-by-group`);
+};
+
+export const getMostOpenedToGroup = () => {
+    return httpClient.get(`${endpoint}/most-opened-to-group`);
+};
 
 // Add more ticket-specific operations as needed
