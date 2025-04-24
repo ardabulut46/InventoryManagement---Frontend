@@ -25,6 +25,7 @@ import {
     TableHead,
     CircularProgress,
     Tooltip,
+    Skeleton,
 } from '@mui/material';
 import {
     QrCode as BarcodeIcon,
@@ -196,9 +197,8 @@ function TicketDetailsDialog({ ticket, onClose, onAssignTicket }) {
     );
 }
 
-function DepartmentTicketsDialog({ open, onClose, tickets, onAssignTicket, onTicketClick }) {
+function DepartmentTicketsDialog({ open, onClose, tickets, onAssignTicket, onTicketClick, loading }) {
     const currentUser = getCurrentUser();
-
     return (
         <Dialog 
             open={open} 
@@ -239,50 +239,15 @@ function DepartmentTicketsDialog({ open, onClose, tickets, onAssignTicket, onTic
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {tickets.map((ticket) => (
-                                <TableRow key={ticket.id}>
-                                    <TableCell>#{ticket.registrationNumber}</TableCell>
-                                    <TableCell>{ticket.subject}</TableCell>
-                                    <TableCell>
-                                        <Chip 
-                                            label={ticket.problemType}
-                                            color="primary"
-                                            variant="outlined"
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip 
-                                            label={ticket.status}
-                                            size="small"
-                                            color={statusColors[ticket.status] || 'default'}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <PriorityChip priority={ticket.priority} />
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        {!ticket.userId && (
-                                            <Button
-                                                size="small"
-                                                onClick={() => onAssignTicket(ticket.id)}
-                                                startIcon={<PersonAddIcon />}
-                                                sx={{ mr: 1 }}
-                                            >
-                                                Üstlen
-                                            </Button>
-                                        )}
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onTicketClick(ticket)}
-                                            color="info"
-                                        >
-                                            <InfoIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {tickets.length === 0 && (
+                            {loading ? (
+                                Array.from({ length: 4 }).map((_, idx) => (
+                                    <TableRow key={idx}>
+                                        {Array.from({ length: 6 }).map((_, i) => (
+                                            <TableCell key={i}><Skeleton /></TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : tickets.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center">
                                         <Box sx={{ py: 3 }}>
@@ -293,6 +258,50 @@ function DepartmentTicketsDialog({ open, onClose, tickets, onAssignTicket, onTic
                                         </Box>
                                     </TableCell>
                                 </TableRow>
+                            ) : (
+                                tickets.map((ticket) => (
+                                    <TableRow key={ticket.id}>
+                                        <TableCell>#{ticket.registrationNumber}</TableCell>
+                                        <TableCell>{ticket.subject}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={ticket.problemType}
+                                                color="primary"
+                                                variant="outlined"
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={ticket.status}
+                                                size="small"
+                                                color={statusColors[ticket.status] || 'default'}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <PriorityChip priority={ticket.priority} />
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {!ticket.userId && (
+                                                <Button
+                                                    size="small"
+                                                    onClick={() => onAssignTicket(ticket.id)}
+                                                    startIcon={<PersonAddIcon />}
+                                                    sx={{ mr: 1 }}
+                                                >
+                                                    Üstlen
+                                                </Button>
+                                            )}
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => onTicketClick(ticket)}
+                                                color="info"
+                                            >
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             )}
                         </TableBody>
                     </Table>
@@ -302,20 +311,17 @@ function DepartmentTicketsDialog({ open, onClose, tickets, onAssignTicket, onTic
     );
 }
 
-function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicketClick }) {
+function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicketClick, loading }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedTicket, setSelectedTicket] = useState(null);
-
     const handlePriorityClick = (event, ticket) => {
         setAnchorEl(event.currentTarget);
         setSelectedTicket(ticket);
     };
-
     const handlePriorityClose = () => {
         setAnchorEl(null);
         setSelectedTicket(null);
     };
-
     const handlePriorityChange = async (priority) => {
         try {
             await updateTicketPriority(selectedTicket.id, priority);
@@ -325,7 +331,6 @@ function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicke
         }
         handlePriorityClose();
     };
-
     return (
         <Dialog 
             open={open} 
@@ -366,48 +371,15 @@ function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicke
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {tickets.map((ticket) => (
-                                <TableRow key={ticket.id}>
-                                    <TableCell>#{ticket.registrationNumber}</TableCell>
-                                    <TableCell>{ticket.subject}</TableCell>
-                                    <TableCell>
-                                        <Chip 
-                                            label={ticket.problemType}
-                                            color="primary"
-                                            variant="outlined"
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip 
-                                            label={ticket.status}
-                                            size="small"
-                                            color={statusColors[ticket.status] || 'default'}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <PriorityChip priority={ticket.priority} />
-                                            <IconButton 
-                                                size="small" 
-                                                onClick={(e) => handlePriorityClick(e, ticket)}
-                                            >
-                                                <ArrowDownIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onTicketClick(ticket)}
-                                            color="info"
-                                        >
-                                            <InfoIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {tickets.length === 0 && (
+                            {loading ? (
+                                Array.from({ length: 4 }).map((_, idx) => (
+                                    <TableRow key={idx}>
+                                        {Array.from({ length: 6 }).map((_, i) => (
+                                            <TableCell key={i}><Skeleton /></TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : tickets.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center">
                                         <Box sx={{ py: 3 }}>
@@ -418,12 +390,53 @@ function AssignedTicketsDialog({ open, onClose, tickets, onTicketUpdate, onTicke
                                         </Box>
                                     </TableCell>
                                 </TableRow>
+                            ) : (
+                                tickets.map((ticket) => (
+                                    <TableRow key={ticket.id}>
+                                        <TableCell>#{ticket.registrationNumber}</TableCell>
+                                        <TableCell>{ticket.subject}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={ticket.problemType}
+                                                color="primary"
+                                                variant="outlined"
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={ticket.status}
+                                                size="small"
+                                                color={statusColors[ticket.status] || 'default'}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <PriorityChip priority={ticket.priority} />
+                                                <IconButton 
+                                                    size="small" 
+                                                    onClick={(e) => handlePriorityClick(e, ticket)}
+                                                >
+                                                    <ArrowDownIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => onTicketClick(ticket)}
+                                                color="info"
+                                            >
+                                                <InfoIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             )}
                         </TableBody>
                     </Table>
                 </TableContainer>
             </DialogContent>
-
             {/* Priority Menu */}
             <Menu
                 anchorEl={anchorEl}
@@ -464,6 +477,7 @@ function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const theme = useTheme();
     const navigate = useNavigate();
+    const currentUser = getCurrentUser();
 
     useEffect(() => {
         fetchData();
@@ -574,7 +588,7 @@ function DashboardPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                         <Box>
                             <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-                                Hoş Geldiniz!
+                                Hoş Geldiniz{currentUser && currentUser.name ? `, ${currentUser.name}` : ''}!
                             </Typography>
                             <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
                                 Envanter ve çağrı yönetim sistemi kontrol paneli
@@ -637,7 +651,7 @@ function DashboardPage() {
                                     Grubumun Çağrıları
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                                    {loading ? '...' : departmentTickets.length}
+                                    {loading ? <Skeleton width={40} /> : departmentTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -669,7 +683,7 @@ function DashboardPage() {
                                     Üzerimdeki Çağrılar
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                                    {loading ? '...' : assignedToMeTickets.length}
+                                    {loading ? <Skeleton width={40} /> : assignedToMeTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -701,7 +715,7 @@ function DashboardPage() {
                                     Tüm Çağrılar
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                                    {loading ? '...' : allTickets.length}
+                                    {loading ? <Skeleton width={40} /> : allTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -729,7 +743,7 @@ function DashboardPage() {
                                     Toplam Envanter
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: theme.palette.primary.light, fontWeight: 'bold' }}>
-                                    {loading ? '...' : inventories.length}
+                                    {loading ? <Skeleton width={40} /> : inventories.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -759,7 +773,7 @@ function DashboardPage() {
                                     Çözüm Süresi Geçen Çağrılar
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: theme.palette.error.light, fontWeight: 'bold' }}>
-                                    {loading ? '...' : solutionOverdueTickets.length}
+                                    {loading ? <Skeleton width={40} /> : solutionOverdueTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -787,7 +801,7 @@ function DashboardPage() {
                                     Müdahale Süresi Geçen Çağrılar
                                 </Typography>
                                 <Typography variant="h4" sx={{ color: theme.palette.warning.light, fontWeight: 'bold' }}>
-                                    {loading ? '...' : responseOverdueTickets.length}
+                                    {loading ? <Skeleton width={40} /> : responseOverdueTickets.length}
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -813,6 +827,7 @@ function DashboardPage() {
                 tickets={departmentTickets}
                 onAssignTicket={handleAssignTicket}
                 onTicketClick={handleTicketClick}
+                loading={loading}
             />
 
             <AssignedTicketsDialog
@@ -821,6 +836,7 @@ function DashboardPage() {
                 tickets={assignedToMeTickets}
                 onTicketUpdate={handleTicketUpdate}
                 onTicketClick={handleTicketClick}
+                loading={loading}
             />
 
             {/* Announcement Section */}
@@ -835,7 +851,10 @@ function DashboardPage() {
                         </Alert>
                     ))
                 ) : (
-                    <Typography variant="body1">Şu anda bir duyuru yok.</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+                        <InfoIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="body1">Şu anda bir duyuru yok.</Typography>
+                    </Box>
                 )}
             </Box>
         </Box>
