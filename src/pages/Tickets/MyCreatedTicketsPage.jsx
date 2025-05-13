@@ -38,6 +38,7 @@ import {
     TimerOff as TimerOffIcon,
     CheckCircle as CheckCircleIcon,
     Alarm as AlarmIcon,
+    AddCircleOutline as AddCircleOutlineIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/httpClient';
@@ -410,12 +411,13 @@ function MyCreatedTicketsPage() {
                                  activeFilter === 'unassigned' ? 'Atanmamış Çağrılarım' : 'Açtığım Çağrılar'}
                                     </Typography>
                                 </Box>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                             {activeFilter !== 'all' && (
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => handleFilterChange('all')}
+                                    sx={{ height: 40 }}
                                 >
                                     Tüm Çağrılara Dön
                                 </Button>
@@ -429,6 +431,15 @@ function MyCreatedTicketsPage() {
                             sx={{ height: 40 }}
                         >
                             {isRefreshing ? 'Yenileniyor...' : 'Yenile'}
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddCircleOutlineIcon />}
+                            onClick={() => navigate('/tickets/create')}
+                            sx={{ height: 40 }}
+                        >
+                            Çağrı Aç
                         </Button>
                         </Box>
                     </Box>

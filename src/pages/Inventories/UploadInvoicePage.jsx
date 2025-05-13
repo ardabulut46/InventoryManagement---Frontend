@@ -248,19 +248,22 @@ function UploadInvoicePage() {
                                                         helperText="Faturayı eklemek istediğiniz envanter öğesini seçin"
                                                     />
                                                 )}
-                                                renderOption={(props, option) => (
-                                                    <li {...props}>
-                                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                                            <Typography variant="body1">
-                                                                {option.brand} {option.model}
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                Barkod: {option.barcode || 'Yok'} | 
-                                                                Seri No: {option.serialNumber || 'Yok'}
-                                                            </Typography>
-                                                        </Box>
-                                                    </li>
-                                                )}
+                                                renderOption={(props, option) => {
+                                                    const { key, ...otherProps } = props;
+                                                    return (
+                                                        <li key={key} {...otherProps}>
+                                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <Typography variant="body1">
+                                                                    {option.brand} {option.model}
+                                                                </Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    Barkod: {option.barcode || 'Yok'} |
+                                                                    Seri No: {option.serialNumber || 'Yok'}
+                                                                </Typography>
+                                                            </Box>
+                                                        </li>
+                                                    );
+                                                }}
                                             />
                                         </Grid>
                                         

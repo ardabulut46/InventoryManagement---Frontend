@@ -278,6 +278,7 @@ function DepartmentTicketsPage() {
     const handleStatusCardClick = (status) => {
         setSelectedStatus(status);
         setViewingHighPriorityOnly(false);
+        setViewingOverdueOnly(false);
     };
 
     const handleHighPriorityCardClick = () => {

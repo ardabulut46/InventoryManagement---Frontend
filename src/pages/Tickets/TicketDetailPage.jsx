@@ -651,7 +651,7 @@ function TicketDetailPage() {
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                     Departman
                   </Typography>
-                  <Typography sx={{ fontWeight: 500 }}>{ticket.group?.department?.name || '-'}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{ticket.user?.department?.name || '-'}</Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -667,7 +667,7 @@ function TicketDetailPage() {
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                     Problem Tipi
                   </Typography>
-                  <Typography sx={{ fontWeight: 500 }}>{ticket.problemType}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{ticket.problemTypeName}</Typography>
                 </Paper>
               </Grid>
             </Grid>

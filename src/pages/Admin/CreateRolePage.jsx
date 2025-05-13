@@ -39,7 +39,11 @@ import httpClient from '../../api/httpClient';
 // Define permissions based on backend constants
 const availablePermissions = {
     'AdminPanel': [
-        'AdminPanel:View'
+        'AdminPanel:View',
+        'Roles:View',
+        'Roles:Create',
+        'Roles:Edit',
+        'Roles:Delete'
     ],
     'Inventory': [
         'Inventory:View',
@@ -61,33 +65,27 @@ const availablePermissions = {
         'Tickets:Delete',
         'Tickets:Assign',
         'Tickets:ViewWhoCreated'
-    ],
-    'Roles': [
-        'Roles:View',
-        'Roles:Create',
-        'Roles:Edit',
-        'Roles:Delete'
     ]
 };
 
 // Helper function to get permission display name
 const getPermissionDisplayName = (permission) => {
-    const [resource, action] = permission.split(':');
-    
-    let actionText = action;
-    // Translate action to Turkish
-    if (permission === 'Tickets:ViewWhoCreated') return 'Çağrıyı Oluşturanı Görebilme';
-    if (action === 'View') actionText = 'Görüntüleme';
-    else if (action === 'Create') actionText = 'Oluşturma';
-    else if (action === 'Edit') actionText = 'Düzenleme';
-    else if (action === 'Delete') actionText = 'Silme';
-    else if (action === 'Assign') actionText = 'Atama';
-    else if (action === 'UploadFile') actionText = 'Dosya Yükleme';
-    
-    // Special case for AdminPanel:View
     if (permission === 'AdminPanel:View') return 'Admin Paneline Erişim';
-    
-    return actionText;
+    if (permission === 'Tickets:ViewWhoCreated') return 'Çağrıyı Oluşturanı Görebilme';
+    const [resource, action] = permission.split(':');
+    if (resource === 'Roles') {
+        if (action === 'View') return 'Rol Görüntüleme';
+        else if (action === 'Create') return 'Rol Oluşturma';
+        else if (action === 'Edit') return 'Rol Düzenleme';
+        else if (action === 'Delete') return 'Rol Silme';
+    }
+    if (action === 'View') return 'Görüntüleme';
+    else if (action === 'Create') return 'Oluşturma';
+    else if (action === 'Edit') return 'Düzenleme';
+    else if (action === 'Delete') return 'Silme';
+    else if (action === 'Assign') return 'Atama';
+    else if (action === 'UploadFile') return 'Dosya Yükleme';
+    return action;
 };
 
 // Helper function to get category display name
