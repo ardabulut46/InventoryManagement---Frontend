@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CssBaseline } from '@mui/material';
 import { NotificationProvider } from './contexts/NotificationContext';
+import InventoryRequests from './components/InventoryRequests';
 
 // Import your pages
 import CompaniesPage from './pages/Companies/CompaniesPage'
@@ -118,6 +119,7 @@ function App() {
                             <Route path="/inventories/warranty-status" element={<WarrantyStatusPage />} />
                             <Route path="/inventories/assigned" element={<AssignedInventoriesPage />} />
                             <Route path="/inventories/group" element={<GroupInventoriesPage />} />
+                            <Route path="/inventories/requests" element={<InventoryRequests />} />
 
                             {/* TICKETS */}
                             <Route path="/tickets" element={<TicketsPage />} />

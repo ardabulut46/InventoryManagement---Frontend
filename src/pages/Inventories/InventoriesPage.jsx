@@ -894,12 +894,13 @@ function InventoriesPage() {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Bu envanteri pasif duruma almak istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+        if (window.confirm('Bu envanteri silmek istediğinizden emin misiniz? Bu işlem grup liderinizin onayını gerektirir.')) {
             try {
                 await deleteInventory(id);
+                setSuccessMessage('Grup liderinize silme onayı isteği gönderilmiştir. İsteğiniz onaylandığında envanter pasif duruma alınacaktır.');
                 fetchInventories();
             } catch (err) {
-                setError('Envanter pasif duruma alınırken bir hata oluştu.');
+                setError('Silme isteği gönderilirken bir hata oluştu.');
             }
         }
     };

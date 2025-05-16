@@ -220,6 +220,11 @@ function Layout() {
             requiredPermissions: ['Inventory:View'],
             subItems: [
                 { text: 'Tüm Envanterler', path: '/inventories' },
+                { 
+                    text: 'İstekler', 
+                    path: '/inventories/requests', 
+                    requiredPermissions: ['Group:Manage', 'Inventory:View']
+                },
                 { text: 'Üzerimdeki Envanterler', path: '/inventories/assigned' },
                 { text: 'Grubumun Envanterleri', path: '/inventories/group' },
                 { text: 'Fatura Yükle', path: '/inventories/upload-invoice' },
