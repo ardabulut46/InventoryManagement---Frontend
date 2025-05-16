@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box,
-    Card,
-    CardContent,
     Typography,
     Button,
     Dialog,
@@ -13,21 +11,30 @@ import {
     Alert,
     Snackbar,
     Chip,
-    Divider,
-    Grid,
-    Paper,
     useTheme,
     alpha,
-    CircularProgress
+    CircularProgress,
+    ToggleButtonGroup,
+    ToggleButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    IconButton,
+    Tooltip,
+    Collapse
 } from '@mui/material';
 import {
     CheckCircleOutline as ApproveIcon,
     CancelOutlined as RejectIcon,
     AccessTime as PendingIcon,
     Person as UserIcon,
-    CalendarToday as DateIcon,
-    Description as CommentIcon,
-    Business as DepartmentIcon
+    FilterList as FilterIcon,
+    KeyboardArrowDown as ExpandMoreIcon,
+    KeyboardArrowUp as ExpandLessIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -41,19 +48,26 @@ const InventoryRequests = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectComment, setRejectComment] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [viewMode, setViewMode] = useState('pending');
+    const [expandedRow, setExpandedRow] = useState(null);
     const theme = useTheme();
 
     useEffect(() => {
         fetchRequests();
-    }, []);
+    }, [viewMode]);
 
     const fetchRequests = async () => {
+        setLoading(true);
         try {
-            const data = await ApprovalService.getPendingApprovals();
+            const data = viewMode === 'pending' 
+                ? await ApprovalService.getPendingApprovals()
+                : await ApprovalService.getAllRequests();
             setRequests(data);
-            setLoading(false);
+            setError(null);
         } catch (err) {
-            setError('İstekler yüklenirken bir hata oluştu.');
+            setError('İstekler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+            setRequests([]);
+        } finally {
             setLoading(false);
         }
     };
@@ -107,7 +121,8 @@ const InventoryRequests = () => {
                         icon={<PendingIcon />}
                         label="Beklemede"
                         color="warning"
-                        variant="outlined"
+                        variant="filled"
+                        size="small"
                     />
                 );
             case 1:
@@ -116,7 +131,8 @@ const InventoryRequests = () => {
                         icon={<ApproveIcon />}
                         label="Onaylandı"
                         color="success"
-                        variant="outlined"
+                        variant="filled"
+                        size="small"
                     />
                 );
             case 2:
@@ -125,7 +141,8 @@ const InventoryRequests = () => {
                         icon={<RejectIcon />}
                         label="Reddedildi"
                         color="error"
-                        variant="outlined"
+                        variant="filled"
+                        size="small"
                     />
                 );
             default:
@@ -135,149 +152,221 @@ const InventoryRequests = () => {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-                <CircularProgress />
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
+                <CircularProgress size={50} />
+                <Typography variant="h6" sx={{ ml: 2 }}>Yükleniyor...</Typography>
             </Box>
         );
     }
 
-    if (error) {
-        return (
-            <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-            </Alert>
-        );
-    }
-
     return (
-        <Box>
-            <Typography variant="h4" gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography 
+                variant="h4" 
+                gutterBottom 
+                sx={{ 
+                    mb: 4, 
+                    fontWeight: 700, 
+                    color: theme.palette.primary.main,
+                    borderBottom: `2px solid ${theme.palette.primary.light}`,
+                    pb: 1
+                }}
+            >
                 Envanter Silme İstekleri
             </Typography>
 
-            {requests.length === 0 ? (
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(e, newValue) => newValue && setViewMode(newValue)}
+                    aria-label="request view mode"
+                    size="small"
+                >
+                    <ToggleButton value="pending" aria-label="show pending requests">
+                        <PendingIcon sx={{ mr: 1 }} />
+                        Bekleyen İstekler
+                    </ToggleButton>
+                    <ToggleButton value="all" aria-label="show all requests">
+                        <FilterIcon sx={{ mr: 1 }} />
+                        Tüm İstekler
+                    </ToggleButton>
+                </ToggleButtonGroup>
+            </Box>
+
+            {error && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    {error} <Button onClick={fetchRequests} size="small">Tekrar Yükle</Button>
+                </Alert>
+            )}
+
+            {requests.length === 0 && !loading && !error ? (
                 <Paper
                     sx={{
-                        p: 4,
+                        p: { xs: 3, md: 5 },
                         textAlign: 'center',
-                        bgcolor: theme.palette.background.paper,
-                        borderRadius: 2
+                        bgcolor: theme.palette.background.default,
+                        borderRadius: 2,
+                        border: `1px dashed ${theme.palette.divider}`
                     }}
                 >
                     <Typography variant="h6" color="text.secondary">
-                        Bekleyen istek bulunmamaktadır.
+                        {viewMode === 'pending' ? 'Bekleyen istek bulunmamaktadır.' : 'Hiç istek bulunmamaktadır.'}
                     </Typography>
                 </Paper>
             ) : (
-                <Grid container spacing={3}>
-                    {requests.map((request) => (
-                        <Grid item xs={12} key={request.id}>
-                            <Card
-                                sx={{
-                                    borderRadius: 2,
-                                    boxShadow: theme.shadows[2],
-                                    '&:hover': {
-                                        boxShadow: theme.shadows[4],
-                                        transform: 'translateY(-2px)',
-                                    },
-                                    transition: 'all 0.3s ease-in-out',
-                                }}
-                            >
-                                <CardContent>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} md={8}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                                <UserIcon color="primary" />
-                                                <Typography variant="h6">
-                                                    {request.requestingUser.name} {request.requestingUser.surname}
-                                                </Typography>
-                                                {getStatusChip(request.status)}
-                                            </Box>
-                                            
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                <DateIcon fontSize="small" color="action" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    İstek Tarihi: {format(new Date(request.requestedDate), 'dd MMMM yyyy HH:mm', { locale: tr })}
-                                                </Typography>
-                                            </Box>
-                                            
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: theme.shadows[3] }}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell padding="checkbox" />
+                                <TableCell>Durum</TableCell>
+                                <TableCell>İsteyen Kullanıcı</TableCell>
+                                <TableCell>Departman</TableCell>
+                                <TableCell>İstek Tarihi</TableCell>
+                                <TableCell align="right">İşlemler</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {requests.map((request) => (
+                                <React.Fragment key={request.id}>
+                                    <TableRow 
+                                        hover
+                                        sx={{ 
+                                            '&:last-child td, &:last-child th': { border: 0 },
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <TableCell padding="checkbox">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => setExpandedRow(expandedRow === request.id ? null : request.id)}
+                                            >
+                                                {expandedRow === request.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                            </IconButton>
+                                        </TableCell>
+                                        <TableCell>{getStatusChip(request.status)}</TableCell>
+                                        <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <CommentIcon fontSize="small" color="action" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Departman: {request.requestingUser.location}
-                                                </Typography>
+                                                <UserIcon fontSize="small" color="action" />
+                                                {request.requestingUser.name} {request.requestingUser.surname}
                                             </Box>
-                                        </Grid>
-                                        
-                                        <Grid item xs={12} md={4}>
-                                            <Box sx={{ 
-                                                display: 'flex', 
-                                                gap: 2, 
-                                                justifyContent: { xs: 'flex-start', md: 'flex-end' },
-                                                mt: { xs: 2, md: 0 }
-                                            }}>
-                                                <Button
-                                                    variant="contained"
-                                                    color="success"
-                                                    startIcon={<ApproveIcon />}
-                                                    onClick={() => handleApprove(request.id)}
-                                                    sx={{ borderRadius: 2 }}
-                                                >
-                                                    Onayla
-                                                </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    color="error"
-                                                    startIcon={<RejectIcon />}
-                                                    onClick={() => {
-                                                        setSelectedRequest(request);
-                                                        setOpenRejectDialog(true);
-                                                    }}
-                                                    sx={{ borderRadius: 2 }}
-                                                >
-                                                    Reddet
-                                                </Button>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+                                        </TableCell>
+                                        <TableCell>{request.requestingUser.location || '-'}</TableCell>
+                                        <TableCell>
+                                            {format(new Date(request.requestedDate), 'dd MMM yyyy, HH:mm', { locale: tr })}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {request.status === 0 && (
+                                                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                                                    <Tooltip title="Onayla">
+                                                        <IconButton
+                                                            color="success"
+                                                            onClick={() => handleApprove(request.id)}
+                                                            size="small"
+                                                        >
+                                                            <ApproveIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Reddet">
+                                                        <IconButton
+                                                            color="error"
+                                                            onClick={() => {
+                                                                setSelectedRequest(request);
+                                                                setOpenRejectDialog(true);
+                                                            }}
+                                                            size="small"
+                                                        >
+                                                            <RejectIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Box>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                                            <Collapse in={expandedRow === request.id} timeout="auto" unmountOnExit>
+                                                <Box sx={{ margin: 2 }}>
+                                                    <Typography variant="subtitle2" gutterBottom component="div">
+                                                        Detaylar
+                                                    </Typography>
+                                                    {request.comment && (
+                                                        <Typography variant="body2" color="text.secondary" paragraph>
+                                                            <strong>Talep Açıklaması:</strong> {request.comment}
+                                                        </Typography>
+                                                    )}
+                                                    {request.status !== 0 && request.approverComments && (
+                                                        <Typography 
+                                                            variant="body2" 
+                                                            sx={{ 
+                                                                bgcolor: alpha(theme.palette.background.default, 0.8),
+                                                                p: 1.5,
+                                                                borderRadius: 1,
+                                                                border: `1px solid ${theme.palette.divider}`
+                                                            }}
+                                                        >
+                                                            <strong>Yönetici Notu:</strong> {request.approverComments}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Collapse>
+                                        </TableCell>
+                                    </TableRow>
+                                </React.Fragment>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             )}
 
             <Dialog
                 open={openRejectDialog}
-                onClose={() => setOpenRejectDialog(false)}
+                onClose={() => {
+                    setOpenRejectDialog(false);
+                    setRejectComment('');
+                    setSelectedRequest(null);
+                }}
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
                     sx: {
-                        borderRadius: 2,
+                        borderRadius: 3,
                         boxShadow: theme.shadows[5]
                     }
                 }}
             >
-                <DialogTitle>Reddetme Nedeni</DialogTitle>
-                <DialogContent>
+                <DialogTitle sx={{ borderBottom: `1px solid ${theme.palette.divider}`, pb: 1.5, fontWeight: 600 }}>
+                    Reddetme Nedenini Belirtin
+                </DialogTitle>
+                <DialogContent sx={{ pt: '20px !important' }}>
+                    <Typography variant="body2" sx={{ mb: 2}}>
+                        Lütfen {selectedRequest?.requestingUser.name} {selectedRequest?.requestingUser.surname} adlı kullanıcının isteğini neden reddettiğinizi açıklayın.
+                    </Typography>
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Reddetme açıklaması"
+                        id="reject-comment"
+                        label="Reddetme Açıklaması"
                         type="text"
                         fullWidth
                         multiline
                         rows={4}
                         value={rejectComment}
                         onChange={(e) => setRejectComment(e.target.value)}
-                        sx={{ mt: 2 }}
+                        variant="outlined"
+                        helperText={!rejectComment.trim() ? "Açıklama boş bırakılamaz." : ""}
+                        error={!rejectComment.trim()}
                     />
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
+                <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5 }}>
                     <Button 
-                        onClick={() => setOpenRejectDialog(false)}
-                        sx={{ borderRadius: 2 }}
+                        onClick={() => {
+                            setOpenRejectDialog(false);
+                            setRejectComment('');
+                            setSelectedRequest(null);
+                        }}
+                        sx={{ borderRadius: 2, color: theme.palette.text.secondary }}
                     >
                         İptal
                     </Button>
@@ -288,20 +377,22 @@ const InventoryRequests = () => {
                         disabled={!rejectComment.trim()}
                         sx={{ borderRadius: 2 }}
                     >
-                        Reddet
+                        Gönder ve Reddet
                     </Button>
                 </DialogActions>
             </Dialog>
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={6000}
+                autoHideDuration={5000}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <Alert 
                     onClose={() => setSnackbar({ ...snackbar, open: false })} 
                     severity={snackbar.severity}
-                    sx={{ width: '100%' }}
+                    variant="filled"
+                    sx={{ width: '100%', boxShadow: theme.shadows[6] }}
                 >
                     {snackbar.message}
                 </Alert>

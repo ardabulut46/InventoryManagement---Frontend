@@ -6,6 +6,11 @@ class ApprovalService {
         return response.data;
     }
 
+    async getAllRequests() {
+        const response = await httpClient.get('/api/approvals/all-requests');
+        return response.data;
+    }
+
     async approveRequest(id) {
         const response = await httpClient.post(`/api/approvals/${id}/approve`);
         return response.data;
