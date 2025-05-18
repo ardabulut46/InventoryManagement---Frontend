@@ -916,24 +916,26 @@ function TicketDetailPage() {
               {/* Assignment Time Information */}
               {ticket.timeToAssign && !ticket.userId && (
                 <Box sx={{ mb: 3 }}>
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 2, 
-                      bgcolor: ticket.isAssignmentOverdue ? 'error.light' : 'info.light',
-                      color: ticket.isAssignmentOverdue ? 'error.contrastText' : 'info.contrastText',
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 2
-                    }}
-                  >
-                    {ticket.isAssignmentOverdue ? <WarningAmberIcon /> : <AlarmIcon />}
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                      {ticket.isAssignmentOverdue ? 'Atama Süresi Doldu!' : 'Atama Süresi:'}
-                    </Typography>
-                  </Paper>
+                  {!ticket.isAssignmentOverdue && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        bgcolor: 'info.light',
+                        color: 'info.contrastText',
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 2
+                      }}
+                    >
+                      <AlarmIcon />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                        {'Atama Süresi:'}
+                      </Typography>
+                    </Paper>
+                  )}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1 }}>
                     <Typography variant="body2" color="text.secondary">
                       Çağrı Açılma:
@@ -946,18 +948,13 @@ function TicketDetailPage() {
                     <Typography variant="body2" color="text.secondary">
                       Atama Süresi:
                     </Typography>
-                    <Chip 
-                      label={translateTimeDisplay(ticket.timeToAssignDisplay)} 
-                      size="small" 
+                    <Chip
+                      label={translateTimeDisplay(ticket.timeToAssignDisplay)}
+                      size="small"
                       color={ticket.isAssignmentOverdue ? "error" : "info"}
-                      sx={{ fontWeight: 'bold' }} 
+                      sx={{ fontWeight: 'bold' }}
                     />
                   </Box>
-                  {ticket.isAssignmentOverdue && (
-                    <Alert severity="error" sx={{ mt: 2 }}>
-                      Bu çağrı en kısa sürede atanmalıdır!
-                    </Alert>
-                  )}
                 </Box>
               )}
 
