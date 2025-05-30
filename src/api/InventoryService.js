@@ -38,8 +38,8 @@ export const updateInventory = (id, updateInventoryDto) => {
         });
 }
 
-export const deleteInventory = (id) => {
-    return httpClient.delete(`${endpoint}/${id}`)
+export const deleteInventory = (id, data) => {
+    return httpClient.delete(`${endpoint}/${id}`, { data });
 }
 
 export const assignUser = (inventoryId, userId, notes) => {

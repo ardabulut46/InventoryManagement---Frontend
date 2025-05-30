@@ -40,7 +40,12 @@ import {
     Person as PersonIcon,
     AttachFile as AttachmentIcon,
     Group as GroupIcon,
-    Close as CloseIcon
+    Close as CloseIcon,
+    ArrowForward as ArrowForwardIcon,
+    CheckCircleOutline as CheckCircleOutlineIcon,
+    Archive as ArchiveIcon,
+    ReportProblem as ReportProblemIcon,
+    Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getGroupInventories } from '../../api/InventoryService';
@@ -326,29 +331,133 @@ const GroupInventoriesPage = () => {
                 </Box>
             </Box>
 
-            {/* Summary Bar with Status Chips */}
-            <Paper elevation={0} sx={{ mb: 3, p: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 2 }}>
-                    Toplam <span style={{ color: theme.palette.primary.main }}>{inventories.length}</span> envanter
-                </Typography>
-                {STATUS_LIST.filter(s => s.value !== 'all').map(s => (
-                    <Chip
-                        key={s.value}
-                        label={`${s.label}: ${statusDistribution[s.value] || 0}`}
-                        color={s.color}
-                        sx={{ fontWeight: 500, bgcolor: STATUS_COLORS[s.value], color: '#fff', mr: 1 }}
-                        variant={statusFilter === String(s.value) ? 'filled' : 'outlined'}
-                        onClick={() => setStatusFilter(String(s.value))}
-                        clickable
-                    />
-                ))}
-                <Button size="small" onClick={() => { setStatusFilter('all'); setSearchTerm(''); }} sx={{ ml: 'auto' }}>
-                    Filtreleri Temizle
-                </Button>
-            </Paper>
+            {/* New Summary Cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                {/* Total Inventories Card */}
+                <Grid item xs={12} sm={6} md={4} lg={2}>
+                    <Card 
+                        sx={{
+                            height: 120,
+                            borderRadius: 2,
+                            bgcolor: theme.palette.primary.light,
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4,
+                            },
+                        }}
+                        onClick={() => { setStatusFilter('all'); setSearchTerm(''); }}
+                    >
+                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
+                                    Toplam Envanter
+                                </Typography>
+                                <AssignmentIcon sx={{ opacity: 0.8, fontSize: 22 }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
+                                    {inventories.length}
+                                </Typography>
+                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                                        Gruptaki tüm envanterler
+                                    </Typography>
+                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
+                                </Box>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
 
-            {/* Sticky Search Bar with Status Filter Chips */}
-            <Box sx={{ mb: 3, position: 'sticky', top: 0, zIndex: 10, bgcolor: theme.palette.background.paper, pb: 1 }}>
+                {/* Status Specific Cards */}
+                {STATUS_LIST.filter(s => s.value !== 'all').map(statusItem => {
+                    let bgColor = 'grey.500';
+                    let icon = <InfoIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                    let subDescription = "Durum bilgisi";
+
+                    switch (String(statusItem.value)) {
+                        case '1': // Müsait
+                            bgColor = theme.palette.success.light;
+                            icon = <CheckCircleOutlineIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                            subDescription = "Kullanıma hazır";
+                            break;
+                        case '2': // Kullanımda
+                            bgColor = theme.palette.info.light;
+                            icon = <ComputerIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                            subDescription = "Aktif kullanımda";
+                            break;
+                        case '3': // Bakımda
+                            bgColor = theme.palette.warning.light;
+                            icon = <BuildIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                            subDescription = "Bakım/onarımda";
+                            break;
+                        case '4': // Emekli
+                            bgColor = '#757575'; // Grey
+                            icon = <ArchiveIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                            subDescription = "Kullanımdan kalkmış";
+                            break;
+                        case '5': // Kayıp
+                            bgColor = theme.palette.error.light;
+                            icon = <ReportProblemIcon sx={{ opacity: 0.8, fontSize: 22 }} />;
+                            subDescription = "Kayıp/bulunamıyor";
+                            break;
+                        default:
+                            break;
+                    }
+
+                    return (
+                        <Grid item xs={12} sm={6} md={4} lg={2} key={statusItem.value}>
+                            <Card 
+                                sx={{
+                                    height: 120,
+                                    borderRadius: 2,
+                                    bgcolor: bgColor,
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: 4,
+                                    },
+                                    ...(statusFilter === String(statusItem.value) && {
+                                        border: '2px solid white',
+                                        boxShadow: `0 0 0 2px ${theme.palette.augmentColor({ color: { main: bgColor } }).main || bgColor}`
+                                    })
+                                }}
+                                onClick={() => setStatusFilter(String(statusItem.value))}
+                            >
+                                <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
+                                            {statusItem.label}
+                                        </Typography>
+                                        {icon}
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
+                                            {statusDistribution[statusItem.value] || 0}
+                                        </Typography>
+                                        <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
+                                                {subDescription}
+                                            </Typography>
+                                            <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    );
+                })}
+            </Grid>
+
+            {/* Sticky Search Bar - Chips Removed */}
+            <Box sx={{ mb: 3, position: 'sticky', top: 0, zIndex: 10, bgcolor: theme.palette.background.paper, pt:1, pb: 1 }}>
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -365,19 +474,6 @@ const GroupInventoriesPage = () => {
                     }}
                     sx={{ maxWidth: 600, bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : '#fff', boxShadow: 1 }}
                 />
-                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {STATUS_LIST.map(s => (
-                        <Chip
-                            key={s.value}
-                            label={s.label}
-                            color={s.color}
-                            variant={statusFilter === String(s.value) ? 'filled' : 'outlined'}
-                            onClick={() => setStatusFilter(String(s.value))}
-                            clickable
-                            sx={{ fontWeight: 500, bgcolor: statusFilter === String(s.value) ? STATUS_COLORS[s.value] : undefined, color: statusFilter === String(s.value) ? '#fff' : undefined }}
-                        />
-                    ))}
-                </Box>
             </Box>
 
             {loading ? (

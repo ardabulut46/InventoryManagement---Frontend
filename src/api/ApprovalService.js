@@ -11,8 +11,9 @@ class ApprovalService {
         return response.data;
     }
 
-    async approveRequest(id) {
-        const response = await httpClient.post(`/api/approvals/${id}/approve`);
+    async approveRequest(id, comments) {
+        const payload = comments ? { comments } : {};
+        const response = await httpClient.post(`/api/approvals/${id}/approve`, payload);
         return response.data;
     }
 

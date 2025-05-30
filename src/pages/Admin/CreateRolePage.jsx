@@ -32,6 +32,7 @@ import {
     Add as AddIcon,
     Remove as RemoveIcon,
     ExpandMore as ExpandMoreIcon,
+    Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import httpClient from '../../api/httpClient';
@@ -65,6 +66,9 @@ const availablePermissions = {
         'Tickets:Delete',
         'Tickets:Assign',
         'Tickets:ViewWhoCreated'
+    ],
+    'Reports': [
+        'Reports:View'
     ]
 };
 
@@ -78,6 +82,9 @@ const getPermissionDisplayName = (permission) => {
         else if (action === 'Create') return 'Rol Oluşturma';
         else if (action === 'Edit') return 'Rol Düzenleme';
         else if (action === 'Delete') return 'Rol Silme';
+    }
+    if (resource === 'Reports') {
+        if (action === 'View') return 'Görüntüleme';
     }
     if (action === 'View') return 'Görüntüleme';
     else if (action === 'Create') return 'Oluşturma';
@@ -95,6 +102,7 @@ const getCategoryDisplayName = (category) => {
     if (category === 'Tickets') return 'Çağrılar';
     if (category === 'Roles') return 'Rol Yönetimi';
     if (category === 'AdminPanel') return 'Admin Paneli';
+    if (category === 'Reports') return 'Raporlar';
     return category;
 };
 
@@ -208,13 +216,36 @@ const CreateRolePage = () => {
     };
 
     const handlePermissionChange = (category, permission) => {
-        setSelectedPermissions(prev => ({
-            ...prev,
-            [category]: {
+        setSelectedPermissions(prev => {
+            const newCategoryPermissions = {
                 ...prev[category],
                 [permission]: !prev[category][permission]
+            };
+
+            // If a permission is being selected (not deselected) and it's not the 'View' permission
+            if (newCategoryPermissions[permission] && !permission.endsWith(':View')) {
+                const viewPermission = availablePermissions[category].find(p => p.endsWith(':View'));
+                if (viewPermission && !newCategoryPermissions[viewPermission]) {
+                    newCategoryPermissions[viewPermission] = true;
+                }
             }
-        }));
+
+            // If a 'View' permission is being deselected
+            if (!newCategoryPermissions[permission] && permission.endsWith(':View')) {
+                // Check if any other permission in this category is still selected
+                const otherPermissionsSelected = Object.keys(newCategoryPermissions).some(p => 
+                    p !== permission && newCategoryPermissions[p]
+                );
+                if (otherPermissionsSelected) {
+                    newCategoryPermissions[permission] = true; // Keep 'View' permission selected
+                }
+            }
+
+            return {
+                ...prev,
+                [category]: newCategoryPermissions
+            };
+        });
     };
 
     const handleCategorySelectAll = (category, value) => {

@@ -42,6 +42,7 @@ import {
     ExpandLess as ExpandLessIcon,
     ExpandMore as ExpandMoreIcon,
     AdminPanelSettings as AdminPanelIcon,
+    Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { logout, getCurrentUser } from './api/auth';
@@ -263,6 +264,16 @@ function Layout() {
                     path: '/admin/inventory-settings',
                     requiredPermissions: ['AdminPanel:View', 'Inventory:View']
                 }
+            ]
+        },
+        { 
+            text: 'Raporlar', 
+            icon: <AssessmentIcon />, 
+            path: '/reports',
+            requiredPermissions: ['Reports:View'],
+            subItems: [
+                { text: 'Çağrı Raporları', path: '/reports/ticket-reports', requiredPermissions: ['Reports:View'] },
+                { text: 'Envanter Raporları', path: '/reports/inventory-reports', requiredPermissions: ['Reports:View'] }
             ]
         },
     ];

@@ -47,6 +47,8 @@ const InventoryRequests = () => {
     const [openRejectDialog, setOpenRejectDialog] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectComment, setRejectComment] = useState('');
+    const [openApproveDialog, setOpenApproveDialog] = useState(false);
+    const [approveComment, setApproveComment] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [viewMode, setViewMode] = useState('pending');
     const [expandedRow, setExpandedRow] = useState(null);
@@ -73,8 +75,15 @@ const InventoryRequests = () => {
     };
 
     const handleApprove = async (requestId) => {
+        setSelectedRequest(requests.find(req => req.id === requestId));
+        setOpenApproveDialog(true);
+    };
+
+    const confirmApprove = async () => {
+        if (!selectedRequest) return;
+
         try {
-            await ApprovalService.approveRequest(requestId);
+            await ApprovalService.approveRequest(selectedRequest.id, approveComment);
             setSnackbar({
                 open: true,
                 message: 'İstek başarıyla onaylandı.',
@@ -84,9 +93,13 @@ const InventoryRequests = () => {
         } catch (err) {
             setSnackbar({
                 open: true,
-                message: 'İstek onaylanırken bir hata oluştu.',
+                message: err.response?.data?.message || 'İstek onaylanırken bir hata oluştu.',
                 severity: 'error'
             });
+        } finally {
+            setOpenApproveDialog(false);
+            setApproveComment('');
+            setSelectedRequest(null);
         }
     };
 
@@ -378,6 +391,65 @@ const InventoryRequests = () => {
                         sx={{ borderRadius: 2 }}
                     >
                         Gönder ve Reddet
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={openApproveDialog}
+                onClose={() => {
+                    setOpenApproveDialog(false);
+                    setApproveComment('');
+                    setSelectedRequest(null);
+                }}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        boxShadow: theme.shadows[5]
+                    }
+                }}
+            >
+                <DialogTitle sx={{ borderBottom: `1px solid ${theme.palette.divider}`, pb: 1.5, fontWeight: 600 }}>
+                    Onay Açıklaması (İsteğe Bağlı)
+                </DialogTitle>
+                <DialogContent sx={{ pt: '20px !important' }}>
+                    <Typography variant="body2" sx={{ mb: 2}}>
+                        İsteği onaylarken bir açıklama ekleyebilirsiniz.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="approve-comment"
+                        label="Onay Açıklaması"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={approveComment}
+                        onChange={(e) => setApproveComment(e.target.value)}
+                        variant="outlined"
+                    />
+                </DialogContent>
+                <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5 }}>
+                    <Button 
+                        onClick={() => {
+                            setOpenApproveDialog(false);
+                            setApproveComment('');
+                            setSelectedRequest(null);
+                        }}
+                        sx={{ borderRadius: 2, color: theme.palette.text.secondary }}
+                    >
+                        İptal
+                    </Button>
+                    <Button 
+                        onClick={confirmApprove} 
+                        variant="contained" 
+                        color="success"
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Onayla
                     </Button>
                 </DialogActions>
             </Dialog>

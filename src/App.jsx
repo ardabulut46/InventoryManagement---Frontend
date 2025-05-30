@@ -54,6 +54,9 @@ import BrandsPage from './pages/Admin/BrandsPage'
 import ModelsPage from './pages/Admin/ModelsPage'
 import AssignedInventoriesPage from './pages/Inventories/AssignedInventoriesPage'
 import GroupInventoriesPage from './pages/Inventories/GroupInventoriesPage'
+import ReportsPage from './pages/ReportsPage'
+import TicketReports from './pages/TicketReports'
+import InventoryReports from './pages/InventoryReports'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -120,6 +123,11 @@ function App() {
                             <Route path="/inventories/assigned" element={<AssignedInventoriesPage />} />
                             <Route path="/inventories/group" element={<GroupInventoriesPage />} />
                             <Route path="/inventories/requests" element={<InventoryRequests />} />
+
+                            {/* REPORTS */}
+                            <Route path="/reports" element={<ReportsPage />} />
+                            <Route path="/reports/ticket-reports" element={<TicketReports />} />
+                            <Route path="/reports/inventory-reports" element={<InventoryReports />} />
 
                             {/* TICKETS */}
                             <Route path="/tickets" element={<TicketsPage />} />

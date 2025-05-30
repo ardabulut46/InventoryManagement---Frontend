@@ -75,4 +75,9 @@ export const getMostOpenedToGroup = () => {
     return httpClient.get(`${endpoint}/most-opened-to-group`);
 };
 
+
+export const getMostAssignedTicketsToUser = () => {
+    return httpClient.get(`${endpoint}/most-assigned-to-user`);
+};
+
 // Add more ticket-specific operations as needed

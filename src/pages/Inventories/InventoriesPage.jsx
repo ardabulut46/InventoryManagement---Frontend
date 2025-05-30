@@ -818,6 +818,9 @@ function InventoriesPage() {
     const [expiringInFifteenDaysInventories, setExpiringInFifteenDaysInventories] = useState([]);
     const [mostRepairedInventories, setMostRepairedInventories] = useState([]);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [inventoryToDeleteId, setInventoryToDeleteId] = useState(null);
+    const [deleteComment, setDeleteComment] = useState('');
 
     useEffect(() => {
         fetchInventories();
@@ -894,14 +897,23 @@ function InventoriesPage() {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Bu envanteri silmek istediğinizden emin misiniz? Bu işlem grup liderinizin onayını gerektirir.')) {
-            try {
-                await deleteInventory(id);
-                setSuccessMessage('Grup liderinize silme onayı isteği gönderilmiştir. İsteğiniz onaylandığında envanter pasif duruma alınacaktır.');
-                fetchInventories();
-            } catch (err) {
-                setError('Silme isteği gönderilirken bir hata oluştu.');
-            }
+        setInventoryToDeleteId(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!inventoryToDeleteId) return;
+        try {
+            // Assuming deleteInventory service function is updated to accept { comments: "..." } as a second argument
+            await deleteInventory(inventoryToDeleteId, { comments: deleteComment });
+            setSuccessMessage('Grup liderinize silme onayı isteği gönderilmiştir. İsteğiniz onaylandığında envanter pasif duruma alınacaktır.');
+            fetchInventories();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Silme isteği gönderilirken bir hata oluştu.');
+        } finally {
+            setDeleteDialogOpen(false);
+            setInventoryToDeleteId(null);
+            setDeleteComment('');
         }
     };
 
@@ -1595,6 +1607,34 @@ function InventoriesPage() {
                             }}
                         >
                             Done
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle>Envanteri Silme Onayı</DialogTitle>
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Bu envanteri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve grup liderinizin onayını gerektirir. Lütfen silme talebiniz için bir açıklama girin.
+                        </Typography>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="delete-comment"
+                            label="Açıklama (İsteğe Bağlı)"
+                            type="text"
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={deleteComment}
+                            onChange={(e) => setDeleteComment(e.target.value)}
+                            variant="outlined"
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteDialogOpen(false)}>İptal</Button>
+                        <Button onClick={confirmDelete} color="error">
+                            Silme Talebi Gönder
                         </Button>
                     </DialogActions>
                 </Dialog>
