@@ -25,7 +25,8 @@ import {
     Paper,
     IconButton,
     Tooltip,
-    Collapse
+    Collapse,
+    Grid
 } from '@mui/material';
 import {
     CheckCircleOutline as ApproveIcon,
@@ -39,6 +40,8 @@ import {
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import ApprovalService from '../api/ApprovalService';
+import { getInventoryById } from '../api/InventoryService';
+import InventoryRequestDetail from './InventoryRequestDetail';
 
 const InventoryRequests = () => {
     const [requests, setRequests] = useState([]);
@@ -52,11 +55,42 @@ const InventoryRequests = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [viewMode, setViewMode] = useState('pending');
     const [expandedRow, setExpandedRow] = useState(null);
+    const [inventoryDetails, setInventoryDetails] = useState({});
+    const [inventoryLoading, setInventoryLoading] = useState(false);
     const theme = useTheme();
 
     useEffect(() => {
         fetchRequests();
     }, [viewMode]);
+
+    useEffect(() => {
+        const fetchInventoryDetails = async (inventoryId) => {
+            if (inventoryDetails[inventoryId]) return; // Already fetched
+
+            setInventoryLoading(true);
+            try {
+                const response = await getInventoryById(inventoryId);
+                console.log("Fetched inventory details response:", response); // Console log for debugging
+                const data = Array.isArray(response.data) ? response.data[0] : response.data;
+                console.log("Processed inventory data:", data); // Console log for debugging
+                setInventoryDetails(prev => ({ ...prev, [inventoryId]: data }));
+            } catch (err) {
+                console.error("Failed to fetch inventory details", err);
+                setInventoryDetails(prev => ({ ...prev, [inventoryId]: { error: 'Detaylar yüklenemedi.' } }));
+            } finally {
+                setInventoryLoading(false);
+            }
+        };
+
+        if (expandedRow !== null) {
+            const request = requests.find(r => r.id === expandedRow);
+            console.log("Expanding row:", expandedRow, "Found request:", request); // Console log for debugging
+            if (request && request.entityType === 'Inventory' && request.entityId) {
+                console.log("Fetching details for inventory ID:", request.entityId); // Console log for debugging
+                fetchInventoryDetails(request.entityId);
+            }
+        }
+    }, [expandedRow, requests, inventoryDetails]);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -300,29 +334,12 @@ const InventoryRequests = () => {
                                     <TableRow>
                                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
                                             <Collapse in={expandedRow === request.id} timeout="auto" unmountOnExit>
-                                                <Box sx={{ margin: 2 }}>
-                                                    <Typography variant="subtitle2" gutterBottom component="div">
-                                                        Detaylar
-                                                    </Typography>
-                                                    {request.comment && (
-                                                        <Typography variant="body2" color="text.secondary" paragraph>
-                                                            <strong>Talep Açıklaması:</strong> {request.comment}
-                                                        </Typography>
-                                                    )}
-                                                    {request.status !== 0 && request.approverComments && (
-                                                        <Typography 
-                                                            variant="body2" 
-                                                            sx={{ 
-                                                                bgcolor: alpha(theme.palette.background.default, 0.8),
-                                                                p: 1.5,
-                                                                borderRadius: 1,
-                                                                border: `1px solid ${theme.palette.divider}`
-                                                            }}
-                                                        >
-                                                            <strong>Yönetici Notu:</strong> {request.approverComments}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
+                                                <InventoryRequestDetail 
+                                                    request={request}
+                                                    inventoryDetails={inventoryDetails}
+                                                    inventoryLoading={inventoryLoading}
+                                                    theme={theme}
+                                                />
                                             </Collapse>
                                         </TableCell>
                                     </TableRow>

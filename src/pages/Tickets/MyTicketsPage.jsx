@@ -432,15 +432,14 @@ function MyTicketsPage() {
 
             {/* Stats Section */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: theme.palette.primary.light,
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -448,37 +447,24 @@ function MyTicketsPage() {
                         }}
                         onClick={handleAllTicketsCardClick}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    Toplam Çağrı
-                                </Typography>
-                                <AssignmentIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {tickets.length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Atanan tüm çağrıların sayısı
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                Toplam Çağrı
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {tickets.length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: theme.palette.warning.light,
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -486,37 +472,24 @@ function MyTicketsPage() {
                         }}
                         onClick={() => handleStatusCardClick('InProgress')}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    Devam Eden
-                                </Typography>
-                                <WarningIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {tickets.filter(t => t.status === 'InProgress').length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Çalışma devam ediyor
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                Devam Eden
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {tickets.filter(t => t.status === 'InProgress').length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: theme.palette.success.light,
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -524,37 +497,24 @@ function MyTicketsPage() {
                         }}
                         onClick={() => handleStatusCardClick('Resolved')}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    Tamamlanan
-                                </Typography>
-                                <CheckCircleIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {tickets.filter(t => t.status === 'Resolved').length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Tamamlanmış çağrılar
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                Tamamlanan
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {tickets.filter(t => t.status === 'Resolved').length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: theme.palette.error.light,
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -562,37 +522,24 @@ function MyTicketsPage() {
                         }}
                         onClick={handleHighPriorityCardClick}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    Kritik Öncelikli
-                                </Typography>
-                                <BoltIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {highPriorityTickets.length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Hemen ilgilenilmeli
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                Kritik Öncelikli
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {highPriorityTickets.length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: '#757575',
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -600,37 +547,24 @@ function MyTicketsPage() {
                         }}
                         onClick={() => handleStatusCardClick('Cancelled')}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    İptal Edilen
-                                </Typography>
-                                <ErrorIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {tickets.filter(t => t.status === 'Cancelled').length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        İptal edilmiş çağrılar
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                İptal Edilen
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {tickets.filter(t => t.status === 'Cancelled').length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3} lg={2.4}>
-                    <Card 
-                        sx={{ 
-                            height: 120,
-                            borderRadius: 2,
+                <Grid item xs={12} sm={6} md={2}>
+                    <Card
+                        sx={{
                             bgcolor: '#E91E63',
                             color: 'white',
+                            borderRadius: 2,
                             cursor: 'pointer',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
                                 boxShadow: 4,
@@ -638,25 +572,13 @@ function MyTicketsPage() {
                         }}
                         onClick={handleOverdueCardClick}
                     >
-                        <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
-                                    Çözüm Süresi Aşılan
-                                </Typography>
-                                <TimerOffIcon sx={{ opacity: 0.8, fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, fontSize: 28 }}>
-                                    {tickets.filter(t => t.status === 'InProgress' && t.isSolutionOverdue).length}
-                                </Typography>
-                                <Box sx={{ width: '28px', height: '3px', bgcolor: 'rgba(255,255,255,0.7)', borderRadius: '2px', mb: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Acilen tamamlanmalı
-                                    </Typography>
-                                    <ArrowForwardIcon sx={{ opacity: 0.8, fontSize: 13 }} />
-                                </Box>
-                            </Box>
+                        <CardContent>
+                            <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.8 }}>
+                                Çözüm Süresi Aşılan
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                {tickets.filter(t => t.status === 'InProgress' && t.isSolutionOverdue).length}
+                            </Typography>
                         </CardContent>
                     </Card>
                 </Grid>

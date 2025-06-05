@@ -51,7 +51,11 @@ const availablePermissions = {
         'Inventory:Create',
         'Inventory:Edit',
         'Inventory:Delete',
-        'Inventory:UploadFile'
+        'Inventory:UploadFile',
+        'Inventory:ViewFiles',
+        'Inventory:ViewAssignmentHistory',
+        'Inventory:ViewPurchaseInfo',
+        'Inventory:ViewAssignmentDocuments'
     ],
     'Users': [
         'Users:View',
@@ -76,6 +80,10 @@ const availablePermissions = {
 const getPermissionDisplayName = (permission) => {
     if (permission === 'AdminPanel:View') return 'Admin Paneline Erişim';
     if (permission === 'Tickets:ViewWhoCreated') return 'Çağrıyı Oluşturanı Görebilme';
+    if (permission === 'Inventory:ViewFiles') return 'Ek Dosyaları Göster';
+    if (permission === 'Inventory:ViewAssignmentHistory') return 'Atama Geçmişini Göster';
+    if (permission === 'Inventory:ViewPurchaseInfo') return 'Satın Alma Bilgilerini Göster';
+    if (permission === 'Inventory:ViewAssignmentDocuments') return 'Zimmet Tutanağını Göster';
     const [resource, action] = permission.split(':');
     if (resource === 'Roles') {
         if (action === 'View') return 'Rol Görüntüleme';
@@ -182,13 +190,14 @@ const CreateRolePage = () => {
                     
                     if (!permissionName) return;
                     
-                    // Split the permission to get the resource category
-                    const [resource] = permissionName.split(':');
-                    
-                    // Check if this permission exists in our available permissions
-                    if (updatedPermissions[resource] && updatedPermissions[resource][permissionName] !== undefined) {
-                        // Set this permission to true
-                        updatedPermissions[resource][permissionName] = true;
+                    // Find the correct category for the permission by iterating through availablePermissions
+                    const permissionCategory = Object.keys(availablePermissions).find(category =>
+                        availablePermissions[category].includes(permissionName)
+                    );
+
+                    // If the category is found, set the permission to true in the state
+                    if (permissionCategory && updatedPermissions[permissionCategory]) {
+                        updatedPermissions[permissionCategory][permissionName] = true;
                     }
                 });
             } else {
@@ -222,19 +231,23 @@ const CreateRolePage = () => {
                 [permission]: !prev[category][permission]
             };
 
-            // If a permission is being selected (not deselected) and it's not the 'View' permission
-            if (newCategoryPermissions[permission] && !permission.endsWith(':View')) {
+            // If a permission is being selected (not deselected) and it's not a view-type permission
+            if (newCategoryPermissions[permission] && 
+                !permission.endsWith(':View') && 
+                !permission.includes(':View')) { // Updated condition to check for all view-type permissions
+                
+                // Find the base view permission
                 const viewPermission = availablePermissions[category].find(p => p.endsWith(':View'));
                 if (viewPermission && !newCategoryPermissions[viewPermission]) {
                     newCategoryPermissions[viewPermission] = true;
                 }
             }
 
-            // If a 'View' permission is being deselected
+            // If a base 'View' permission is being deselected
             if (!newCategoryPermissions[permission] && permission.endsWith(':View')) {
                 // Check if any other permission in this category is still selected
                 const otherPermissionsSelected = Object.keys(newCategoryPermissions).some(p => 
-                    p !== permission && newCategoryPermissions[p]
+                    p !== permission && newCategoryPermissions[p] && !p.includes(':View')
                 );
                 if (otherPermissionsSelected) {
                     newCategoryPermissions[permission] = true; // Keep 'View' permission selected
